@@ -18,9 +18,9 @@ npm install
 npm run dev
 ```
 
-Open the local URL printed by the development server. On desktop, the mobile
-prototype is paired with a short product thesis and branch selector. On a phone,
-the care experience fills the viewport.
+Open the local URL printed by the development server. The prototype presents
+only the mobile care experience: centered as a device on desktop and filling
+the viewport on a phone. All branches are reached through the product itself.
 
 ## Product position
 

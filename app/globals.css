@@ -56,13 +56,14 @@ svg {
 
 .prototype-shell {
   position: relative;
-  display: grid;
-  grid-template-columns: minmax(360px, 540px) minmax(460px, 1fr);
+  display: flex;
   min-height: 100vh;
+  align-items: center;
+  justify-content: center;
   overflow: hidden;
   background:
-    radial-gradient(circle at 12% 18%, rgba(74, 162, 129, 0.1), transparent 32%),
-    linear-gradient(125deg, #f8fbf8 0%, #eef5f1 58%, #e9f3ee 100%);
+    radial-gradient(circle at 50% 42%, rgba(74, 162, 129, 0.12), transparent 34%),
+    linear-gradient(145deg, #f8fbf8 0%, #edf5f0 100%);
 }
 
 .prototype-shell::before {
@@ -73,13 +74,6 @@ svg {
   opacity: 0.28;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.88' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.09'/%3E%3C/svg%3E");
   mix-blend-mode: multiply;
-}
-
-.story-panel {
-  z-index: 2;
-  display: flex;
-  flex-direction: column;
-  padding: clamp(48px, 7vw, 104px) 24px 38px clamp(36px, 7vw, 108px);
 }
 
 .brand {
@@ -122,104 +116,6 @@ svg {
   display: none;
 }
 
-.story-kicker {
-  margin-top: auto;
-  color: var(--green);
-  font-size: 12px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.story-panel h1 {
-  max-width: 470px;
-  margin: 19px 0 20px;
-  font-size: clamp(38px, 4.6vw, 68px);
-  font-weight: 500;
-  letter-spacing: -0.055em;
-  line-height: 1.02;
-}
-
-.story-panel > p {
-  max-width: 430px;
-  margin: 0;
-  color: var(--muted);
-  font-size: 15px;
-  line-height: 1.75;
-}
-
-.story-line {
-  width: 100%;
-  max-width: 430px;
-  height: 1px;
-  margin: 42px 0 24px;
-  background: linear-gradient(90deg, var(--line), transparent);
-}
-
-.demo-routes {
-  display: grid;
-  max-width: 430px;
-  gap: 5px;
-}
-
-.demo-routes > span {
-  margin-bottom: 8px;
-  color: var(--muted);
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.demo-routes button {
-  display: grid;
-  grid-template-columns: 9px 1fr 20px;
-  align-items: center;
-  gap: 12px;
-  padding: 11px 12px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: var(--ink-soft);
-  text-align: left;
-  cursor: pointer;
-}
-
-.demo-routes button:hover,
-.demo-routes button.active {
-  background: rgba(255, 255, 255, 0.58);
-}
-
-.demo-routes button i {
-  width: 6px;
-  height: 6px;
-  border: 1px solid var(--green);
-  border-radius: 50%;
-}
-
-.demo-routes button.active i {
-  border-color: var(--green);
-  background: var(--green);
-  box-shadow: 0 0 0 4px rgba(20, 125, 100, 0.12);
-}
-
-.demo-routes .icon {
-  opacity: 0.4;
-}
-
-.story-panel footer {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-top: auto;
-  color: var(--muted);
-  font-size: 11px;
-}
-
-.story-panel footer .icon {
-  width: 16px;
-}
-
 .device-stage {
   position: relative;
   display: flex;
@@ -228,27 +124,6 @@ svg {
   justify-content: center;
   padding: 34px;
   isolation: isolate;
-}
-
-.ambient {
-  position: absolute;
-  z-index: -1;
-  border-radius: 50%;
-  filter: blur(2px);
-}
-
-.ambient-one {
-  width: 590px;
-  height: 590px;
-  background: radial-gradient(circle, rgba(40, 139, 105, 0.18), rgba(40, 139, 105, 0) 68%);
-}
-
-.ambient-two {
-  right: 8%;
-  bottom: -18%;
-  width: 380px;
-  height: 380px;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.9), transparent 68%);
 }
 
 .phone-frame {
@@ -312,23 +187,6 @@ svg {
 .phone-status i:nth-child(2) { height: 9px; }
 .phone-status i:nth-child(3) { width: 12px; height: 6px; }
 
-.screen-progress {
-  position: absolute;
-  z-index: 12;
-  top: 42px;
-  left: 0;
-  right: 0;
-  display: flex;
-  justify-content: space-between;
-  padding: 0 22px;
-  pointer-events: none;
-  color: rgba(11, 92, 69, 0.5);
-  font-size: 8px;
-  font-weight: 600;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
 .phone-content {
   width: 100%;
   height: 100%;
@@ -351,14 +209,6 @@ svg {
 @keyframes screen-in {
   from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: none; }
-}
-
-.stage-hint {
-  position: absolute;
-  bottom: 8px;
-  margin: 0;
-  color: rgba(11, 92, 69, 0.48);
-  font-size: 10px;
 }
 
 .icon {
@@ -1562,13 +1412,8 @@ svg {
 
 @media (max-width: 900px) {
   .prototype-shell {
-    display: block;
     min-height: 100svh;
     background: var(--warm);
-  }
-
-  .story-panel {
-    display: none;
   }
 
   .device-stage {
@@ -1585,10 +1430,6 @@ svg {
     box-shadow: none;
   }
 
-  .stage-hint,
-  .ambient {
-    display: none;
-  }
 }
 
 @media (max-height: 760px) and (min-width: 901px) {

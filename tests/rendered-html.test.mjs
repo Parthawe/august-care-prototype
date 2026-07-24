@@ -30,7 +30,8 @@ test("renders the August care prototype", async () => {
   const html = await response.text();
   assert.match(html, /<title>August — Care that continues<\/title>/i);
   assert.match(html, /What can we help with today\?/);
-  assert.match(html, /Care that continues/);
-  assert.match(html, /Not medical advice/);
+  assert.match(html, /Private care, at your pace/);
+  assert.match(html, /August is an AI, not a clinician/);
   assert.doesNotMatch(html, /Your site is taking shape/);
+  assert.doesNotMatch(html, /Product design prototype/);
 });

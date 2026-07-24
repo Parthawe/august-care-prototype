@@ -270,59 +270,9 @@ export function AugustPrototype() {
     setNotice("");
   };
 
-  const screenLabel: Record<View, string> = {
-    home: "Start",
-    intake: "Safety",
-    details: "Intake",
-    summary: "Handoff",
-    checkout: "Consent",
-    waiting: "Waiting",
-    clinician: "Clinician",
-    plan: "Care plan",
-    emergency: "Emergency",
-    unsupported: "Boundary",
-  };
-
   return (
     <main className="prototype-shell">
-      <aside className="story-panel">
-        <Brand />
-        <div className="story-kicker">Product design prototype</div>
-        <h1>Care that continues, without blurring who is responsible.</h1>
-        <p>
-          One chronological journey from AI intake to licensed clinical care,
-          with authorship, safety, and next steps visible at every moment.
-        </p>
-        <div className="story-line" />
-        <div className="demo-routes">
-          <span>Explore the prototype</span>
-          {(
-            [
-              ["home", "Core journey"],
-              ["emergency", "Emergency exit"],
-              ["unsupported", "Care boundary"],
-            ] as [View, string][]
-          ).map(([route, label]) => (
-            <button
-              key={route}
-              className={view === route ? "active" : ""}
-              onClick={() => setView(route)}
-            >
-              <i />
-              {label}
-              <Icon name="arrow" />
-            </button>
-          ))}
-        </div>
-        <footer>
-          <Icon name="shield" />
-          <span>Concept prototype · Not medical advice</span>
-        </footer>
-      </aside>
-
       <section className="device-stage">
-        <div className="ambient ambient-one" />
-        <div className="ambient ambient-two" />
         <div className="phone-frame">
           <div className="phone-status">
             <span>9:41</span>
@@ -331,10 +281,6 @@ export function AugustPrototype() {
               <i />
               <i />
             </div>
-          </div>
-          <div className="screen-progress">
-            <span>{screenLabel[view]}</span>
-            <span>August care · 01</span>
           </div>
           <div className="phone-content" ref={contentRef}>
             {view === "home" && (
@@ -400,7 +346,6 @@ export function AugustPrototype() {
             {view === "unsupported" && <UnsupportedScreen onBack={reset} />}
           </div>
         </div>
-        <p className="stage-hint">Interactive prototype · Best viewed at mobile size</p>
       </section>
     </main>
   );
