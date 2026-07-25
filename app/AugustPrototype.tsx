@@ -11,6 +11,7 @@ import {
 import {
   getPrototypeCase,
   type PrototypeCaseId,
+  type PrototypeVariationId,
   type PrototypeView,
 } from "./prototypeCases";
 
@@ -256,9 +257,11 @@ function PrimaryButton({
 export function AugustPrototype({
   initialView = "home",
   initialConcern = "",
+  variation = "classic",
 }: {
   initialView?: PrototypeView;
   initialConcern?: string;
+  variation?: PrototypeVariationId;
 }) {
   const [view, setView] = useState<PrototypeView>(initialView);
   const [concern, setConcern] = useState(initialConcern);
@@ -358,7 +361,7 @@ export function AugustPrototype({
   };
 
   return (
-    <main className="prototype-shell">
+    <main className={`prototype-shell variation-${variation}`}>
       <section className="device-stage">
         <div className="phone-frame">
           <div className="phone-status">

@@ -42,6 +42,7 @@ export default async function PrototypeCasePage({ params }: Props) {
     <AugustPrototype
       initialView={prototypeCase.view}
       initialConcern={prototypeCase.concern}
+      variation="classic"
     />
   );
 }

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { prototypeCases } from "../prototypeCases";
+import { primaryPrototypeCases, prototypeVariations } from "../prototypeCases";
 
 export const metadata: Metadata = {
   title: "August — Prototype cases",
@@ -14,19 +14,31 @@ export default function PrototypeCasesPage() {
         <p className="eyebrow">August AI prototype</p>
         <h1>Review by case.</h1>
         <p>
-          Each link opens the same mobile prototype at a different moment in the
-          care journey, so feedback can stay specific.
+          Each scenario has four visual directions. Open the exact moment you
+          want to critique, then compare Classic, Ambient, Clinical, and
+          Concierge.
         </p>
-        <div className="case-link-grid">
-          {prototypeCases.map((prototypeCase, index) => (
-            <Link
-              href={`/cases/${prototypeCase.id}`}
+        <div className="case-link-grid variation-case-grid">
+          {primaryPrototypeCases.map((prototypeCase, index) => (
+            <article
+              className="case-variation-card"
               key={prototypeCase.id}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
               <strong>{prototypeCase.label}</strong>
               <small>{prototypeCase.note}</small>
-            </Link>
+              <div className="variation-link-row">
+                {prototypeVariations.map((variation) => (
+                  <Link
+                    href={`/cases/${prototypeCase.id}/${variation.id}`}
+                    key={variation.id}
+                    title={variation.note}
+                  >
+                    {variation.label}
+                  </Link>
+                ))}
+              </div>
+            </article>
           ))}
         </div>
         <Link className="case-home-link" href="/">

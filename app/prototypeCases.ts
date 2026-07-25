@@ -13,6 +13,39 @@ export type PrototypeView =
   | "emergency"
   | "unsupported";
 
+export type PrototypeVariationId =
+  | "classic"
+  | "ambient"
+  | "clinical"
+  | "concierge";
+
+export const prototypeVariations = [
+  {
+    id: "classic",
+    label: "Classic",
+    note: "Balanced August baseline: premium chat, soft cards, restrained clinical detail.",
+  },
+  {
+    id: "ambient",
+    label: "Ambient",
+    note: "Softer companion feel with more air, glow, and less visible structure.",
+  },
+  {
+    id: "clinical",
+    label: "Clinical",
+    note: "More trust-forward: clearer status, sharper surfaces, stronger care-system cues.",
+  },
+  {
+    id: "concierge",
+    label: "Concierge",
+    note: "High-touch and premium: darker green shell, elevated panels, guided service feel.",
+  },
+] satisfies Array<{
+  id: PrototypeVariationId;
+  label: string;
+  note: string;
+}>;
+
 export const prototypeCases = [
   {
     id: "home",
@@ -143,10 +176,46 @@ export const prototypeCases = [
 
 export type PrototypeCaseId = (typeof prototypeCases)[number]["id"];
 
+export const primaryPrototypeCaseIds = [
+  "home",
+  "symptom-intake",
+  "three-questions",
+  "visit-summary",
+  "pricing-checkout",
+  "async-wait",
+  "doctor-handoff",
+  "report-upload",
+  "prescription-request",
+  "care-plan",
+  "follow-up",
+  "emergency",
+  "unsupported",
+] as const;
+
+export const primaryPrototypeCases = primaryPrototypeCaseIds
+  .map((caseId) => prototypeCases.find((prototypeCase) => prototypeCase.id === caseId))
+  .filter((prototypeCase): prototypeCase is (typeof prototypeCases)[number] =>
+    Boolean(prototypeCase)
+  );
+
 export function getPrototypeCase(caseId: string | string[] | null | undefined) {
   const normalizedCaseId = Array.isArray(caseId) ? caseId[0] : caseId;
   if (!normalizedCaseId) return undefined;
   return prototypeCases.find(
     (prototypeCase) => prototypeCase.id === normalizedCaseId
+  );
+}
+
+export function getPrototypeVariation(
+  variationId: string | string[] | null | undefined
+) {
+  const normalizedVariationId = Array.isArray(variationId)
+    ? variationId[0]
+    : variationId;
+  if (!normalizedVariationId) return prototypeVariations[0];
+  return (
+    prototypeVariations.find(
+      (variation) => variation.id === normalizedVariationId
+    ) ?? prototypeVariations[0]
   );
 }

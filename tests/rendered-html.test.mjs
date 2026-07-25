@@ -49,12 +49,21 @@ test("renders a direct clinician handoff case", async () => {
   assert.match(html, /Typical response today: 30–60 minutes/);
 });
 
+test("renders a variation for a scenario", async () => {
+  const response = await render("/cases/doctor-handoff/concierge");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
+  assert.match(html, /variation-concierge/);
+  assert.match(html, /Maya Rao, MD/);
+});
+
 test("renders the prototype case directory", async () => {
   const response = await render("/cases");
   assert.equal(response.status, 200);
 
   const html = await response.text();
   assert.match(html, /Review by case\./);
-  assert.match(html, /\/cases\/symptom-intake/);
-  assert.match(html, /\/cases\/doctor-handoff/);
+  assert.match(html, /\/cases\/symptom-intake\/classic/);
+  assert.match(html, /\/cases\/doctor-handoff\/concierge/);
 });
