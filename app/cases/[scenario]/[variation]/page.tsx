@@ -35,12 +35,12 @@ export async function generateMetadata({ params }: Props) {
   }
 
   return {
-    title: `August prototype — ${prototypeCase.label} / ${prototypeVariation.label}`,
-    description: `Review the ${prototypeVariation.label.toLowerCase()} variation for ${prototypeCase.label.toLowerCase()} in the August AI prototype.`,
+    title: `August prototype — ${prototypeCase.label} · ${prototypeVariation.label}`,
+    description: `${prototypeVariation.label} variation for the ${prototypeCase.label.toLowerCase()} scenario.`,
   };
 }
 
-export default async function PrototypeVariationPage({ params }: Props) {
+export default async function PrototypeCaseVariationPage({ params }: Props) {
   const { scenario, variation } = await params;
   const prototypeCase = getPrototypeCase(scenario);
   const prototypeVariation = getPrototypeVariation(variation);
