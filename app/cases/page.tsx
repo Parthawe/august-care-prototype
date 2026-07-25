@@ -21,7 +21,7 @@ export default function PrototypeCasesPage() {
         <div className="case-link-grid variation-case-grid">
           {primaryPrototypeCases.map((prototypeCase, index) => (
             <article
-              className="case-variation-card"
+              className="case-link-card"
               key={prototypeCase.id}
             >
               <span>{String(index + 1).padStart(2, "0")}</span>
