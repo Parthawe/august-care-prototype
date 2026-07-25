@@ -10,7 +10,10 @@ type View =
   | "checkout"
   | "waiting"
   | "clinician"
+  | "upload"
+  | "prescription"
   | "plan"
+  | "followup"
   | "emergency"
   | "unsupported";
 
@@ -69,6 +72,12 @@ const icons: Record<string, ReactNode> = {
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M7 3h7l4 4v14H7z" />
       <path d="M14 3v5h5M10 13h5M10 17h5" />
+    </svg>
+  ),
+  lab: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M10 2v6l-5 9a3 3 0 0 0 2.6 4.5h8.8A3 3 0 0 0 19 17L14 8V2" />
+      <path d="M8 2h8M7.5 16h9" />
     </svg>
   ),
   spark: (
@@ -269,9 +278,19 @@ export function AugustPrototype() {
     if (
       normalized.includes("chest pain") ||
       normalized.includes("can’t breathe") ||
-      normalized.includes("can't breathe")
+      normalized.includes("can't breathe") ||
+      normalized.includes("trouble breathing")
     ) {
       setView("emergency");
+      return;
+    }
+    if (
+      normalized.includes("upload") ||
+      normalized.includes("report") ||
+      normalized.includes("result") ||
+      normalized.includes("lab")
+    ) {
+      setView("upload");
       return;
     }
     if (
@@ -280,6 +299,14 @@ export function AugustPrototype() {
       normalized.includes("controlled")
     ) {
       setView("unsupported");
+      return;
+    }
+    if (
+      normalized.includes("prescription") ||
+      normalized.includes("refill") ||
+      normalized.includes("antibiotic")
+    ) {
+      setView("prescription");
       return;
     }
     setReviewing(true);
@@ -312,7 +339,7 @@ export function AugustPrototype() {
               <HomeScreen
                 onSubmit={startConcern}
                 onPrescription={() =>
-                  startConcern("I need a refill for Adderall")
+                  startConcern("I think I need an antibiotic prescription for my sore throat.")
                 }
               />
             )}
@@ -367,13 +394,34 @@ export function AugustPrototype() {
               <ClinicianScreen
                 notice={notice}
                 setNotice={setNotice}
+                onUpload={() => setView("upload")}
                 onPlan={() => setView("plan")}
                 onBack={() => setView("waiting")}
+              />
+            )}
+            {view === "upload" && (
+              <UploadScreen
+                onContinue={() => setView("summary")}
+                onBack={reset}
+              />
+            )}
+            {view === "prescription" && (
+              <PrescriptionScreen
+                onContinue={() => setView("checkout")}
+                onBack={reset}
               />
             )}
             {view === "plan" && (
               <PlanScreen
                 onBack={() => setView("clinician")}
+                onFollowUp={() => setView("followup")}
+                onHome={reset}
+              />
+            )}
+            {view === "followup" && (
+              <FollowUpScreen
+                onBack={() => setView("plan")}
+                onEmergency={() => setView("emergency")}
                 onHome={reset}
               />
             )}
@@ -406,16 +454,17 @@ function HomeScreen({
         <button className="avatar">P</button>
       </nav>
       <section className="home-hero">
-        <Pill>Private care</Pill>
-        <h2>What can we help with today?</h2>
-        <p>Start in your own words.</p>
+        <Pill>Secure · Private · Built by doctors</Pill>
+        <span className="home-greeting">Good morning, Parth</span>
+        <h2>Ask August anything.</h2>
+        <p>Symptoms, prescriptions, reports, or follow-ups. Start in your own words.</p>
       </section>
       <form className="hero-composer glass" onSubmit={submit}>
         <textarea
           value={value}
           onChange={(event) => setValue(event.target.value)}
-          placeholder="Tell August what’s going on…"
-          aria-label="Tell August what’s going on"
+          placeholder="Describe what’s going on…"
+          aria-label="Describe what’s going on"
         />
         <div>
           <button type="button" className="attach-button" aria-label="Attach">
@@ -436,7 +485,7 @@ function HomeScreen({
             <Icon name="spark" />
           </span>
           <strong>Check a symptom</strong>
-          <small>Get started safely</small>
+          <small>Chat with August</small>
           <Icon name="arrow" />
         </button>
         <button onClick={onPrescription}>
@@ -444,7 +493,23 @@ function HomeScreen({
             <Icon name="file" />
           </span>
           <strong>Medication</strong>
-          <small>Refill or question</small>
+          <small>Assess first</small>
+          <Icon name="arrow" />
+        </button>
+        <button onClick={() => onSubmit("I think I need a doctor for my sore throat.")}>
+          <span className="shortcut-icon">
+            <Icon name="doctor" />
+          </span>
+          <strong>Doctor visit</strong>
+          <small>Prepare handoff</small>
+          <Icon name="arrow" />
+        </button>
+        <button onClick={() => onSubmit("I want to upload my lab report.")}>
+          <span className="shortcut-icon">
+            <Icon name="lab" />
+          </span>
+          <strong>Upload result</strong>
+          <small>Summarize report</small>
           <Icon name="arrow" />
         </button>
       </div>
@@ -542,12 +607,16 @@ function DetailsScreen({
           101.5°F last night. Swallowing hurts, but I can drink water.
         </Message>
         <Message author="August AI" role="AI care guide">
-          Got it. Any medication allergies?
+          Any medication allergies or recent exposure to someone with strep?
         </Message>
         <div className="inline-answer">
-          <span>No medication allergies</span>
+          <span>No allergies. My roommate had strep last week.</span>
           <Icon name="check" />
         </div>
+        <Message author="August AI" role="AI care guide">
+          A clinician should review this because fever, five days of throat
+          pain, and possible strep exposure may need testing or treatment.
+        </Message>
         <div className="record-update">
           <Icon name="file" />
           <div>
@@ -559,6 +628,111 @@ function DetailsScreen({
         <PrimaryButton onClick={onContinue}>Review what August collected</PrimaryButton>
       </div>
       <Composer />
+    </div>
+  );
+}
+
+function UploadScreen({
+  onContinue,
+  onBack,
+}: {
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="screen conversation-screen upload-screen">
+      <Header title="Lab report" status="August AI · Reading upload" onBack={onBack} />
+      <div className="conversation-body">
+        <div className="step-row">
+          <span>Upload</span>
+          <div><i /><i className="active" /><i /><i /></div>
+          <span>Report</span>
+        </div>
+        <Message author="You" role="Patient" patient>
+          I uploaded my rapid strep result.
+        </Message>
+        <section className="upload-preview">
+          <div className="report-thumb">
+            <Icon name="lab" />
+            <span>PDF</span>
+          </div>
+          <div>
+            <strong>Rapid strep result.pdf</strong>
+            <span>Uploaded · 1 page</span>
+          </div>
+          <Pill>Read</Pill>
+        </section>
+        <div className="reviewing-state">
+          <span className="thinking-mark"><i /><i /><i /></span>
+          <div>
+            <strong>Reading the report</strong>
+            <small>August is extracting key details</small>
+          </div>
+        </div>
+        <Message author="August AI" role="AI care guide">
+          I found a rapid strep result marked negative from today. Your fever
+          and throat pain still matter, so I’ll add this to the clinician
+          summary instead of treating it as the final answer.
+        </Message>
+        <section className="extraction-card">
+          <div><Icon name="check" /><span>Rapid strep: negative</span></div>
+          <div><Icon name="check" /><span>Collected today</span></div>
+          <div><Icon name="doctor" /><span>Clinician review recommended</span></div>
+        </section>
+        <PrimaryButton onClick={onContinue}>Add to visit summary</PrimaryButton>
+      </div>
+      <Composer placeholder="Add a note with your result…" />
+    </div>
+  );
+}
+
+function PrescriptionScreen({
+  onContinue,
+  onBack,
+}: {
+  onContinue: () => void;
+  onBack: () => void;
+}) {
+  return (
+    <div className="screen conversation-screen">
+      <Header title="Medication request" status="August AI · Assessment first" onBack={onBack} />
+      <div className="conversation-body">
+        <div className="step-row">
+          <span>Prescription</span>
+          <div><i /><i className="active" /><i /><i /></div>
+          <span>Context</span>
+        </div>
+        <Message author="You" role="Patient" patient>
+          I think I need an antibiotic for my sore throat.
+        </Message>
+        <Message author="August AI" role="AI care guide">
+          Before a clinician can consider a prescription, I need to understand
+          what you’re treating and how you’re doing now.
+        </Message>
+        <Message author="August AI" role="AI care guide">
+          How long has your throat hurt, and have you had fever, rash, or
+          trouble swallowing liquids?
+        </Message>
+        <Message author="You" role="Patient" patient>
+          Five days, fever last night, no rash, and I can drink water.
+        </Message>
+        <Message author="August AI" role="AI care guide">
+          Any medication allergies or antibiotics that caused problems before?
+        </Message>
+        <Message author="You" role="Patient" patient>
+          No medication allergies.
+        </Message>
+        <section className="record-update">
+          <Icon name="file" />
+          <div>
+            <strong>Prescription request prepared</strong>
+            <span>A clinician decides whether medication is appropriate</span>
+          </div>
+          <Pill>Review</Pill>
+        </section>
+        <PrimaryButton onClick={onContinue}>Continue to clinician review</PrimaryButton>
+      </div>
+      <Composer placeholder="Answer in your own words…" />
     </div>
   );
 }
@@ -743,11 +917,13 @@ function WaitingScreen({
 function ClinicianScreen({
   notice,
   setNotice,
+  onUpload,
   onPlan,
   onBack,
 }: {
   notice: string;
   setNotice: (notice: string) => void;
+  onUpload: () => void;
   onPlan: () => void;
   onBack: () => void;
 }) {
@@ -787,6 +963,21 @@ function ClinicianScreen({
           <Pill tone="white">Clinician joined · 10:16 AM</Pill>
           <span className="line" />
         </div>
+        <section className="doctor-profile-card">
+          <div className="doctor-photo">MR</div>
+          <div>
+            <strong>Maya Rao, MD</strong>
+            <span>Board-certified · Licensed in CA</span>
+            <small>Reviewed your August summary and safety answers.</small>
+          </div>
+        </section>
+        <div className="reviewing-state clinician-wait">
+          <span className="thinking-mark"><i /><i /><i /></span>
+          <div>
+            <strong>Dr. Rao is reviewing</strong>
+            <small>Typical response today: 30–60 minutes</small>
+          </div>
+        </div>
         <Message author="Maya Rao, MD" role="Human clinician · CA licensed" clinician>
           I’m Dr. Rao. I reviewed your fever, sore throat, and safety answers.
         </Message>
@@ -797,6 +988,11 @@ function ClinicianScreen({
         <Message author="You" role="Patient · Delivered" patient>
           No rash, and the swelling feels even on both sides.
         </Message>
+        <button className="upload-inline" onClick={onUpload}>
+          <Icon name="lab" />
+          <span>Upload a report or test result</span>
+          <Icon name="arrow" />
+        </button>
         <section className="plan-preview">
           <div className="plan-preview-top">
             <span><Icon name="check" /></span>
@@ -817,9 +1013,11 @@ function ClinicianScreen({
 
 function PlanScreen({
   onBack,
+  onFollowUp,
   onHome,
 }: {
   onBack: () => void;
+  onFollowUp: () => void;
   onHome: () => void;
 }) {
   return (
@@ -873,10 +1071,55 @@ function PlanScreen({
           </div>
         </section>
         <div className="plan-actions">
-          <PrimaryButton onClick={onHome}>Done for now</PrimaryButton>
+          <PrimaryButton onClick={onFollowUp}>Preview follow-up check-in</PrimaryButton>
           <button className="ask-august"><Icon name="spark" /> Ask August to explain</button>
+          <button className="text-button" onClick={onHome}>Done for now</button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function FollowUpScreen({
+  onBack,
+  onEmergency,
+  onHome,
+}: {
+  onBack: () => void;
+  onEmergency: () => void;
+  onHome: () => void;
+}) {
+  return (
+    <div className="screen conversation-screen followup-screen">
+      <Header title="Follow-up" status="August AI · Check-in" onBack={onBack} />
+      <div className="conversation-body">
+        <div className="joined-event">
+          <span className="line" />
+          <Pill tone="white">Next day · 9:12 AM</Pill>
+          <span className="line" />
+        </div>
+        <Message author="August AI" role="AI care guide">
+          How is your throat today: better, the same, or worse?
+        </Message>
+        <Message author="You" role="Patient" patient>
+          A little better. Fever is gone.
+        </Message>
+        <Message author="August AI" role="AI care guide">
+          Good. Keep following Dr. Rao’s plan. If breathing becomes difficult,
+          swallowing liquids becomes hard, or symptoms worsen quickly, get
+          urgent care.
+        </Message>
+        <section className="followup-card">
+          <div><Icon name="check" /><span>Fever improved</span></div>
+          <div><Icon name="clock" /><span>Next check-in tomorrow</span></div>
+          <div><Icon name="doctor" /><span>Doctor thread stays available</span></div>
+        </section>
+        <PrimaryButton onClick={onHome}>Close for now</PrimaryButton>
+        <button className="text-button" onClick={onEmergency}>
+          Symptoms are getting worse
+        </button>
+      </div>
+      <Composer placeholder="Tell August how you feel…" />
     </div>
   );
 }

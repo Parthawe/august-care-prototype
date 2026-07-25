@@ -29,9 +29,11 @@ test("renders the August care prototype", async () => {
 
   const html = await response.text();
   assert.match(html, /<title>August — Care that continues<\/title>/i);
-  assert.match(html, /What can we help with today\?/);
-  assert.match(html, /Private care/);
+  assert.match(html, /Ask August anything\./);
+  assert.match(html, /Good morning, Parth/);
+  assert.match(html, /Secure · Private · Built by doctors/);
   assert.match(html, /Private by design/);
+  assert.match(html, /Upload result/);
   assert.match(html, /August<\/span><\/button><\/nav>/);
   assert.doesNotMatch(html, /Your site is taking shape/);
   assert.doesNotMatch(html, /Product design prototype/);
