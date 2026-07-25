@@ -115,6 +115,48 @@ svg {
     0 40px 90px rgba(7, 65, 50, 0.25);
 }
 
+.variation-ambient {
+  background:
+    radial-gradient(circle at 50% 26%, rgba(136, 205, 178, 0.22), transparent 35%),
+    linear-gradient(145deg, #fbfdfb 0%, #edf7f2 100%);
+}
+
+.variation-ambient .phone-frame {
+  border-radius: 52px;
+  background: #fcfefc;
+  box-shadow:
+    0 0 0 7px rgba(14, 72, 58, 0.9),
+    0 38px 110px rgba(42, 129, 101, 0.22);
+}
+
+.variation-clinical {
+  background:
+    radial-gradient(circle at 50% 14%, rgba(20, 125, 100, 0.15), transparent 30%),
+    linear-gradient(145deg, #f5faf7 0%, #eaf3ef 100%);
+}
+
+.variation-clinical .phone-frame {
+  border-radius: 36px;
+  background: #f8fbf9;
+  box-shadow:
+    0 0 0 7px rgba(6, 42, 35, 0.96),
+    0 34px 78px rgba(7, 65, 50, 0.22);
+}
+
+.variation-concierge {
+  background:
+    radial-gradient(circle at 50% 38%, rgba(22, 135, 101, 0.28), transparent 36%),
+    linear-gradient(145deg, #e8f3ee 0%, #cfe4da 100%);
+}
+
+.variation-concierge .phone-frame {
+  background: linear-gradient(180deg, #062b24 0%, #0b3d31 22%, #fbfcfa 22%);
+  box-shadow:
+    0 0 0 7px rgba(3, 28, 24, 0.98),
+    0 0 0 10px rgba(255, 255, 255, 0.35),
+    0 42px 100px rgba(4, 44, 35, 0.34);
+}
+
 .phone-status {
   position: absolute;
   z-index: 10;
@@ -593,6 +635,146 @@ svg {
   background: white;
   padding: 14px;
   box-shadow: 0 10px 25px rgba(11, 92, 69, 0.06);
+}
+
+.variation-ambient .screen {
+  padding-bottom: 102px;
+}
+
+.variation-ambient .care-header,
+.variation-ambient .composer,
+.variation-ambient .bottom-nav,
+.variation-ambient .hero-composer,
+.variation-ambient .summary-card {
+  border-color: rgba(27, 130, 101, 0.1);
+  background: rgba(255, 255, 255, 0.62);
+  box-shadow: 0 18px 46px rgba(72, 142, 116, 0.09);
+}
+
+.variation-ambient .message-bubble {
+  color: #294b43;
+  font-size: 12.5px;
+  line-height: 1.75;
+}
+
+.variation-ambient .message-patient .message-bubble {
+  background: linear-gradient(145deg, #107257, #0b5c45);
+  border-radius: 24px 10px 24px 24px;
+}
+
+.variation-ambient .message-clinician .message-bubble,
+.variation-ambient .record-update,
+.variation-ambient .upload-preview,
+.variation-ambient .doctor-profile-card,
+.variation-ambient .extraction-card,
+.variation-ambient .followup-card {
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.64);
+}
+
+.variation-clinical .care-header {
+  grid-template-columns: 34px 32px 1fr 34px;
+  border-radius: 14px;
+  border-color: rgba(13, 104, 78, 0.22);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 9px 22px rgba(8, 76, 57, 0.08);
+}
+
+.variation-clinical .conversation-body,
+.variation-clinical .page-body {
+  padding-left: 16px;
+  padding-right: 16px;
+}
+
+.variation-clinical .message-meta {
+  color: #064c3b;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.variation-clinical .message-bubble,
+.variation-clinical .summary-card li,
+.variation-clinical .included-card > div,
+.variation-clinical .status-track strong {
+  font-size: 9.5px;
+}
+
+.variation-clinical .message-clinician .message-bubble,
+.variation-clinical .summary-card,
+.variation-clinical .included-card,
+.variation-clinical .status-track,
+.variation-clinical .plan-preview,
+.variation-clinical .next-card {
+  border-radius: 12px;
+  border-color: rgba(11, 92, 69, 0.22);
+  box-shadow: none;
+}
+
+.variation-clinical .message-patient .message-bubble {
+  border-radius: 14px 5px 14px 14px;
+  box-shadow: none;
+}
+
+.variation-concierge .phone-status {
+  background: linear-gradient(#062b24 68%, transparent);
+  color: white;
+}
+
+.variation-concierge .phone-status i,
+.variation-concierge .phone-status::after {
+  background: white;
+}
+
+.variation-concierge .home-screen,
+.variation-concierge .conversation-screen,
+.variation-concierge .summary-screen,
+.variation-concierge .waiting-screen,
+.variation-concierge .plan-screen,
+.variation-concierge .boundary-screen {
+  background:
+    radial-gradient(circle at 85% 8%, rgba(255, 255, 255, 0.16), transparent 26%),
+    linear-gradient(180deg, transparent 0, transparent 104px, #fbfcfa 104px);
+}
+
+.variation-concierge .home-nav .brand,
+.variation-concierge .home-greeting,
+.variation-concierge .home-hero h2 {
+  color: white;
+}
+
+.variation-concierge .home-hero p {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.variation-concierge .home-hero .pill {
+  background: rgba(255, 255, 255, 0.13);
+  color: white;
+}
+
+.variation-concierge .care-header {
+  margin-top: 12px;
+  border-color: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.9);
+}
+
+.variation-concierge .message-clinician .message-bubble,
+.variation-concierge .summary-card,
+.variation-concierge .included-card,
+.variation-concierge .status-track,
+.variation-concierge .plan-preview,
+.variation-concierge .upload-preview,
+.variation-concierge .doctor-profile-card,
+.variation-concierge .extraction-card,
+.variation-concierge .followup-card {
+  border-radius: 24px;
+  border-color: rgba(11, 92, 69, 0.12);
+  box-shadow: 0 18px 44px rgba(11, 92, 69, 0.09);
+}
+
+.variation-concierge .message-patient .message-bubble,
+.variation-concierge .primary-button,
+.variation-concierge .bottom-nav .august-tab {
+  background: linear-gradient(145deg, #07513f, #0d7458);
 }
 
 .upload-preview,
