@@ -540,8 +540,13 @@ svg {
 }
 
 .message {
+  width: 100%;
+  margin-bottom: 24px;
+}
+
+.message-patient,
+.message-clinician {
   width: 86%;
-  margin-bottom: 20px;
 }
 
 .message-patient {
@@ -569,10 +574,9 @@ svg {
 }
 
 .message-bubble {
-  border: 1px solid rgba(20, 125, 100, 0.11);
-  border-radius: 7px 18px 18px 18px;
-  background: rgba(235, 247, 242, 0.82);
-  padding: 14px;
+  border: 0;
+  background: transparent;
+  padding: 0 4px;
   color: var(--ink-soft);
   font-size: 12px;
   line-height: 1.6;
@@ -582,13 +586,16 @@ svg {
   border: 0;
   border-radius: 18px 7px 18px 18px;
   background: var(--forest);
+  padding: 14px;
   color: white;
   box-shadow: 0 10px 22px rgba(11, 92, 69, 0.17);
 }
 
 .message-clinician .message-bubble {
-  border-color: rgba(10, 72, 54, 0.17);
+  border: 1px solid rgba(10, 72, 54, 0.17);
+  border-radius: 7px 18px 18px 18px;
   background: white;
+  padding: 14px;
   box-shadow: 0 10px 25px rgba(11, 92, 69, 0.06);
 }
 
