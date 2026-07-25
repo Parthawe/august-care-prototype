@@ -15,6 +15,11 @@ type View =
   | "unsupported";
 
 const icons: Record<string, ReactNode> = {
+  home: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M4 11.5 12 5l8 6.5V20H6v-6h12" />
+    </svg>
+  ),
   arrow: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="m9 18 6-6-6-6" />
@@ -91,13 +96,31 @@ function Icon({ name }: { name: keyof typeof icons }) {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`brand ${compact ? "brand-compact" : ""}`}>
-      <span className="brand-mark" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
       <span>august</span>
     </div>
+  );
+}
+
+function BottomNav() {
+  return (
+    <nav className="bottom-nav glass" aria-label="August navigation">
+      <button type="button">
+        <Icon name="home" />
+        <span>Home</span>
+      </button>
+      <button type="button">
+        <Icon name="file" />
+        <span>Visits</span>
+      </button>
+      <button type="button">
+        <Icon name="clock" />
+        <span>Updates</span>
+      </button>
+      <button type="button" className="august-tab">
+        <Icon name="spark" />
+        <span>August</span>
+      </button>
+    </nav>
   );
 }
 
@@ -128,7 +151,7 @@ function Header({
         <Icon name="back" />
       </button>
       <div className={`header-avatar ${person ? "person-avatar" : ""}`}>
-        {person ? "MR" : <Brand compact />}
+        {person ? "MR" : "A"}
         <span className="online-dot" />
       </div>
       <div className="header-copy">
@@ -357,6 +380,7 @@ export function AugustPrototype() {
             {view === "emergency" && <EmergencyScreen onBack={reset} />}
             {view === "unsupported" && <UnsupportedScreen onBack={reset} />}
           </div>
+          <BottomNav />
         </div>
       </section>
     </main>
@@ -382,9 +406,9 @@ function HomeScreen({
         <button className="avatar">P</button>
       </nav>
       <section className="home-hero">
-        <Pill>Private care, at your pace</Pill>
+        <Pill>Private care</Pill>
         <h2>What can we help with today?</h2>
-        <p>Start in your own words. August will take it one step at a time.</p>
+        <p>Start in your own words.</p>
       </section>
       <form className="hero-composer glass" onSubmit={submit}>
         <textarea
@@ -427,8 +451,8 @@ function HomeScreen({
       <div className="privacy-note">
         <Icon name="shield" />
         <p>
-          <strong>Your information stays yours.</strong>
-          August is an AI, not a clinician. It can help prepare care.
+          <strong>Private by design.</strong>
+          August prepares care; clinicians make clinical decisions.
         </p>
       </div>
     </div>
@@ -469,13 +493,12 @@ function IntakeScreen({
         ) : (
           <>
             <Message author="August AI" role="AI care guide">
-              A sore throat with fever for five days is helpful context.
               Before we continue, are you having trouble breathing, unable to
-              swallow liquids, fainting, or severe chest pain right now?
+              swallow liquids, fainting, or having severe chest pain right now?
             </Message>
             <div className="chat-prompt">
               <Icon name="shield" />
-              <span>Answer in your own words so August can choose the safest next step.</span>
+              <span>Answer in your own words.</span>
             </div>
           </>
         )}
@@ -512,15 +535,14 @@ function DetailsScreen({
           {safetyAnswer}
         </Message>
         <Message author="August AI" role="AI care guide">
-          Thanks for confirming. What was your highest temperature, and can you
-          swallow liquids normally?
+          Thanks. What was your highest temperature, and can you swallow
+          liquids normally?
         </Message>
         <Message author="You" role="Patient" patient>
           101.5°F last night. Swallowing hurts, but I can drink water.
         </Message>
         <Message author="August AI" role="AI care guide">
-          Got it. Before I prepare this for a clinician, do you have any
-          medication allergies?
+          Got it. Any medication allergies?
         </Message>
         <div className="inline-answer">
           <span>No medication allergies</span>
@@ -530,7 +552,7 @@ function DetailsScreen({
           <Icon name="file" />
           <div>
             <strong>Care summary updated</strong>
-            <span>3 new details added from your answers</span>
+            <span>Ready for review</span>
           </div>
           <Pill>Draft</Pill>
         </div>
@@ -565,11 +587,10 @@ function SummaryScreen({
         onBack={onBack}
       />
       <div className="page-body">
-        <div className="eyebrow">Your information, your choice</div>
+        <div className="eyebrow">Review</div>
         <h2>What I’ll share with the clinician</h2>
         <p className="page-intro">
-          Check that this is accurate. The clinician will also see your answers
-          and safety check.
+          Make sure this feels right before it goes to a clinician.
         </p>
         <section className="summary-card glass">
           <div className="card-heading">
@@ -599,7 +620,7 @@ function SummaryScreen({
           )}
           <div className="summary-source">
             <Icon name="shield" />
-            <span>Built only from information you provided</span>
+            <span>Built from your answers</span>
           </div>
         </section>
         <section className="clinician-recommendation">
@@ -610,8 +631,7 @@ function SummaryScreen({
             <Pill>Recommended next step</Pill>
             <h3>A clinician should review this</h3>
             <p>
-              Your symptoms may need testing or treatment. A licensed clinician
-              makes that decision.
+              A clinician can decide whether testing or treatment is needed.
             </p>
           </div>
         </section>
@@ -662,8 +682,7 @@ function CheckoutScreen({
             onChange={(event) => setAgreed(event.target.checked)}
           />
           <span>
-            I consent to telehealth care and to share the visit summary with a
-            California-licensed clinician.
+            I consent to share this visit with a California-licensed clinician.
           </span>
         </label>
         <div className="total-row">
@@ -674,8 +693,7 @@ function CheckoutScreen({
           Confirm and send for review
         </PrimaryButton>
         <p className="legal-line">
-          Payment is authorized now. If no clinician accepts your case, you
-          won’t be charged.
+          If no clinician accepts your case, you won’t be charged.
         </p>
       </div>
     </div>
@@ -700,11 +718,10 @@ function WaitingScreen({
         <div className="orb">
           <span><Icon name="doctor" /></span>
         </div>
-        <Pill>Case received · 9:48 AM</Pill>
+        <Pill>Case received</Pill>
         <h2>Your case is in good hands</h2>
         <p className="page-intro">
-          We’re finding a clinician licensed in California. You can close this
-          screen—we’ll notify you.
+          We’re finding a clinician licensed in California.
         </p>
         <section className="status-track">
           <div className="done"><i><Icon name="check" /></i><span><strong>Information prepared</strong><small>Summary and consent complete</small></span></div>
@@ -714,7 +731,7 @@ function WaitingScreen({
         </section>
         <div className="worsen-note">
           <Icon name="shield" />
-          <span><strong>If your symptoms worsen</strong>Don’t wait for a reply. Get urgent help.</span>
+          <span><strong>If symptoms worsen</strong>Get urgent help.</span>
         </div>
         <PrimaryButton onClick={onContinue}>Preview clinician joining</PrimaryButton>
         <button className="text-button">View submitted summary</button>
@@ -747,7 +764,7 @@ function ClinicianScreen({
         <button
           onClick={() =>
             setNotice(
-              "August can explain information or help prepare questions. Dr. Rao remains responsible for clinical decisions."
+              "August can explain information and help prepare questions. Dr. Rao makes clinical decisions."
             )
           }
         >
@@ -771,13 +788,11 @@ function ClinicianScreen({
           <span className="line" />
         </div>
         <Message author="Maya Rao, MD" role="Human clinician · CA licensed" clinician>
-          I’m Dr. Maya Rao. I’ve reviewed the information you shared with
-          August, including your fever and safety answers.
+          I’m Dr. Rao. I reviewed your fever, sore throat, and safety answers.
         </Message>
         <Message author="Maya Rao, MD" role="Human clinician · 10:18 AM" clinician>
           Your symptoms could be strep throat. I recommend a rapid test today.
-          While we arrange that, have you noticed a rash or swelling mostly on
-          one side?
+          Any rash or one-sided swelling?
         </Message>
         <Message author="You" role="Patient · Delivered" patient>
           No rash, and the swelling feels even on both sides.
@@ -871,24 +886,23 @@ function EmergencyScreen({ onBack }: { onBack: () => void }) {
     <div className="screen emergency-screen">
       <div className="emergency-top">
         <Brand />
-        <Pill tone="dark">Urgent safety alert</Pill>
+        <Pill tone="dark">Urgent</Pill>
       </div>
       <div className="emergency-body">
         <div className="emergency-icon"><Icon name="phone" /></div>
-        <div className="eyebrow">August has paused this conversation</div>
+        <div className="eyebrow">Paused for safety</div>
         <h2>This may need emergency care now.</h2>
         <p>
-          Trouble breathing, fainting, or severe chest pain can be life
-          threatening. Do not wait for a reply in this chat.
+          Trouble breathing, fainting, or severe chest pain can be urgent.
         </p>
         <button className="emergency-call"><Icon name="phone" /><span><small>Call emergency services</small>911</span></button>
         <button className="emergency-location"><Icon name="pin" /><span><strong>Find the nearest emergency department</strong><small>Uses your current location</small></span><Icon name="arrow" /></button>
         <div className="emergency-guidance">
           <strong>While help is on the way</strong>
           <ul>
-            <li>Unlock the door if you’re at home.</li>
-            <li>Sit somewhere safe and avoid driving yourself.</li>
-            <li>Tell someone nearby what is happening.</li>
+            <li>Unlock the door if you’re home.</li>
+            <li>Sit somewhere safe.</li>
+            <li>Tell someone nearby.</li>
           </ul>
         </div>
         <button className="outline-light" onClick={onBack}>I’m taking action</button>
@@ -909,10 +923,9 @@ function UnsupportedScreen({ onBack }: { onBack: () => void }) {
       <div className="page-body">
         <div className="boundary-icon"><Icon name="shield" /></div>
         <Pill>Clear next steps</Pill>
-        <h2>This medication isn’t supported through August.</h2>
+        <h2>This medication isn’t supported here.</h2>
         <p className="page-intro">
-          August clinicians don’t prescribe controlled medications such as
-          Adderall. You won’t be charged for this request.
+          Controlled medication requests need an established prescriber.
         </p>
         <section className="why-card">
           <span>Why this route is different</span>

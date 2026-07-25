@@ -79,41 +79,15 @@ svg {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 9px;
   width: fit-content;
   color: var(--forest);
   font-size: 21px;
   font-weight: 600;
-  letter-spacing: -0.7px;
+  letter-spacing: 0;
 }
-
-.brand-mark {
-  position: relative;
-  display: flex;
-  align-items: end;
-  gap: 2px;
-  width: 22px;
-  height: 22px;
-  transform: rotate(-12deg);
-}
-
-.brand-mark i {
-  display: block;
-  width: 5px;
-  border-radius: 9px;
-  background: currentColor;
-}
-
-.brand-mark i:nth-child(1) { height: 12px; }
-.brand-mark i:nth-child(2) { height: 20px; }
-.brand-mark i:nth-child(3) { height: 15px; }
 
 .brand-compact {
-  transform: scale(0.65);
-}
-
-.brand-compact > span:last-child {
-  display: none;
+  font-size: 14px;
 }
 
 .device-stage {
@@ -203,6 +177,7 @@ svg {
   position: relative;
   min-height: 100%;
   padding-top: 42px;
+  padding-bottom: 92px;
   animation: screen-in 0.42s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -247,7 +222,7 @@ svg {
 .pill-white { border: 1px solid var(--line); background: white; color: var(--muted); }
 
 .home-screen {
-  padding: 61px 22px 30px;
+  padding: 61px 22px 108px;
   background:
     radial-gradient(circle at 85% 15%, rgba(50, 148, 115, 0.13), transparent 30%),
     var(--warm);
@@ -452,6 +427,8 @@ svg {
   border-radius: 12px;
   background: var(--mint);
   color: var(--forest);
+  font-size: 13px;
+  font-weight: 600;
   overflow: visible;
 }
 
@@ -496,7 +473,9 @@ svg {
 }
 
 .conversation-screen {
-  padding-bottom: 84px;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 88px;
   background:
     radial-gradient(circle at 8% 12%, rgba(76, 160, 130, 0.09), transparent 28%),
     var(--warm);
@@ -505,6 +484,10 @@ svg {
 .conversation-body,
 .page-body {
   padding: 25px 18px 28px;
+}
+
+.conversation-body {
+  flex: 1;
 }
 
 .step-row {
@@ -664,7 +647,7 @@ svg {
 .composer {
   position: sticky;
   z-index: 7;
-  bottom: 12px;
+  bottom: 76px;
   display: grid;
   width: calc(100% - 24px);
   grid-template-columns: 34px 1fr 38px;
@@ -672,8 +655,53 @@ svg {
   gap: 5px;
   min-height: 58px;
   margin: 0 12px;
+  margin-top: auto;
   padding: 8px;
   border-radius: 19px;
+}
+
+.bottom-nav {
+  position: absolute;
+  z-index: 20;
+  right: 12px;
+  bottom: 12px;
+  left: 12px;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  min-height: 56px;
+  padding: 6px;
+  border-radius: 20px;
+}
+
+.bottom-nav button {
+  display: grid;
+  min-width: 0;
+  place-items: center;
+  gap: 2px;
+  border: 0;
+  border-radius: 15px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 7px;
+  font-weight: 600;
+  cursor: default;
+}
+
+.bottom-nav .icon {
+  width: 17px;
+  height: 17px;
+}
+
+.bottom-nav .august-tab {
+  background: var(--forest);
+  color: white;
+  box-shadow: 0 9px 20px rgba(11, 92, 69, 0.22);
+}
+
+.bottom-nav .august-tab .icon {
+  width: 16px;
+  height: 16px;
 }
 
 .composer .attach-button {
@@ -762,6 +790,7 @@ svg {
 
 .page-body {
   padding-top: 30px;
+  padding-bottom: 108px;
 }
 
 .eyebrow {
