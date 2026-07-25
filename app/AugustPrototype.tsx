@@ -227,6 +227,7 @@ function PrimaryButton({
 export function AugustPrototype() {
   const [view, setView] = useState<View>("home");
   const [concern, setConcern] = useState("");
+  const [safetyAnswer, setSafetyAnswer] = useState("");
   const [reviewing, setReviewing] = useState(false);
   const [summary, setSummary] = useState(
     "Sore throat for five days\nPainful swallowing, but able to drink liquids\nTemperature reached 101.5°F\nBreathing normally\nNo medication allergies reported\nMain question: whether treatment or testing is needed"
@@ -266,6 +267,7 @@ export function AugustPrototype() {
   const reset = () => {
     setView("home");
     setConcern("");
+    setSafetyAnswer("");
     setReviewing(false);
     setNotice("");
   };
@@ -295,13 +297,23 @@ export function AugustPrototype() {
               <IntakeScreen
                 concern={concern || "My throat has hurt for five days."}
                 reviewing={reviewing}
-                onSafe={() => setView("details")}
-                onEmergency={() => setView("emergency")}
+                onAnswer={(answer) => {
+                  const normalized = answer.toLowerCase();
+                  const clearNegative =
+                    /\b(no|none|not|don’t|don't|do not)\b/.test(normalized);
+                  const dangerSignal =
+                    /\byes\b|trouble breathing|can.?t swallow|cannot swallow|faint|chest pain/.test(
+                      normalized
+                    );
+                  setSafetyAnswer(answer);
+                  setView(dangerSignal && !clearNegative ? "emergency" : "details");
+                }}
                 onBack={reset}
               />
             )}
             {view === "details" && (
               <DetailsScreen
+                safetyAnswer={safetyAnswer || "No, none of those are happening."}
                 onContinue={() => setView("summary")}
                 onBack={() => setView("intake")}
               />
@@ -426,14 +438,12 @@ function HomeScreen({
 function IntakeScreen({
   concern,
   reviewing,
-  onSafe,
-  onEmergency,
+  onAnswer,
   onBack,
 }: {
   concern: string;
   reviewing: boolean;
-  onSafe: () => void;
-  onEmergency: () => void;
+  onAnswer: (answer: string) => void;
   onBack: () => void;
 }) {
   return (
@@ -459,42 +469,33 @@ function IntakeScreen({
         ) : (
           <>
             <Message author="August AI" role="AI care guide">
-              A sore throat with fever for five days is helpful context. I’ll
-              first check whether you need urgent care.
+              A sore throat with fever for five days is helpful context.
+              Before we continue, are you having trouble breathing, unable to
+              swallow liquids, fainting, or severe chest pain right now?
             </Message>
-            <section className="safety-card">
-              <div className="safety-title">
-                <Icon name="shield" />
-                <div>
-                  <span>Safety check</span>
-                  <strong>Are any of these happening now?</strong>
-                </div>
-              </div>
-              <ul>
-                <li>Trouble breathing</li>
-                <li>Unable to swallow liquids</li>
-                <li>Fainting or severe chest pain</li>
-              </ul>
-              <div className="choice-row">
-                <button onClick={onEmergency}>Yes</button>
-                <button className="selected" onClick={onSafe}>
-                  No, none of these
-                </button>
-              </div>
-              <small>You can add context in your own words next.</small>
-            </section>
+            <div className="chat-prompt">
+              <Icon name="shield" />
+              <span>Answer in your own words so August can choose the safest next step.</span>
+            </div>
           </>
         )}
       </div>
-      {!reviewing && <Composer />}
+      {!reviewing && (
+        <Composer
+          placeholder="Write your answer…"
+          onSubmit={onAnswer}
+        />
+      )}
     </div>
   );
 }
 
 function DetailsScreen({
+  safetyAnswer,
   onContinue,
   onBack,
 }: {
+  safetyAnswer: string;
   onContinue: () => void;
   onBack: () => void;
 }) {
@@ -507,8 +508,11 @@ function DetailsScreen({
           <div><i /><i /><i className="active" /><i /></div>
           <span>3 of 4</span>
         </div>
+        <Message author="You" role="Patient" patient>
+          {safetyAnswer}
+        </Message>
         <Message author="August AI" role="AI care guide">
-          Thanks—that helps. What was your highest temperature, and can you
+          Thanks for confirming. What was your highest temperature, and can you
           swallow liquids normally?
         </Message>
         <Message author="You" role="Patient" patient>
