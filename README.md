@@ -4,12 +4,23 @@ An interview-ready, mobile-first product prototype exploring how August AI can
 move a patient from AI intake into licensed clinical care without blurring
 authorship or medical authority.
 
-## Prototype routes
+## Prototype review links
 
-- Core journey: symptom → safety check → intake → reviewable summary → consent
-  → asynchronous wait → clinician → signed care plan
-- Emergency interruption
-- Unsupported controlled-medication request
+Open `/cases` for a review index, or use direct links:
+
+- `/cases/home` — premium August home
+- `/cases/symptom-intake` — open-ended symptom chat
+- `/cases/three-questions` — three natural follow-up questions
+- `/cases/visit-summary` — editable clinician handoff summary
+- `/cases/pricing-checkout` — pricing, consent, location, expectations
+- `/cases/async-wait` — clinician matching and async wait state
+- `/cases/doctor-handoff` — human clinician joins the thread
+- `/cases/report-upload` — report upload and extraction
+- `/cases/prescription-request` — assessment-first prescription request
+- `/cases/unsupported` — controlled-medication care boundary
+- `/cases/care-plan` — signed care plan
+- `/cases/follow-up` — next-day August check-in
+- `/cases/emergency` — urgent escalation
 
 ## Run locally
 

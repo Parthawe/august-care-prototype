@@ -1,21 +1,18 @@
 "use client";
 
-import { FormEvent, ReactNode, useEffect, useRef, useState } from "react";
-
-type View =
-  | "home"
-  | "intake"
-  | "details"
-  | "summary"
-  | "checkout"
-  | "waiting"
-  | "clinician"
-  | "upload"
-  | "prescription"
-  | "plan"
-  | "followup"
-  | "emergency"
-  | "unsupported";
+import {
+  FormEvent,
+  ReactNode,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+import {
+  getPrototypeCase,
+  type PrototypeCaseId,
+  type PrototypeView,
+} from "./prototypeCases";
 
 const icons: Record<string, ReactNode> = {
   home: (
@@ -256,9 +253,15 @@ function PrimaryButton({
   );
 }
 
-export function AugustPrototype() {
-  const [view, setView] = useState<View>("home");
-  const [concern, setConcern] = useState("");
+export function AugustPrototype({
+  initialView = "home",
+  initialConcern = "",
+}: {
+  initialView?: PrototypeView;
+  initialConcern?: string;
+}) {
+  const [view, setView] = useState<PrototypeView>(initialView);
+  const [concern, setConcern] = useState(initialConcern);
   const [safetyAnswer, setSafetyAnswer] = useState("");
   const [reviewing, setReviewing] = useState(false);
   const [summary, setSummary] = useState(
@@ -268,9 +271,45 @@ export function AugustPrototype() {
   const [notice, setNotice] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const openPrototypeCase = useCallback((caseId: PrototypeCaseId, updateUrl = true) => {
+    const selectedCase = getPrototypeCase(caseId);
+    if (!selectedCase) return;
+
+    setView(selectedCase.view);
+    setConcern(selectedCase.concern);
+    setSafetyAnswer("I’m breathing normally and can drink water.");
+    setReviewing(false);
+    setEditingSummary(false);
+    setNotice(selectedCase.note);
+
+    if (updateUrl) {
+      const url = new URL(window.location.href);
+      if (selectedCase.id === "home") {
+        url.searchParams.delete("case");
+      } else {
+        url.searchParams.set("case", selectedCase.id);
+      }
+      window.history.pushState({}, "", url);
+    }
+  }, []);
+
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
   }, [view]);
+
+  useEffect(() => {
+    const syncFromUrl = () => {
+      const caseId = new URLSearchParams(window.location.search).get("case");
+      const selectedCase = getPrototypeCase(caseId);
+      if (selectedCase) {
+        openPrototypeCase(selectedCase.id, false);
+      }
+    };
+
+    syncFromUrl();
+    window.addEventListener("popstate", syncFromUrl);
+    return () => window.removeEventListener("popstate", syncFromUrl);
+  }, [openPrototypeCase]);
 
   const startConcern = (value: string) => {
     const normalized = value.toLowerCase();
@@ -315,11 +354,7 @@ export function AugustPrototype() {
   };
 
   const reset = () => {
-    setView("home");
-    setConcern("");
-    setSafetyAnswer("");
-    setReviewing(false);
-    setNotice("");
+    openPrototypeCase("home");
   };
 
   return (
@@ -363,7 +398,7 @@ export function AugustPrototype() {
             )}
             {view === "details" && (
               <DetailsScreen
-                safetyAnswer={safetyAnswer || "No, none of those are happening."}
+                safetyAnswer={safetyAnswer || "I’m breathing normally and can drink water."}
                 onContinue={() => setView("summary")}
                 onBack={() => setView("intake")}
               />
