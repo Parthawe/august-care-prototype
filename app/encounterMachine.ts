@@ -66,6 +66,7 @@ export type EncounterState = {
   safetyClarification: boolean;
   intakeStep: number;
   intakeAnswers: string[];
+  summaryCorrections: string[];
   recipient: ConversationRecipient;
   clinicianState: ClinicianState;
   clinicianMessages: ConversationMessage[];
@@ -86,6 +87,7 @@ export type EncounterAction =
   | { type: "START_CONCERN"; concern: string }
   | { type: "SUBMIT_SAFETY"; answer: string }
   | { type: "SUBMIT_INTAKE"; answer: string }
+  | { type: "ADD_SUMMARY_CORRECTION"; correction: string }
   | { type: "SET_RECIPIENT"; recipient: ConversationRecipient }
   | {
       type: "SEND_MESSAGE";
@@ -189,6 +191,40 @@ function message(
   };
 }
 
+function clinicianReplyMessages() {
+  return [
+    message(
+      "clinician-1",
+      "clinician",
+      "clinician",
+      "shared-with-clinician",
+      "10:18 AM",
+      "I reviewed your fever, throat pain, safety answers, and recent exposure."
+    ),
+    message(
+      "clinician-2",
+      "clinician",
+      "clinician",
+      "shared-with-clinician",
+      "10:19 AM",
+      "A rapid strep test would help guide the next step. Is the swelling stronger on one side, or is it even?"
+    ),
+  ];
+}
+
+function privateAugustMessages() {
+  return [
+    message(
+      "august-private-1",
+      "august",
+      "august",
+      "private-to-august",
+      "10:20 AM",
+      "Maya is asking about one-sided swelling because it can change how urgently your throat should be examined."
+    ),
+  ];
+}
+
 export function createEncounterState({
   phase = "entry",
   concern = "",
@@ -220,6 +256,27 @@ export function createEncounterState({
 
   const uploadStatus: UploadStatus =
     fixture === "upload-low-confidence" ? "low_confidence" : "attached";
+  const clinicianHasReplied =
+    phase === "clinician_active" ||
+    phase === "plan_ready" ||
+    phase === "follow_up";
+  const planIsSigned = phase === "plan_ready" || phase === "follow_up";
+  const seededClinicianMessages = clinicianHasReplied
+    ? clinicianReplyMessages()
+    : [];
+  const clinicianMessages = planIsSigned
+    ? [
+        ...seededClinicianMessages,
+        message(
+          "patient-final-answer",
+          "patient",
+          "clinician",
+          "shared-with-clinician",
+          "10:21 AM",
+          "The swelling feels even on both sides."
+        ),
+      ]
+    : seededClinicianMessages;
 
   return {
     phase,
@@ -228,36 +285,11 @@ export function createEncounterState({
     safetyClarification: false,
     intakeStep: phase === "intake" ? 0 : 0,
     intakeAnswers: [],
+    summaryCorrections: [],
     recipient: "clinician",
     clinicianState,
-    clinicianMessages: [
-      message(
-        "clinician-1",
-        "clinician",
-        "clinician",
-        "shared-with-clinician",
-        "10:18 AM",
-        "I reviewed your fever, throat pain, safety answers, and recent exposure."
-      ),
-      message(
-        "clinician-2",
-        "clinician",
-        "clinician",
-        "shared-with-clinician",
-        "10:19 AM",
-        "A rapid strep test would help guide the next step. Is the swelling stronger on one side, or is it even?"
-      ),
-    ],
-    augustMessages: [
-      message(
-        "august-private-1",
-        "august",
-        "august",
-        "private-to-august",
-        "10:20 AM",
-        "Dr. Rao is asking about one-sided swelling because it can change how urgently your throat should be examined."
-      ),
-    ],
+    clinicianMessages,
+    augustMessages: clinicianHasReplied ? privateAugustMessages() : [],
     upload:
       phase === "report"
         ? {
@@ -300,7 +332,20 @@ export function encounterReducer(
   switch (action.type) {
     case "RESET":
       return action.state;
-    case "GO_TO":
+    case "GO_TO": {
+      const skipsAssignment =
+        state.phase === "matching" &&
+        action.phase === "clinician_reviewing" &&
+        state.clinicianState !== "assigned";
+      const skipsReply =
+        state.phase === "clinician_reviewing" &&
+        action.phase === "clinician_active" &&
+        state.clinicianState !== "replied";
+      const skipsSignature =
+        state.phase === "clinician_active" &&
+        action.phase === "plan_ready" &&
+        state.clinicianState !== "plan_signed";
+      if (skipsAssignment || skipsReply || skipsSignature) return state;
       return {
         ...state,
         phase: action.phase,
@@ -309,20 +354,15 @@ export function encounterReducer(
             ? "matching"
             : action.phase === "clinician_reviewing"
               ? "reviewing"
-              : action.phase === "clinician_active"
+              : action.phase === "clinician_active" &&
+                  state.phase === "follow_up"
                 ? "replied"
-                : action.phase === "plan_ready" ||
-                    action.phase === "follow_up"
-                  ? "plan_signed"
-                  : state.clinicianState,
+              : state.clinicianState,
       };
+    }
     case "START_CONCERN": {
       const normalized = action.concern.toLowerCase();
-      if (
-        /chest pain|can't breathe|cannot breathe|trouble breathing|fainted|passed out/.test(
-          normalized
-        )
-      ) {
+      if (hasEmergencySignal(normalized)) {
         return { ...state, concern: action.concern, phase: "emergency" };
       }
       if (/adderall|oxycodone|controlled medication/.test(normalized)) {
@@ -395,6 +435,14 @@ export function encounterReducer(
         phase: nextStep >= 3 ? "summary" : "intake",
       };
     }
+    case "ADD_SUMMARY_CORRECTION":
+      return {
+        ...state,
+        summaryCorrections: [
+          ...state.summaryCorrections,
+          action.correction.trim(),
+        ].filter(Boolean),
+      };
     case "SET_RECIPIENT":
       return { ...state, recipient: action.recipient };
     case "SEND_MESSAGE": {
@@ -411,7 +459,6 @@ export function encounterReducer(
         ? {
             ...state,
             clinicianMessages: [...state.clinicianMessages, next],
-            clinicianState: "replied",
           }
         : {
             ...state,
@@ -424,26 +471,43 @@ export function encounterReducer(
                 "august",
                 "private-to-august",
                 "Now",
-                "The rapid test checks for group A strep. Dr. Rao will interpret the result alongside your symptoms before deciding what comes next."
+                state.phase === "follow_up"
+                  ? "Thanks for the update. I can help compare this with yesterday. If symptoms are worsening, reopen the safety check or message Maya about this visit."
+                  : "The rapid test checks for group A strep. Maya will interpret the result alongside your symptoms before deciding what comes next."
               ),
             ],
           };
     }
     case "ASSIGN_CLINICIAN":
+      if (state.phase !== "matching") return state;
       return {
         ...state,
         phase: "clinician_reviewing",
         clinicianState: "reviewing",
       };
-    case "CLINICIAN_REPLIED":
+    case "CLINICIAN_REPLIED": {
+      if (state.phase !== "clinician_reviewing") return state;
+      const hasReply = state.clinicianMessages.some(
+        (item) => item.author === "clinician"
+      );
       return {
         ...state,
         phase: "clinician_active",
         clinicianState: "replied",
         recipient: "clinician",
+        clinicianMessages: hasReply
+          ? state.clinicianMessages
+          : [...state.clinicianMessages, ...clinicianReplyMessages()],
+        augustMessages:
+          state.augustMessages.length > 0
+            ? state.augustMessages
+            : privateAugustMessages(),
       };
+    }
     case "SIGN_PLAN":
       if (
+        state.phase !== "clinician_active" ||
+        state.clinicianState !== "replied" ||
         !state.clinicianMessages.some(
           (item) => item.author === "patient"
         )
@@ -463,6 +527,10 @@ export function encounterReducer(
           ? "clinician_active"
           : action.origin === "prescription"
             ? "prescription"
+            : action.origin === "follow_up"
+              ? "follow_up"
+              : action.origin === "safety"
+                ? "safety"
             : action.origin === "intake"
               ? "intake"
               : "summary";
@@ -484,14 +552,14 @@ export function encounterReducer(
       };
     }
     case "PROCESS_UPLOAD":
-      return state.upload
+      return state.upload?.status === "attached"
         ? {
             ...state,
             upload: { ...state.upload, status: "processing" },
           }
         : state;
     case "COMPLETE_UPLOAD":
-      return state.upload
+      return state.upload?.status === "processing"
         ? {
             ...state,
             upload: {
@@ -502,7 +570,7 @@ export function encounterReducer(
           }
         : state;
     case "SET_UPLOAD_LOW_CONFIDENCE":
-      return state.upload
+      return state.upload?.status === "review"
         ? {
             ...state,
             upload: {
@@ -513,7 +581,7 @@ export function encounterReducer(
           }
         : state;
     case "CONFIRM_UPLOAD": {
-      if (!state.upload) return state;
+      if (!state.upload || state.upload.status !== "review") return state;
       const clinicianUpdate =
         state.upload.returnTo === "clinician_active"
           ? [
@@ -536,7 +604,7 @@ export function encounterReducer(
       };
     }
     case "RETRY_UPLOAD":
-      return state.upload
+      return state.upload?.status === "low_confidence"
         ? {
             ...state,
             upload: {

@@ -141,7 +141,7 @@ svg {
   padding: 4px 26px 0;
   background: linear-gradient(var(--warm) 68%, transparent);
   color: var(--ink);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
 }
 
@@ -2274,6 +2274,7 @@ svg {
 .composer label {
   display: grid;
   min-width: 0;
+  min-height: 46px;
   gap: 1px;
 }
 
@@ -3308,4 +3309,151 @@ svg {
 .step-row,
 .joined-event .pill {
   font-size: 0.75rem;
+}
+
+.phone-status,
+.phone-status > span {
+  font-size: 0.75rem;
+}
+
+/* Signature-moment hypotheses are content and interaction changes, not skins. */
+
+.variation-cue,
+.handoff-context,
+.concierge-handoff {
+  display: grid;
+  align-items: center;
+  gap: 10px;
+  margin: -6px 0 20px;
+  padding: 13px 14px;
+  border: 1px solid rgba(20, 125, 100, 0.1);
+  border-radius: 16px;
+  background: rgba(234, 246, 241, 0.72);
+  color: var(--ink-soft);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+
+.variation-cue {
+  grid-template-columns: 20px 1fr;
+}
+
+.variation-cue .icon,
+.handoff-context .icon {
+  width: 18px;
+  color: var(--green);
+}
+
+.variation-cue-ambient {
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+}
+
+.variation-cue-clinical,
+.handoff-context-clinical {
+  border-radius: 12px;
+  background: white;
+  letter-spacing: 0.03em;
+}
+
+.variation-cue-concierge,
+.handoff-context-concierge {
+  background: linear-gradient(135deg, #e6f4ee, #f8fcfa);
+}
+
+.handoff-context {
+  grid-template-columns: 22px 1fr;
+}
+
+.handoff-context > div,
+.concierge-handoff > div {
+  display: grid;
+  gap: 2px;
+}
+
+.handoff-context strong,
+.concierge-handoff strong {
+  color: var(--ink);
+  font-size: 0.8125rem;
+}
+
+.handoff-context span,
+.concierge-handoff span {
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
+.handoff-context-ambient {
+  border-color: transparent;
+  background: rgba(255, 255, 255, 0.46);
+}
+
+.concierge-handoff {
+  grid-template-columns: 48px 1fr;
+  margin-top: 0;
+  background: linear-gradient(135deg, #e3f3ec, #fff);
+  box-shadow: 0 14px 34px rgba(7, 65, 50, 0.09);
+}
+
+.experience-note-ambient {
+  opacity: 0.82;
+}
+
+.experience-note-clinical {
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: white;
+}
+
+.experience-note-concierge {
+  padding: 13px;
+  border-radius: 15px;
+  background: linear-gradient(135deg, #e5f3ed, rgba(255, 255, 255, 0.8));
+}
+
+.shortcut-grid-ambient button {
+  min-height: 112px;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.shortcut-grid-clinical button {
+  border-radius: 13px;
+  background: white;
+  box-shadow: none;
+}
+
+.sample-data-note span {
+  font-size: 0.75rem;
+}
+
+/* Mobile care copy never drops below the 12px secondary-text floor. */
+
+.clinician-recommendation .pill,
+.upload-preview .pill,
+.visit-profile > div > span,
+.visit-profile p,
+.total-row,
+.worsen-note span,
+.worsen-note strong,
+.doctor-profile-card span,
+.upload-inline,
+.plan-hero p,
+.timeline-card i span,
+.timeline-card article small,
+.timeline-action,
+.emergency-call small,
+.emergency-location strong,
+.outline-light,
+.next-card h3,
+.next-card > div > i,
+.next-card strong,
+.next-card small {
+  font-size: 0.75rem;
+}
+
+.turn-note > p {
+  color: var(--ink-soft);
+  font-weight: 500;
 }

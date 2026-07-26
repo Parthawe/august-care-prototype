@@ -125,6 +125,12 @@ const intakeQuestions = [
   "Any rash, one-sided swelling, or recent exposure to someone with strep?",
 ];
 
+const intakeSummaryLabels = [
+  "Temperature and swallowing",
+  "Medication allergies",
+  "Rash, swelling, or exposure",
+];
+
 const prescriptionQuestions = [
   "How long has your throat hurt, and have you had a fever or rash?",
   "Can you swallow liquids, and is the swelling stronger on one side?",
@@ -147,6 +153,83 @@ const phaseLabels: Record<EncounterPhase, string> = {
   prescription: "Medication assessment",
   emergency: "Emergency interruption",
   unsupported: "Unsupported care",
+};
+
+const variationExperience: Record<
+  PrototypeVariationId,
+  {
+    homePill: string;
+    homeTitle: string;
+    homeIntro: string;
+    safetyStatus: string;
+    safetyProgress: string;
+    safetyQuestion: string;
+    safetyCue: string;
+    clinicianStatus: string;
+    replyEvent: string;
+    handoffTitle: string;
+    handoffBody: string;
+  }
+> = {
+  classic: {
+    homePill: "AI guide + human care",
+    homeTitle: "Ask August anything.",
+    homeIntro:
+      "Start with what is happening. August will help organize the next step.",
+    safetyStatus: "August AI · Safety check",
+    safetyProgress: "1 of 4",
+    safetyQuestion:
+      "Before we continue, are you having trouble breathing, unable to swallow liquids, fainting, or severe chest pain right now?",
+    safetyCue: "One clear answer is enough.",
+    clinicianStatus: "Human clinician conversation",
+    replyEvent: "Maya replied · 10:18 AM",
+    handoffTitle: "One continuous visit",
+    handoffBody: "Messages to Maya become part of this clinician conversation.",
+  },
+  ambient: {
+    homePill: "A quieter way to get care",
+    homeTitle: "What’s on your mind?",
+    homeIntro: "Begin in your own words. We’ll take it one question at a time.",
+    safetyStatus: "August · One quick check",
+    safetyProgress: "Safety first",
+    safetyQuestion:
+      "Before we go on, tell me if breathing, swallowing liquids, fainting, or severe chest pain is a problem right now.",
+    safetyCue: "Take your time. A short answer works.",
+    clinicianStatus: "Maya is here",
+    replyEvent: "Maya joined the conversation",
+    handoffTitle: "The conversation continues here",
+    handoffBody: "Reply when you are ready. You can leave and return at any time.",
+  },
+  clinical: {
+    homePill: "Structured care, clearly explained",
+    homeTitle: "Start a care question.",
+    homeIntro:
+      "Your answers form a reviewable summary before anything reaches a clinician.",
+    safetyStatus: "August AI · Safety triage",
+    safetyProgress: "Safety screen · 1/4",
+    safetyQuestion:
+      "Current warning signs: trouble breathing, unable to swallow liquids, fainting, or severe chest pain?",
+    safetyCue: "Patient-reported · not shared with a clinician yet",
+    clinicianStatus: "Clinician thread · Patient-visible",
+    replyEvent: "Clinician reply · 10:18 AM · Shared record",
+    handoffTitle: "Message visibility is explicit",
+    handoffBody: "This thread is visible to Maya. The August sidecar remains private.",
+  },
+  concierge: {
+    homePill: "Personal care, thoughtfully coordinated",
+    homeTitle: "How can we care for you today?",
+    homeIntro:
+      "Tell August what changed. We’ll prepare the right next step with you.",
+    safetyStatus: "August · Preparing your care",
+    safetyProgress: "Step 1 of 4",
+    safetyQuestion:
+      "First, I’ll check for anything urgent. Are you having trouble breathing, unable to swallow liquids, fainting, or severe chest pain?",
+    safetyCue: "I’ll use this answer to guide what happens next.",
+    clinicianStatus: "Maya · Your care team",
+    replyEvent: "Maya is ready for you · 10:18 AM",
+    handoffTitle: "Your clinician has the context",
+    handoffBody: "Maya reviewed your summary so you do not have to start over.",
+  },
 };
 
 function Icon({ name }: { name: keyof typeof icons }) {
@@ -457,6 +540,7 @@ export function AugustPrototype({
           <div className="phone-content" ref={contentRef}>
             {state.phase === "entry" && (
               <HomeScreen
+                variation={variation}
                 onSubmit={(concern) =>
                   dispatch({ type: "START_CONCERN", concern })
                 }
@@ -465,6 +549,7 @@ export function AugustPrototype({
             )}
             {state.phase === "safety" && (
               <SafetyScreen
+                variation={variation}
                 concern={state.concern}
                 clarification={state.safetyClarification}
                 onAnswer={(answer) =>
@@ -489,6 +574,7 @@ export function AugustPrototype({
             {state.phase === "summary" && (
               <SummaryScreen
                 state={state}
+                dispatch={dispatch}
                 onContinue={() => backTo("eligibility")}
                 onBack={() => backTo("intake")}
               />
@@ -535,6 +621,7 @@ export function AugustPrototype({
             )}
             {state.phase === "clinician_active" && (
               <ClinicianScreen
+                variation={variation}
                 state={state}
                 dispatch={dispatch}
                 onBack={() => backTo("clinician_reviewing")}
@@ -558,6 +645,13 @@ export function AugustPrototype({
                 onBack={() => backTo("plan_ready")}
                 onEmergency={() => backTo("emergency")}
                 onUpload={() => openUpload("follow_up")}
+                onClinician={() => {
+                  dispatch({
+                    type: "SET_RECIPIENT",
+                    recipient: "clinician",
+                  });
+                  backTo("clinician_active");
+                }}
                 onHome={reset}
               />
             )}
@@ -605,13 +699,16 @@ export function AugustPrototype({
 }
 
 function HomeScreen({
+  variation,
   onSubmit,
   onUpload,
 }: {
+  variation: PrototypeVariationId;
   onSubmit: (value: string) => void;
   onUpload: () => void;
 }) {
   const [value, setValue] = useState("");
+  const experience = variationExperience[variation];
   const submit = (event: FormEvent) => {
     event.preventDefault();
     onSubmit(value.trim() || "My throat has hurt for five days and I have a fever.");
@@ -625,10 +722,10 @@ function HomeScreen({
         </span>
       </nav>
       <section className="home-hero">
-        <Pill>AI guide + human care</Pill>
+        <Pill>{experience.homePill}</Pill>
         <span className="home-greeting">Good morning, Parth</span>
-        <h2>Ask August anything.</h2>
-        <p>Start with what is happening. August will help organize the next step.</p>
+        <h2>{experience.homeTitle}</h2>
+        <p>{experience.homeIntro}</p>
       </section>
       <form className="hero-composer glass" onSubmit={submit}>
         <textarea
@@ -651,7 +748,7 @@ function HomeScreen({
           </button>
         </div>
       </form>
-      <div className="shortcut-grid">
+      <div className={`shortcut-grid shortcut-grid-${variation}`}>
         <button
           onClick={() =>
             onSubmit("My throat has hurt for five days and I have a fever.")
@@ -665,32 +762,46 @@ function HomeScreen({
           <small>Start in your words</small>
           <Icon name="arrow" />
         </button>
-        <button
-          onClick={() =>
-            onSubmit("I think I need an antibiotic prescription for my sore throat.")
-          }
-          type="button"
-        >
-          <span className="shortcut-icon">
-            <Icon name="file" />
-          </span>
-          <strong>Medication</strong>
-          <small>Assessment first</small>
-          <Icon name="arrow" />
-        </button>
-        <button
-          onClick={() =>
-            onSubmit("I think I need a doctor for my sore throat.")
-          }
-          type="button"
-        >
-          <span className="shortcut-icon">
-            <Icon name="doctor" />
-          </span>
-          <strong>Doctor visit</strong>
-          <small>Prepare context</small>
-          <Icon name="arrow" />
-        </button>
+        {variation !== "ambient" && (
+          <button
+            onClick={() =>
+              onSubmit(
+                variation === "concierge"
+                  ? "I think I need a doctor for my sore throat."
+                  : "I think I need an antibiotic prescription for my sore throat."
+              )
+            }
+            type="button"
+          >
+            <span className="shortcut-icon">
+              <Icon name={variation === "concierge" ? "doctor" : "file"} />
+            </span>
+            <strong>
+              {variation === "concierge" ? "Talk to a clinician" : "Medication"}
+            </strong>
+            <small>
+              {variation === "concierge"
+                ? "We’ll prepare the visit"
+                : "Assessment first"}
+            </small>
+            <Icon name="arrow" />
+          </button>
+        )}
+        {variation === "classic" && (
+          <button
+            onClick={() =>
+              onSubmit("I think I need a doctor for my sore throat.")
+            }
+            type="button"
+          >
+            <span className="shortcut-icon">
+              <Icon name="doctor" />
+            </span>
+            <strong>Doctor visit</strong>
+            <small>Prepare context</small>
+            <Icon name="arrow" />
+          </button>
+        )}
         <button onClick={onUpload} type="button">
           <span className="shortcut-icon">
             <Icon name="lab" />
@@ -700,11 +811,25 @@ function HomeScreen({
           <Icon name="arrow" />
         </button>
       </div>
-      <div className="privacy-note">
+      <div className={`privacy-note experience-note experience-note-${variation}`}>
         <Icon name="shield" />
         <p>
-          <strong>August is an AI care guide.</strong>
-          A human clinician makes clinical decisions.
+          <strong>
+            {variation === "clinical"
+              ? "You review the record before it is shared."
+              : variation === "concierge"
+                ? "Your context carries into the clinician visit."
+                : variation === "ambient"
+                  ? "One conversation, at your pace."
+                  : "August is an AI care guide."}
+          </strong>
+          {variation === "classic"
+            ? "A human clinician makes clinical decisions."
+            : variation === "clinical"
+              ? "A human clinician makes every clinical decision."
+              : variation === "concierge"
+                ? "A human clinician makes clinical decisions."
+                : "Human care is available when it is the right next step."}
         </p>
       </div>
     </div>
@@ -712,23 +837,26 @@ function HomeScreen({
 }
 
 function SafetyScreen({
+  variation,
   concern,
   clarification,
   onAnswer,
   onUpload,
   onBack,
 }: {
+  variation: PrototypeVariationId;
   concern: string;
   clarification: boolean;
   onAnswer: (answer: string) => void;
   onUpload: () => void;
   onBack: () => void;
 }) {
+  const experience = variationExperience[variation];
   return (
     <div className="screen conversation-screen">
       <Header
         title="Sore throat"
-        status="August AI · Safety check"
+        status={experience.safetyStatus}
         onBack={onBack}
       />
       <div className="conversation-body">
@@ -740,7 +868,7 @@ function SafetyScreen({
             <i />
             <i />
           </div>
-          <span>1 of 4</span>
+          <span>{experience.safetyProgress}</span>
         </div>
         <Message author="You" role="Patient" patient>
           {concern || "My throat has hurt for five days and I have a fever."}
@@ -748,8 +876,12 @@ function SafetyScreen({
         <Message author="August AI" role="AI care guide">
           {clarification
             ? "I want to make sure I understood. Are any of these happening right now: trouble breathing, unable to swallow liquids, fainting, or severe chest pain?"
-            : "Before we continue, are you having trouble breathing, unable to swallow liquids, fainting, or severe chest pain right now?"}
+            : experience.safetyQuestion}
         </Message>
+        <div className={`variation-cue variation-cue-${variation}`}>
+          <Icon name={variation === "clinical" ? "file" : "shield"} />
+          <span>{experience.safetyCue}</span>
+        </div>
         {clarification && (
           <div className="clarification-note">
             <Icon name="shield" />
@@ -839,24 +971,40 @@ function IntakeScreen({
 
 function SummaryScreen({
   state,
+  dispatch,
   onContinue,
   onBack,
 }: {
   state: EncounterState;
+  dispatch: React.Dispatch<EncounterAction>;
   onContinue: () => void;
   onBack: () => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [correction, setCorrection] = useState("");
-  const [savedCorrection, setSavedCorrection] = useState("");
+  const recordedSummary =
+    state.intakeAnswers.length > 0
+      ? [
+          state.concern || "Sore throat concern",
+          `Safety answer: ${state.intakeAnswers[0]}`,
+          ...state.intakeAnswers
+            .slice(1)
+            .map(
+              (answer, index) =>
+                `${intakeSummaryLabels[index]}: ${answer}`
+            ),
+        ]
+      : [
+          state.concern || "Sore throat for five days",
+          "Breathing normally; able to swallow liquids",
+          "No medication allergies reported",
+          "No rash or one-sided swelling reported",
+        ];
   const summaryItems = [
-    "Sore throat for five days",
-    "Fever reached 101.5°F last night",
-    "Painful swallowing, but able to drink liquids",
-    "Breathing normally; no fainting or severe chest pain reported",
-    "No medication allergies reported",
-    "Recent household exposure to strep",
-    ...(savedCorrection ? [`Patient correction: ${savedCorrection}`] : []),
+    ...recordedSummary,
+    ...state.summaryCorrections.map(
+      (item) => `Patient correction: ${item}`
+    ),
   ];
   return (
     <div className="screen summary-screen">
@@ -895,7 +1043,10 @@ function SummaryScreen({
               onSubmit={(event) => {
                 event.preventDefault();
                 if (!correction.trim()) return;
-                setSavedCorrection(correction.trim());
+                dispatch({
+                  type: "ADD_SUMMARY_CORRECTION",
+                  correction,
+                });
                 setCorrection("");
                 setEditing(false);
               }}
@@ -1257,17 +1408,20 @@ function ClinicianReviewingScreen({
 }
 
 function ClinicianScreen({
+  variation,
   state,
   dispatch,
   onUpload,
   onBack,
 }: {
+  variation: PrototypeVariationId;
   state: EncounterState;
   dispatch: React.Dispatch<EncounterAction>;
   onUpload: () => void;
   onBack: () => void;
 }) {
   const privateToAugust = state.recipient === "august";
+  const experience = variationExperience[variation];
   return (
     <div className="screen conversation-screen clinician-screen">
       <Header
@@ -1275,7 +1429,7 @@ function ClinicianScreen({
         status={
           privateToAugust
             ? "Private August explanation"
-            : "Human clinician conversation"
+            : experience.clinicianStatus
         }
         onBack={onBack}
         person={!privateToAugust}
@@ -1320,11 +1474,28 @@ function ClinicianScreen({
           </>
         ) : (
           <>
-            <div className="joined-event">
-              <span className="line" />
-              <Pill tone="white">Maya replied · 10:18 AM</Pill>
-              <span className="line" />
-            </div>
+            {variation === "concierge" ? (
+              <section className="concierge-handoff">
+                <ClinicianPortrait />
+                <div>
+                  <strong>{experience.replyEvent}</strong>
+                  <span>{experience.handoffBody}</span>
+                </div>
+              </section>
+            ) : (
+              <div className="joined-event">
+                <span className="line" />
+                <Pill tone="white">{experience.replyEvent}</Pill>
+                <span className="line" />
+              </div>
+            )}
+            <section className={`handoff-context handoff-context-${variation}`}>
+              <Icon name={variation === "clinical" ? "shield" : "doctor"} />
+              <div>
+                <strong>{experience.handoffTitle}</strong>
+                <span>{experience.handoffBody}</span>
+              </div>
+            </section>
             <ThreadMessages messages={state.clinicianMessages} />
             {state.prescriptionOutcome && (
               <PrescriptionOutcomeCard outcome={state.prescriptionOutcome} />
@@ -1502,6 +1673,7 @@ function FollowUpScreen({
   onBack,
   onEmergency,
   onUpload,
+  onClinician,
   onHome,
 }: {
   state: EncounterState;
@@ -1509,6 +1681,7 @@ function FollowUpScreen({
   onBack: () => void;
   onEmergency: () => void;
   onUpload: () => void;
+  onClinician: () => void;
   onHome: () => void;
 }) {
   const followUpMessages = state.augustMessages.filter(
@@ -1547,6 +1720,9 @@ function FollowUpScreen({
         </section>
         <button className="text-button danger-text" onClick={onEmergency}>
           Symptoms are getting worse
+        </button>
+        <button className="text-button" onClick={onClinician}>
+          Message Maya about this visit
         </button>
         <button className="text-button" onClick={onHome}>
           Close for now
@@ -1853,7 +2029,7 @@ function EmergencyScreen({
             checked={locationConfirmed}
             onChange={(event) => setLocationConfirmed(event.target.checked)}
           />
-          <span>I am at my current device location</span>
+          <span>I am currently in San Francisco, California</span>
         </label>
         <button
           className="emergency-location"
@@ -2006,6 +2182,10 @@ function ReviewerRail({
     currentIndex >= 0 && currentIndex < walkthroughPhases.length - 1
       ? walkthroughPhases[currentIndex + 1]
       : null;
+  const nextRequiresSimulation =
+    state.phase === "matching" ||
+    state.phase === "clinician_reviewing" ||
+    state.phase === "clinician_active";
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
@@ -2122,7 +2302,12 @@ function ReviewerRail({
           onClick={() =>
             nextPhase && dispatch({ type: "GO_TO", phase: nextPhase })
           }
-          disabled={!nextPhase}
+          disabled={!nextPhase || nextRequiresSimulation}
+          title={
+            nextRequiresSimulation
+              ? "Use the encounter control above to preserve chronology"
+              : undefined
+          }
           type="button"
         >
           Next

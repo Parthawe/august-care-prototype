@@ -14,6 +14,21 @@ const edgePaths = [
   "/cases/unsupported/classic",
 ];
 
+const patientUiPaths = [
+  "/cases/home/classic",
+  "/cases/symptom-intake/classic",
+  "/cases/three-questions/classic",
+  "/cases/visit-summary/classic",
+  "/cases/eligibility/classic",
+  "/cases/pricing-checkout/classic",
+  "/cases/async-wait/classic",
+  "/cases/doctor-reviewing/classic",
+  "/cases/doctor-handoff/classic",
+  "/cases/care-plan/classic",
+  "/cases/follow-up/classic",
+  ...edgePaths,
+];
+
 async function expectNoObscuredContent(page: Parameters<typeof test>[0]["page"]) {
   await page.evaluate(() => {
     const activeScroll =
@@ -68,6 +83,7 @@ for (const path of edgePaths) {
   test(`resolved edge path ${path}`, async ({ page }, testInfo) => {
     await page.goto(path);
     await expect(page.locator(".phone-frame")).toBeVisible();
+    await expectNoObscuredContent(page);
     await page.screenshot({
       path: testInfo.outputPath(
         `${path.replaceAll("/", "-").replace(/^-/, "")}.png`
@@ -76,6 +92,44 @@ for (const path of edgePaths) {
     });
   });
 }
+
+test("visit summary is derived from the patient's answers", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/cases/home/classic");
+  await page
+    .getByRole("textbox", { name: "Describe what’s going on" })
+    .fill("My throat has hurt for five days and I have a fever.");
+  await page.getByRole("button", { name: "Start conversation" }).click();
+
+  const answers = [
+    "Breathing is normal, I can swallow liquids, I have not fainted, and I have no chest pain.",
+    "102 degrees last night, and I can swallow liquids.",
+    "No medication allergies and no antibiotic reactions.",
+    "No rash or one-sided swelling; a coworker recently had strep.",
+  ];
+  for (const [index, answer] of answers.entries()) {
+    const composer = page.locator(".composer");
+    await composer.getByRole("textbox").fill(answer);
+    const send = composer.getByRole("button", { name: "Send message" });
+    await expect(send).toBeEnabled();
+    await send.click();
+    if (index === answers.length - 1) {
+      await expect(page.getByText("What August collected", { exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByText(answer, { exact: true })).toBeVisible();
+    }
+  }
+
+  await expect(
+    page.getByText(
+      "Temperature and swallowing: 102 degrees last night, and I can swallow liquids.",
+      { exact: true }
+    )
+  ).toBeVisible();
+  await expect(page.getByText(/101\.5°F/)).toHaveCount(0);
+});
 
 test("checkout consent starts unchecked and blocks progress", async ({ page }) => {
   await page.goto("/cases/pricing-checkout/classic");
@@ -91,6 +145,130 @@ test("composer remains available in the clinician conversation", async ({ page }
   await page.getByRole("button", { name: /Ask August/ }).click();
   await expect(page.getByText("Maya cannot see messages in this sidecar.")).toBeVisible();
   await expect(page.locator(".composer")).toBeVisible();
+});
+
+test("the four hypotheses change content at every signature moment", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  const expectations = [
+    {
+      path: "/cases/home/ambient",
+      text: "What’s on your mind?",
+    },
+    {
+      path: "/cases/symptom-intake/clinical",
+      text: "Patient-reported · not shared with a clinician yet",
+    },
+    {
+      path: "/cases/doctor-handoff/concierge",
+      text: "Your clinician has the context",
+    },
+  ];
+  for (const expectation of expectations) {
+    await page.goto(expectation.path);
+    await expect(page.getByText(expectation.text, { exact: true })).toBeVisible();
+  }
+});
+
+test("follow-up can reopen the clinician conversation", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/cases/follow-up/classic");
+  await page
+    .getByRole("button", { name: "Message Maya about this visit" })
+    .click();
+  await expect(page.getByText("Sore throat visit", { exact: true })).toBeVisible();
+  await expect(page.locator(".composer")).toBeVisible();
+});
+
+test("patient-facing text never renders below 12px", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  const failures: Array<{ path: string; undersized: unknown[] }> = [];
+  for (const path of patientUiPaths) {
+    await page.goto(path);
+    const undersized = await page.evaluate(() =>
+      Array.from(document.querySelectorAll<HTMLElement>(".phone-frame *"))
+        .filter((element) => {
+          const style = getComputedStyle(element);
+          const bounds = element.getBoundingClientRect();
+          const hasOwnText = Array.from(element.childNodes).some(
+            (node) =>
+              node.nodeType === Node.TEXT_NODE &&
+              Boolean(node.textContent?.trim())
+          );
+          return (
+            hasOwnText &&
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            bounds.width > 0 &&
+            bounds.height > 0 &&
+            Number.parseFloat(style.fontSize) < 12
+          );
+        })
+        .slice(0, 20)
+        .map((element) => ({
+          tag: element.tagName,
+          className: element.className,
+          text: element.textContent?.trim().slice(0, 80),
+          size: getComputedStyle(element).fontSize,
+        }))
+    );
+    if (undersized.length > 0) {
+      failures.push({ path, undersized });
+    }
+  }
+  expect(failures, JSON.stringify(failures)).toEqual([]);
+});
+
+test("patient-facing controls provide 44px touch targets", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  const failures: Array<{ path: string; controls: unknown[] }> = [];
+  for (const path of patientUiPaths) {
+    await page.goto(path);
+    await expect(page.locator(".phone-frame")).toBeVisible();
+    await page.waitForTimeout(75);
+    const controls = await page.evaluate(() =>
+      Array.from(
+        document.querySelectorAll<HTMLElement>(
+          ".phone-frame button, .phone-frame a, .phone-frame input, .phone-frame textarea"
+        )
+      )
+        .filter((element) => {
+          const style = getComputedStyle(element);
+          const bounds = element.getBoundingClientRect();
+          return (
+            style.display !== "none" &&
+            style.visibility !== "hidden" &&
+            bounds.width > 0 &&
+            bounds.height > 0
+          );
+        })
+        .map((element) => {
+          const target =
+            element.closest<HTMLElement>("label") ?? element;
+          const bounds = target.getBoundingClientRect();
+          return {
+            tag: element.tagName,
+            className: element.className,
+            name:
+              element.getAttribute("aria-label") ??
+              element.textContent?.trim().slice(0, 60),
+            width: Math.round(bounds.width),
+            height: Math.round(bounds.height),
+          };
+        })
+        .filter((target) => target.width < 44 || target.height < 44)
+        .slice(0, 20)
+    );
+    if (controls.length > 0) failures.push({ path, controls });
+  }
+  expect(failures, JSON.stringify(failures)).toEqual([]);
 });
 
 test("emergency suppresses routine navigation and composer", async ({ page }) => {

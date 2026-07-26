@@ -21,6 +21,20 @@ test("safety classifier distinguishes negatives, danger, and ambiguity", () => {
   assert.equal(classifySafetyAnswer("I feel strange."), "clarify");
 });
 
+test("initial concern routing respects negation and interrupts on clear danger", () => {
+  const routine = encounterReducer(createEncounterState(), {
+    type: "START_CONCERN",
+    concern: "No chest pain, just heartburn.",
+  });
+  assert.equal(routine.phase, "safety");
+
+  const danger = encounterReducer(createEncounterState(), {
+    type: "START_CONCERN",
+    concern: "No chest pain, but I fainted.",
+  });
+  assert.equal(danger.phase, "emergency");
+});
+
 test("routine intake unlocks one answer at a time and ends at summary", () => {
   let state = createEncounterState({
     phase: "safety",
@@ -54,6 +68,17 @@ test("routine intake unlocks one answer at a time and ends at summary", () => {
   });
   assert.equal(state.phase, "summary");
   assert.equal(state.intakeStep, 3);
+});
+
+test("summary corrections persist in the encounter record", () => {
+  const initial = createEncounterState({ phase: "summary" });
+  const corrected = encounterReducer(initial, {
+    type: "ADD_SUMMARY_CORRECTION",
+    correction: "The fever reached 102°F, not 101°F.",
+  });
+  assert.deepEqual(corrected.summaryCorrections, [
+    "The fever reached 102°F, not 101°F.",
+  ]);
 });
 
 test("a danger signal interrupts routine intake immediately", () => {
@@ -112,6 +137,54 @@ test("care plan cannot be signed before a final patient answer", () => {
   assert.equal(signed.clinicianState, "plan_signed");
 });
 
+test("clinician assignment, reply, patient answer, and signature remain chronological", () => {
+  const matching = createEncounterState({ phase: "matching" });
+  assert.equal(matching.clinicianMessages.length, 0);
+
+  const bypassAssignment = encounterReducer(matching, {
+    type: "GO_TO",
+    phase: "clinician_reviewing",
+  });
+  assert.equal(bypassAssignment.phase, "matching");
+
+  const reviewing = encounterReducer(matching, { type: "ASSIGN_CLINICIAN" });
+  assert.equal(reviewing.phase, "clinician_reviewing");
+  assert.equal(reviewing.clinicianMessages.length, 0);
+
+  const bypassReply = encounterReducer(reviewing, {
+    type: "GO_TO",
+    phase: "clinician_active",
+  });
+  assert.equal(bypassReply.phase, "clinician_reviewing");
+
+  const replied = encounterReducer(reviewing, { type: "CLINICIAN_REPLIED" });
+  assert.equal(replied.phase, "clinician_active");
+  assert.equal(
+    replied.clinicianMessages.filter((item) => item.author === "clinician")
+      .length,
+    2
+  );
+
+  const bypassSignature = encounterReducer(replied, {
+    type: "GO_TO",
+    phase: "plan_ready",
+  });
+  assert.equal(bypassSignature.phase, "clinician_active");
+
+  const answered = encounterReducer(replied, {
+    type: "SEND_MESSAGE",
+    recipient: "clinician",
+    content: "The swelling feels even.",
+  });
+  const signed = encounterReducer(answered, { type: "SIGN_PLAN" });
+  assert.equal(signed.phase, "plan_ready");
+
+  const directPlan = createEncounterState({ phase: "plan_ready" });
+  assert.ok(
+    directPlan.clinicianMessages.some((item) => item.author === "patient")
+  );
+});
+
 test("uploads remember their origin and only notify the intended thread", () => {
   const intake = encounterReducer(createEncounterState({ phase: "intake" }), {
     type: "START_UPLOAD",
@@ -132,6 +205,88 @@ test("uploads remember their origin and only notify the intended thread", () => 
   assert.equal(clinician.phase, "clinician_active");
   assert.equal(clinician.upload?.status, "confirmed");
   assert.equal(clinician.clinicianMessages.at(-1)?.author, "system");
+});
+
+test("safety and follow-up uploads return to the exact originating conversation", () => {
+  const safety = encounterReducer(createEncounterState({ phase: "safety" }), {
+    type: "START_UPLOAD",
+    origin: "safety",
+  });
+  assert.equal(safety.upload?.returnTo, "safety");
+
+  const followUp = encounterReducer(
+    createEncounterState({ phase: "follow_up" }),
+    {
+      type: "START_UPLOAD",
+      origin: "follow_up",
+    }
+  );
+  assert.equal(followUp.upload?.returnTo, "follow_up");
+});
+
+test("report extraction cannot skip required processing and confirmation states", () => {
+  let state = encounterReducer(createEncounterState({ phase: "intake" }), {
+    type: "START_UPLOAD",
+    origin: "intake",
+  });
+
+  const cannotCompleteAttached = encounterReducer(state, {
+    type: "COMPLETE_UPLOAD",
+  });
+  assert.equal(cannotCompleteAttached.upload?.status, "attached");
+
+  const cannotConfirmAttached = encounterReducer(state, {
+    type: "CONFIRM_UPLOAD",
+  });
+  assert.equal(cannotConfirmAttached.phase, "report");
+
+  state = encounterReducer(state, { type: "PROCESS_UPLOAD" });
+  const cannotConfirmProcessing = encounterReducer(state, {
+    type: "CONFIRM_UPLOAD",
+  });
+  assert.equal(cannotConfirmProcessing.upload?.status, "processing");
+
+  state = encounterReducer(state, { type: "COMPLETE_UPLOAD" });
+  const cannotRetryReview = encounterReducer(state, { type: "RETRY_UPLOAD" });
+  assert.equal(cannotRetryReview.upload?.status, "review");
+
+  state = encounterReducer(state, { type: "SET_UPLOAD_LOW_CONFIDENCE" });
+  state = encounterReducer(state, { type: "RETRY_UPLOAD" });
+  assert.equal(state.upload?.status, "attached");
+});
+
+test("follow-up replies are contextual and clinician care can be reopened", () => {
+  const followUp = createEncounterState({ phase: "follow_up" });
+  const replied = encounterReducer(followUp, {
+    type: "SEND_MESSAGE",
+    recipient: "august",
+    content: "It feels about the same.",
+  });
+  assert.match(
+    replied.augustMessages.at(-1)?.content ?? "",
+    /compare this with yesterday/i
+  );
+
+  const reopened = encounterReducer(replied, {
+    type: "GO_TO",
+    phase: "clinician_active",
+  });
+  assert.equal(reopened.phase, "clinician_active");
+  assert.equal(reopened.clinicianState, "replied");
+});
+
+test("all medication decision outcomes resolve inside the clinician encounter", () => {
+  for (const outcome of ["appropriate", "test-first", "declined"] as const) {
+    const resolved = encounterReducer(
+      createEncounterState({
+        phase: "prescription",
+        concern: "I think I need an antibiotic.",
+      }),
+      { type: "SET_PRESCRIPTION_OUTCOME", outcome }
+    );
+    assert.equal(resolved.phase, "clinician_active");
+    assert.equal(resolved.prescriptionOutcome, outcome);
+  }
 });
 
 test("eligibility and consent begin explicitly unconfirmed", () => {
