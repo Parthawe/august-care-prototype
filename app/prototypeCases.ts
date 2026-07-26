@@ -5,6 +5,7 @@ export type PrototypeView =
   | "summary"
   | "checkout"
   | "waiting"
+  | "clinician-reviewing"
   | "clinician"
   | "upload"
   | "prescription"
@@ -24,26 +25,38 @@ export const prototypeVariations = [
     id: "classic",
     label: "Classic",
     note: "Balanced August baseline: premium chat, soft cards, restrained clinical detail.",
+    hypothesis: "Continuous care thread",
+    question: "Does familiar chat with light clinical structure feel trustworthy without feeling over-designed?",
+    recommended: true,
   },
   {
     id: "ambient",
     label: "Ambient",
     note: "Softer companion feel with more air, glow, and less visible structure.",
+    hypothesis: "Quiet care companion",
+    question: "Can August collect medical context while feeling calmer and less like an intake form?",
   },
   {
     id: "clinical",
     label: "Clinical",
     note: "More trust-forward: clearer status, sharper surfaces, stronger care-system cues.",
+    hypothesis: "Transparent care system",
+    question: "Do stronger provenance, timing, and status cues increase trust without making the chat feel bureaucratic?",
   },
   {
     id: "concierge",
     label: "Concierge",
     note: "High-touch and premium: darker green shell, elevated panels, guided service feel.",
+    hypothesis: "Guided premium service",
+    question: "Does a more proactive handoff and stronger care-team presence make the experience feel worth paying for?",
   },
 ] satisfies Array<{
   id: PrototypeVariationId;
   label: string;
   note: string;
+  hypothesis: string;
+  question: string;
+  recommended?: boolean;
 }>;
 
 export const prototypeCases = [
@@ -88,6 +101,13 @@ export const prototypeCases = [
     view: "waiting",
     concern: "My throat has hurt for five days and I have a fever.",
     note: "Clinician response expectation management.",
+  },
+  {
+    id: "doctor-reviewing",
+    label: "Doctor reviewing",
+    view: "clinician-reviewing",
+    concern: "My throat has hurt for five days and I have a fever.",
+    note: "A clinician is assigned, but has not replied yet.",
   },
   {
     id: "doctor-handoff",
@@ -183,6 +203,7 @@ export const primaryPrototypeCaseIds = [
   "visit-summary",
   "pricing-checkout",
   "async-wait",
+  "doctor-reviewing",
   "doctor-handoff",
   "report-upload",
   "prescription-request",
@@ -191,6 +212,25 @@ export const primaryPrototypeCaseIds = [
   "emergency",
   "unsupported",
 ] as const;
+
+export const recommendedWalkthroughCaseIds = [
+  "home",
+  "symptom-intake",
+  "three-questions",
+  "visit-summary",
+  "pricing-checkout",
+  "async-wait",
+  "doctor-reviewing",
+  "doctor-handoff",
+  "care-plan",
+  "follow-up",
+] as const;
+
+export const recommendedWalkthroughCases = recommendedWalkthroughCaseIds
+  .map((caseId) => prototypeCases.find((prototypeCase) => prototypeCase.id === caseId))
+  .filter((prototypeCase): prototypeCase is (typeof prototypeCases)[number] =>
+    Boolean(prototypeCase)
+  );
 
 export const primaryPrototypeCases = primaryPrototypeCaseIds
   .map((caseId) => prototypeCases.find((prototypeCase) => prototypeCase.id === caseId))

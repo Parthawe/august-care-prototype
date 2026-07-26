@@ -108,25 +108,25 @@ function Brand({ compact = false }: { compact?: boolean }) {
   );
 }
 
-function BottomNav() {
+function BottomNav({ active }: { active: "home" | "august" }) {
   return (
     <nav className="bottom-nav glass" aria-label="August navigation">
-      <button type="button">
+      <span className={active === "home" ? "active" : ""}>
         <Icon name="home" />
         <span>Home</span>
-      </button>
-      <button type="button">
+      </span>
+      <span>
         <Icon name="file" />
         <span>Visits</span>
-      </button>
-      <button type="button">
+      </span>
+      <span>
         <Icon name="clock" />
         <span>Updates</span>
-      </button>
-      <button type="button" className="august-tab">
+      </span>
+      <span className={active === "august" ? "august-tab active" : "august-tab"}>
         <Icon name="spark" />
         <span>August</span>
-      </button>
+      </span>
     </nav>
   );
 }
@@ -145,11 +145,13 @@ function Header({
   title,
   status,
   onBack,
+  onDetails,
   person = false,
 }: {
   title: string;
   status: string;
   onBack: () => void;
+  onDetails?: () => void;
   person?: boolean;
 }) {
   return (
@@ -165,9 +167,20 @@ function Header({
         <strong>{title}</strong>
         <span>{status}</span>
       </div>
-      <button className="history-button" aria-label="View encounter details">
-        <Icon name="file" />
-      </button>
+      {onDetails ? (
+        <button
+          className="history-button"
+          onClick={onDetails}
+          type="button"
+          aria-label="View encounter details"
+        >
+          <Icon name="file" />
+        </button>
+      ) : (
+        <span className="history-indicator" aria-hidden="true">
+          <Icon name="file" />
+        </span>
+      )}
     </header>
   );
 }
@@ -203,9 +216,11 @@ function Message({
 function Composer({
   placeholder = "Write a message…",
   onSubmit,
+  onAttach,
 }: {
   placeholder?: string;
-  onSubmit?: (value: string) => void;
+  onSubmit: (value: string) => void;
+  onAttach?: () => void;
 }) {
   const [value, setValue] = useState("");
   return (
@@ -218,16 +233,31 @@ function Composer({
         setValue("");
       }}
     >
-      <button type="button" className="attach-button" aria-label="Attach a file">
-        <Icon name="plus" />
-      </button>
+      {onAttach ? (
+        <button
+          type="button"
+          className="attach-button"
+          onClick={onAttach}
+          aria-label="Attach a file"
+        >
+          <Icon name="plus" />
+        </button>
+      ) : (
+        <span className="attach-button composer-decoration" aria-hidden="true">
+          <Icon name="plus" />
+        </span>
+      )}
       <input
         value={value}
         onChange={(event) => setValue(event.target.value)}
         placeholder={placeholder}
         aria-label={placeholder}
       />
-      <button className="send-button" aria-label="Send message">
+      <button
+        className="send-button"
+        disabled={!value.trim()}
+        aria-label="Send message"
+      >
         <Icon name="send" />
       </button>
     </form>
@@ -238,19 +268,58 @@ function PrimaryButton({
   children,
   onClick,
   secondary = false,
+  disabled = false,
 }: {
   children: ReactNode;
   onClick?: () => void;
   secondary?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <button
       className={`primary-button ${secondary ? "secondary-button" : ""}`}
       onClick={onClick}
+      disabled={disabled || !onClick}
+      type="button"
     >
       <span>{children}</span>
       <Icon name="arrow" />
     </button>
+  );
+}
+
+export function hasEmergencySignal(answer: string) {
+  const normalized = answer.toLowerCase().replace(/[’]/g, "'").trim();
+  if (/^(yes|yes,|one of those|i am|i do)$/.test(normalized)) return true;
+
+  const signals = [
+    {
+      positive:
+        /trouble breathing|difficulty breathing|hard to breathe|short of breath|can't breathe|cannot breathe/,
+      negative:
+        /no (?:trouble|difficulty) breathing|not (?:having )?(?:trouble|difficulty) breathing|breathing (?:is )?(?:normal|fine|okay)|can breathe/,
+    },
+    {
+      positive:
+        /unable to swallow|can't swallow|cannot swallow|hard to swallow liquids|can't drink|cannot drink/,
+      negative:
+        /can swallow|able to swallow|can drink|able to drink/,
+    },
+    {
+      positive: /fainted|fainting|passed out|feel like i (?:might|may) pass out/,
+      negative:
+        /didn't faint|did not faint|haven't fainted|have not fainted|no fainting|not fainting/,
+    },
+    {
+      positive: /severe chest pain|chest pressure|pressure in (?:my )?chest/,
+      negative:
+        /no (?:severe )?chest pain|chest pain (?:is )?not severe|no chest pressure/,
+    },
+  ];
+
+  return signals.some(
+    ({ positive, negative }) =>
+      positive.test(normalized) && !negative.test(normalized)
   );
 }
 
@@ -271,7 +340,6 @@ export function AugustPrototype({
     "Sore throat for five days\nPainful swallowing, but able to drink liquids\nTemperature reached 101.5°F\nBreathing normally\nNo medication allergies reported\nMain question: whether treatment or testing is needed"
   );
   const [editingSummary, setEditingSummary] = useState(false);
-  const [notice, setNotice] = useState("");
   const contentRef = useRef<HTMLDivElement>(null);
 
   const openPrototypeCase = useCallback((caseId: PrototypeCaseId, updateUrl = true) => {
@@ -283,7 +351,6 @@ export function AugustPrototype({
     setSafetyAnswer("I’m breathing normally and can drink water.");
     setReviewing(false);
     setEditingSummary(false);
-    setNotice(selectedCase.note);
 
     if (updateUrl) {
       const url = new URL(window.location.href);
@@ -376,6 +443,7 @@ export function AugustPrototype({
             {view === "home" && (
               <HomeScreen
                 onSubmit={startConcern}
+                onUpload={() => setView("upload")}
                 onPrescription={() =>
                   startConcern("I think I need an antibiotic prescription for my sore throat.")
                 }
@@ -386,16 +454,10 @@ export function AugustPrototype({
                 concern={concern || "My throat has hurt for five days."}
                 reviewing={reviewing}
                 onAnswer={(answer) => {
-                  const normalized = answer.toLowerCase();
-                  const clearNegative =
-                    /\b(no|none|not|don’t|don't|do not)\b/.test(normalized);
-                  const dangerSignal =
-                    /\byes\b|trouble breathing|can.?t swallow|cannot swallow|faint|chest pain/.test(
-                      normalized
-                    );
                   setSafetyAnswer(answer);
-                  setView(dangerSignal && !clearNegative ? "emergency" : "details");
+                  setView(hasEmergencySignal(answer) ? "emergency" : "details");
                 }}
+                onUpload={() => setView("upload")}
                 onBack={reset}
               />
             )}
@@ -403,6 +465,7 @@ export function AugustPrototype({
               <DetailsScreen
                 safetyAnswer={safetyAnswer || "I’m breathing normally and can drink water."}
                 onContinue={() => setView("summary")}
+                onUpload={() => setView("upload")}
                 onBack={() => setView("intake")}
               />
             )}
@@ -424,14 +487,20 @@ export function AugustPrototype({
             )}
             {view === "waiting" && (
               <WaitingScreen
-                onContinue={() => setView("clinician")}
+                onContinue={() => setView("clinician-reviewing")}
+                onViewSummary={() => setView("summary")}
                 onBack={() => setView("checkout")}
+              />
+            )}
+            {view === "clinician-reviewing" && (
+              <ClinicianReviewingScreen
+                onContinue={() => setView("clinician")}
+                onUpload={() => setView("upload")}
+                onBack={() => setView("waiting")}
               />
             )}
             {view === "clinician" && (
               <ClinicianScreen
-                notice={notice}
-                setNotice={setNotice}
                 onUpload={() => setView("upload")}
                 onPlan={() => setView("plan")}
                 onBack={() => setView("waiting")}
@@ -446,6 +515,7 @@ export function AugustPrototype({
             {view === "prescription" && (
               <PrescriptionScreen
                 onContinue={() => setView("checkout")}
+                onUpload={() => setView("upload")}
                 onBack={reset}
               />
             )}
@@ -453,6 +523,7 @@ export function AugustPrototype({
               <PlanScreen
                 onBack={() => setView("clinician")}
                 onFollowUp={() => setView("followup")}
+                onExplain={() => setView("clinician")}
                 onHome={reset}
               />
             )}
@@ -460,13 +531,14 @@ export function AugustPrototype({
               <FollowUpScreen
                 onBack={() => setView("plan")}
                 onEmergency={() => setView("emergency")}
+                onUpload={() => setView("upload")}
                 onHome={reset}
               />
             )}
             {view === "emergency" && <EmergencyScreen onBack={reset} />}
             {view === "unsupported" && <UnsupportedScreen onBack={reset} />}
           </div>
-          <BottomNav />
+          <BottomNav active={view === "home" ? "home" : "august"} />
         </div>
       </section>
     </main>
@@ -475,9 +547,11 @@ export function AugustPrototype({
 
 function HomeScreen({
   onSubmit,
+  onUpload,
   onPrescription,
 }: {
   onSubmit: (value: string) => void;
+  onUpload: () => void;
   onPrescription: () => void;
 }) {
   const [value, setValue] = useState("");
@@ -489,7 +563,7 @@ function HomeScreen({
     <div className="screen home-screen">
       <nav className="home-nav">
         <Brand />
-        <button className="avatar">P</button>
+        <span className="avatar" aria-label="Parth profile">P</span>
       </nav>
       <section className="home-hero">
         <Pill>Secure · Private · Built by doctors</Pill>
@@ -505,7 +579,12 @@ function HomeScreen({
           aria-label="Describe what’s going on"
         />
         <div>
-          <button type="button" className="attach-button" aria-label="Attach">
+          <button
+            type="button"
+            className="attach-button"
+            onClick={onUpload}
+            aria-label="Attach"
+          >
             <Icon name="plus" />
           </button>
           <button className="send-button" aria-label="Start conversation">
@@ -566,11 +645,13 @@ function IntakeScreen({
   concern,
   reviewing,
   onAnswer,
+  onUpload,
   onBack,
 }: {
   concern: string;
   reviewing: boolean;
   onAnswer: (answer: string) => void;
+  onUpload: () => void;
   onBack: () => void;
 }) {
   return (
@@ -610,6 +691,7 @@ function IntakeScreen({
         <Composer
           placeholder="Write your answer…"
           onSubmit={onAnswer}
+          onAttach={onUpload}
         />
       )}
     </div>
@@ -619,12 +701,15 @@ function IntakeScreen({
 function DetailsScreen({
   safetyAnswer,
   onContinue,
+  onUpload,
   onBack,
 }: {
   safetyAnswer: string;
   onContinue: () => void;
+  onUpload: () => void;
   onBack: () => void;
 }) {
+  const [extraAnswer, setExtraAnswer] = useState("");
   return (
     <div className="screen conversation-screen">
       <Header title="Sore throat" status="August AI · Medical intake" onBack={onBack} />
@@ -663,9 +748,23 @@ function DetailsScreen({
           </div>
           <Pill>Draft</Pill>
         </div>
+        {extraAnswer && (
+          <>
+            <Message author="You" role="Patient · Added" patient>
+              {extraAnswer}
+            </Message>
+            <Message author="August AI" role="AI care guide">
+              I added that to the clinician summary.
+            </Message>
+          </>
+        )}
         <PrimaryButton onClick={onContinue}>Review what August collected</PrimaryButton>
       </div>
-      <Composer />
+      <Composer
+        placeholder="Add anything else…"
+        onSubmit={setExtraAnswer}
+        onAttach={onUpload}
+      />
     </div>
   );
 }
@@ -677,6 +776,7 @@ function UploadScreen({
   onContinue: () => void;
   onBack: () => void;
 }) {
+  const [note, setNote] = useState("");
   return (
     <div className="screen conversation-screen upload-screen">
       <Header title="Lab report" status="August AI · Reading upload" onBack={onBack} />
@@ -717,20 +817,31 @@ function UploadScreen({
           <div><Icon name="check" /><span>Collected today</span></div>
           <div><Icon name="doctor" /><span>Clinician review recommended</span></div>
         </section>
+        {note && (
+          <Message author="You" role="Patient · Note added" patient>
+            {note}
+          </Message>
+        )}
         <PrimaryButton onClick={onContinue}>Add to visit summary</PrimaryButton>
       </div>
-      <Composer placeholder="Add a note with your result…" />
+      <Composer
+        placeholder="Add a note with your result…"
+        onSubmit={setNote}
+      />
     </div>
   );
 }
 
 function PrescriptionScreen({
   onContinue,
+  onUpload,
   onBack,
 }: {
   onContinue: () => void;
+  onUpload: () => void;
   onBack: () => void;
 }) {
+  const [extraAnswer, setExtraAnswer] = useState("");
   return (
     <div className="screen conversation-screen">
       <Header title="Medication request" status="August AI · Assessment first" onBack={onBack} />
@@ -768,9 +879,23 @@ function PrescriptionScreen({
           </div>
           <Pill>Review</Pill>
         </section>
+        {extraAnswer && (
+          <>
+            <Message author="You" role="Patient · Added" patient>
+              {extraAnswer}
+            </Message>
+            <Message author="August AI" role="AI care guide">
+              I added that for the clinician to review.
+            </Message>
+          </>
+        )}
         <PrimaryButton onClick={onContinue}>Continue to clinician review</PrimaryButton>
       </div>
-      <Composer placeholder="Answer in your own words…" />
+      <Composer
+        placeholder="Add medication context…"
+        onSubmit={setExtraAnswer}
+        onAttach={onUpload}
+      />
     </div>
   );
 }
@@ -883,7 +1008,7 @@ function CheckoutScreen({
         </div>
         <section className="included-card">
           <h3>Before you continue</h3>
-          <div><Icon name="pin" /><span>You’re currently in <strong>California</strong></span><button>Change</button></div>
+          <div><Icon name="pin" /><span>You’re currently in <strong>California</strong></span><small>Current</small></div>
           <div><Icon name="clock" /><span>You can leave and return anytime</span></div>
           <div><Icon name="shield" /><span>No prescription is guaranteed</span></div>
         </section>
@@ -901,7 +1026,7 @@ function CheckoutScreen({
           <span>Total today</span>
           <strong>$39.00</strong>
         </div>
-        <PrimaryButton onClick={agreed ? onContinue : undefined}>
+        <PrimaryButton onClick={onContinue} disabled={!agreed}>
           Confirm and send for review
         </PrimaryButton>
         <p className="legal-line">
@@ -914,9 +1039,11 @@ function CheckoutScreen({
 
 function WaitingScreen({
   onContinue,
+  onViewSummary,
   onBack,
 }: {
   onContinue: () => void;
+  onViewSummary: () => void;
   onBack: () => void;
 }) {
   return (
@@ -946,59 +1073,37 @@ function WaitingScreen({
           <span><strong>If symptoms worsen</strong>Get urgent help.</span>
         </div>
         <PrimaryButton onClick={onContinue}>Preview clinician joining</PrimaryButton>
-        <button className="text-button">View submitted summary</button>
+        <button className="text-button" onClick={onViewSummary} type="button">
+          View submitted summary
+        </button>
       </div>
     </div>
   );
 }
 
-function ClinicianScreen({
-  notice,
-  setNotice,
+function ClinicianReviewingScreen({
+  onContinue,
   onUpload,
-  onPlan,
   onBack,
 }: {
-  notice: string;
-  setNotice: (notice: string) => void;
+  onContinue: () => void;
   onUpload: () => void;
-  onPlan: () => void;
   onBack: () => void;
 }) {
+  const [note, setNote] = useState("");
+
   return (
     <div className="screen conversation-screen clinician-screen">
       <Header
         title="Maya Rao, MD"
-        status="Human clinician · Active"
+        status="Human clinician · Reviewing"
         onBack={onBack}
         person
       />
-      <div className="mode-switch">
-        <button className="active">Dr. Rao</button>
-        <button
-          onClick={() =>
-            setNotice(
-              "August can explain information and help prepare questions. Dr. Rao makes clinical decisions."
-            )
-          }
-        >
-          Ask August
-        </button>
-        <button onClick={() => setNotice("Your full care history is up to date.")}>
-          History
-        </button>
-      </div>
       <div className="conversation-body">
-        {notice && (
-          <div className="mode-notice">
-            <Icon name="spark" />
-            <span>{notice}</span>
-            <button onClick={() => setNotice("")}>×</button>
-          </div>
-        )}
         <div className="joined-event">
           <span className="line" />
-          <Pill tone="white">Clinician joined · 10:16 AM</Pill>
+          <Pill tone="white">Assigned · 10:16 AM</Pill>
           <span className="line" />
         </div>
         <section className="doctor-profile-card">
@@ -1006,7 +1111,7 @@ function ClinicianScreen({
           <div>
             <strong>Maya Rao, MD</strong>
             <span>Board-certified · Licensed in CA</span>
-            <small>Reviewed your August summary and safety answers.</small>
+            <small>Reviewing your summary, safety answers, and uploaded files.</small>
           </div>
         </section>
         <div className="reviewing-state clinician-wait">
@@ -1016,35 +1121,199 @@ function ClinicianScreen({
             <small>Typical response today: 30–60 minutes</small>
           </div>
         </div>
-        <Message author="Maya Rao, MD" role="Human clinician · CA licensed" clinician>
-          I’m Dr. Rao. I reviewed your fever, sore throat, and safety answers.
-        </Message>
-        <Message author="Maya Rao, MD" role="Human clinician · 10:18 AM" clinician>
-          Your symptoms could be strep throat. I recommend a rapid test today.
-          Any rash or one-sided swelling?
-        </Message>
-        <Message author="You" role="Patient · Delivered" patient>
-          No rash, and the swelling feels even on both sides.
-        </Message>
-        <button className="upload-inline" onClick={onUpload}>
-          <Icon name="lab" />
-          <span>Upload a report or test result</span>
-          <Icon name="arrow" />
-        </button>
-        <section className="plan-preview">
-          <div className="plan-preview-top">
-            <span><Icon name="check" /></span>
-            <div><small>Signed by Dr. Rao</small><strong>Your care plan is ready</strong></div>
+        <section className="waiting-expectation">
+          <div>
+            <Icon name="clock" />
+            <span>
+              <strong>You can leave this screen.</strong>
+              We’ll notify you when Dr. Rao replies.
+            </span>
           </div>
-          <div className="plan-preview-items">
-            <span>Rapid strep test</span>
-            <span>Relief while you wait</span>
-            <span>Follow-up in 24 hours</span>
+          <div>
+            <Icon name="shield" />
+            <span>
+              <strong>If symptoms worsen,</strong>
+              get urgent help instead of waiting here.
+            </span>
           </div>
-          <button onClick={onPlan}>Open care plan <Icon name="arrow" /></button>
         </section>
+        {note && (
+          <Message author="You" role="Patient · Added for Dr. Rao" patient>
+            {note}
+          </Message>
+        )}
+        <PrimaryButton onClick={onContinue}>Preview Dr. Rao’s reply</PrimaryButton>
       </div>
-      <Composer placeholder="Message Dr. Rao…" />
+      <Composer
+        placeholder="Add a note for Dr. Rao…"
+        onSubmit={setNote}
+        onAttach={onUpload}
+      />
+    </div>
+  );
+}
+
+function ClinicianScreen({
+  onUpload,
+  onPlan,
+  onBack,
+}: {
+  onUpload: () => void;
+  onPlan: () => void;
+  onBack: () => void;
+}) {
+  const [mode, setMode] = useState<"doctor" | "august" | "history">("doctor");
+  const [patientMessage, setPatientMessage] = useState("");
+
+  const submitMessage = (value: string) => {
+    if (mode === "history") setMode("doctor");
+    setPatientMessage(value);
+  };
+
+  return (
+    <div className="screen conversation-screen clinician-screen">
+      <Header
+        title={mode === "august" ? "August" : "Maya Rao, MD"}
+        status={
+          mode === "august"
+            ? "AI care guide · Explaining Dr. Rao’s plan"
+            : "Human clinician · Active"
+        }
+        onBack={onBack}
+        person={mode !== "august"}
+      />
+      <div className="mode-switch" aria-label="Conversation view">
+        <button
+          className={mode === "doctor" ? "active" : ""}
+          onClick={() => setMode("doctor")}
+          type="button"
+          aria-pressed={mode === "doctor"}
+        >
+          Dr. Rao
+        </button>
+        <button
+          className={mode === "august" ? "active" : ""}
+          onClick={() => setMode("august")}
+          type="button"
+          aria-pressed={mode === "august"}
+        >
+          Ask August
+        </button>
+        <button
+          className={mode === "history" ? "active" : ""}
+          onClick={() => setMode("history")}
+          type="button"
+          aria-pressed={mode === "history"}
+        >
+          History
+        </button>
+      </div>
+      <div className="conversation-body" aria-live="polite">
+        {mode === "doctor" && (
+          <>
+            <div className="joined-event">
+              <span className="line" />
+              <Pill tone="white">Dr. Rao replied · 10:18 AM</Pill>
+              <span className="line" />
+            </div>
+            <Message author="Maya Rao, MD" role="Human clinician · CA licensed" clinician>
+              I reviewed your fever, throat pain, and safety answers.
+            </Message>
+            <Message author="Maya Rao, MD" role="Human clinician · 10:18 AM" clinician>
+              This could be strep throat. I recommend a rapid test today. Any
+              rash or one-sided swelling?
+            </Message>
+            <Message author="You" role="Patient · Delivered" patient>
+              No rash, and the swelling feels even on both sides.
+            </Message>
+            {patientMessage && (
+              <Message author="You" role="Patient · Delivered" patient>
+                {patientMessage}
+              </Message>
+            )}
+            <button className="upload-inline" onClick={onUpload} type="button">
+              <Icon name="lab" />
+              <span>Upload a report or test result</span>
+              <Icon name="arrow" />
+            </button>
+            <section className="plan-preview">
+              <div className="plan-preview-top">
+                <span><Icon name="check" /></span>
+                <div><small>Signed by Dr. Rao</small><strong>Your care plan is ready</strong></div>
+              </div>
+              <div className="plan-preview-items">
+                <span>Rapid strep test</span>
+                <span>Relief while you wait</span>
+                <span>Follow-up in 24 hours</span>
+              </div>
+              <button onClick={onPlan} type="button">
+                Open care plan <Icon name="arrow" />
+              </button>
+            </section>
+          </>
+        )}
+
+        {mode === "august" && (
+          <>
+            <div className="mode-notice">
+              <Icon name="spark" />
+              <span>
+                August can explain and help prepare questions. Dr. Rao makes
+                clinical decisions.
+              </span>
+            </div>
+            <Message author="August AI" role="AI care guide">
+              Dr. Rao recommends a rapid strep test because your fever, five
+              days of throat pain, and recent exposure make testing useful.
+            </Message>
+            <Message author="August AI" role="AI care guide">
+              What would you like me to explain before you reply to Dr. Rao?
+            </Message>
+            {patientMessage && (
+              <>
+                <Message author="You" role="Patient · Private to August" patient>
+                  {patientMessage}
+                </Message>
+                <Message author="August AI" role="AI care guide">
+                  The rapid test checks for group A strep. A negative result may
+                  still need clinician interpretation alongside your symptoms.
+                </Message>
+              </>
+            )}
+          </>
+        )}
+
+        {mode === "history" && (
+          <section className="care-history">
+            <div>
+              <span>9:42 AM</span>
+              <strong>August prepared your visit</strong>
+              <small>Symptoms, safety answers, and allergies summarized.</small>
+            </div>
+            <div>
+              <span>10:16 AM</span>
+              <strong>Dr. Rao began review</strong>
+              <small>California license and eligibility confirmed.</small>
+            </div>
+            <div>
+              <span>10:18 AM</span>
+              <strong>Dr. Rao replied</strong>
+              <small>Rapid strep test recommended.</small>
+            </div>
+          </section>
+        )}
+      </div>
+      <Composer
+        placeholder={
+          mode === "august"
+            ? "Ask August about the plan…"
+            : mode === "history"
+              ? "Add a note for Dr. Rao…"
+              : "Message Dr. Rao…"
+        }
+        onSubmit={submitMessage}
+        onAttach={onUpload}
+      />
     </div>
   );
 }
@@ -1052,10 +1321,12 @@ function ClinicianScreen({
 function PlanScreen({
   onBack,
   onFollowUp,
+  onExplain,
   onHome,
 }: {
   onBack: () => void;
   onFollowUp: () => void;
+  onExplain: () => void;
   onHome: () => void;
 }) {
   return (
@@ -1080,7 +1351,7 @@ function PlanScreen({
               <small>Today</small>
               <h3>Complete a rapid strep test</h3>
               <p>Your lab order has been received. Choose a nearby location.</p>
-              <button>Choose a lab <Icon name="arrow" /></button>
+              <span className="timeline-action">Lab order ready</span>
             </article>
           </div>
           <div>
@@ -1089,7 +1360,7 @@ function PlanScreen({
               <small>While you wait</small>
               <h3>Manage pain and fever</h3>
               <p>Acetaminophen as directed on the label, fluids, and rest.</p>
-              <button>See instructions <Icon name="arrow" /></button>
+              <span className="timeline-action">Instructions included</span>
             </article>
           </div>
           <div>
@@ -1110,7 +1381,9 @@ function PlanScreen({
         </section>
         <div className="plan-actions">
           <PrimaryButton onClick={onFollowUp}>Preview follow-up check-in</PrimaryButton>
-          <button className="ask-august"><Icon name="spark" /> Ask August to explain</button>
+          <button className="ask-august" onClick={onExplain} type="button">
+            <Icon name="spark" /> Ask August to explain
+          </button>
           <button className="text-button" onClick={onHome}>Done for now</button>
         </div>
       </div>
@@ -1121,12 +1394,15 @@ function PlanScreen({
 function FollowUpScreen({
   onBack,
   onEmergency,
+  onUpload,
   onHome,
 }: {
   onBack: () => void;
   onEmergency: () => void;
+  onUpload: () => void;
   onHome: () => void;
 }) {
+  const [followUpNote, setFollowUpNote] = useState("");
   return (
     <div className="screen conversation-screen followup-screen">
       <Header title="Follow-up" status="August AI · Check-in" onBack={onBack} />
@@ -1152,17 +1428,33 @@ function FollowUpScreen({
           <div><Icon name="clock" /><span>Next check-in tomorrow</span></div>
           <div><Icon name="doctor" /><span>Doctor thread stays available</span></div>
         </section>
+        {followUpNote && (
+          <>
+            <Message author="You" role="Patient · Added" patient>
+              {followUpNote}
+            </Message>
+            <Message author="August AI" role="AI care guide">
+              I added that to this follow-up. If it becomes hard to breathe or
+              swallow liquids, get urgent help.
+            </Message>
+          </>
+        )}
         <PrimaryButton onClick={onHome}>Close for now</PrimaryButton>
         <button className="text-button" onClick={onEmergency}>
           Symptoms are getting worse
         </button>
       </div>
-      <Composer placeholder="Tell August how you feel…" />
+      <Composer
+        placeholder="Tell August how you feel…"
+        onSubmit={setFollowUpNote}
+        onAttach={onUpload}
+      />
     </div>
   );
 }
 
 function EmergencyScreen({ onBack }: { onBack: () => void }) {
+  const [actionNotice, setActionNotice] = useState("");
   return (
     <div className="screen emergency-screen">
       <div className="emergency-top">
@@ -1176,8 +1468,21 @@ function EmergencyScreen({ onBack }: { onBack: () => void }) {
         <p>
           Trouble breathing, fainting, or severe chest pain can be urgent.
         </p>
-        <button className="emergency-call"><Icon name="phone" /><span><small>Call emergency services</small>911</span></button>
-        <button className="emergency-location"><Icon name="pin" /><span><strong>Find the nearest emergency department</strong><small>Uses your current location</small></span><Icon name="arrow" /></button>
+        <button
+          className="emergency-call"
+          onClick={() => setActionNotice("On a phone, this would open emergency calling.")}
+          type="button"
+        >
+          <Icon name="phone" /><span><small>Call emergency services</small>911</span>
+        </button>
+        <button
+          className="emergency-location"
+          onClick={() => setActionNotice("Location results are simulated in this prototype.")}
+          type="button"
+        >
+          <Icon name="pin" /><span><strong>Find the nearest emergency department</strong><small>Uses your current location</small></span><Icon name="arrow" />
+        </button>
+        {actionNotice && <div className="emergency-demo-note" aria-live="polite">{actionNotice}</div>}
         <div className="emergency-guidance">
           <strong>While help is on the way</strong>
           <ul>
@@ -1194,6 +1499,18 @@ function EmergencyScreen({ onBack }: { onBack: () => void }) {
 }
 
 function UnsupportedScreen({ onBack }: { onBack: () => void }) {
+  const downloadSummary = () => {
+    const summaryText =
+      "August care summary\n\nMedication requested: Adderall refill\nCare boundary: controlled medication requests are not supported through August\nSuggested next step: contact the established prescriber or ongoing primary care";
+    const blob = new Blob([summaryText], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "august-care-summary.txt";
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="screen boundary-screen">
       <Header
@@ -1220,7 +1537,7 @@ function UnsupportedScreen({ onBack }: { onBack: () => void }) {
           <div><i>1</i><span><strong>Contact your current prescriber</strong><small>Ask about their refill process and timing.</small></span></div>
           <div><i>2</i><span><strong>Find ongoing primary care</strong><small>We can help you prepare a concise summary.</small></span></div>
         </section>
-        <PrimaryButton>Download my care summary</PrimaryButton>
+        <PrimaryButton onClick={downloadSummary}>Download my care summary</PrimaryButton>
         <PrimaryButton secondary onClick={onBack}>Start a different concern</PrimaryButton>
         <p className="legal-line">If stopping your medication could be unsafe, contact your prescriber or pharmacist today.</p>
       </div>

@@ -34,7 +34,7 @@ test("renders the August care prototype", async () => {
   assert.match(html, /Secure · Private · Built by doctors/);
   assert.match(html, /Private by design/);
   assert.match(html, /Upload result/);
-  assert.match(html, /August<\/span><\/button><\/nav>/);
+  assert.match(html, /class="august-tab[^"]*".*?August<\/span><\/span><\/nav>/s);
   assert.doesNotMatch(html, /Your site is taking shape/);
   assert.doesNotMatch(html, /Product design prototype/);
 });
@@ -45,8 +45,20 @@ test("renders a direct clinician handoff case", async () => {
 
   const html = await response.text();
   assert.match(html, /Maya Rao, MD/);
+  assert.match(html, /Dr\. Rao replied · 10:18 AM/);
+  assert.match(html, /Ask August/);
+  assert.doesNotMatch(html, /Dr\. Rao is reviewing/);
+});
+
+test("separates clinician reviewing from clinician replies", async () => {
+  const response = await render("/cases/doctor-reviewing");
+  assert.equal(response.status, 200);
+
+  const html = await response.text();
   assert.match(html, /Dr\. Rao is reviewing/);
   assert.match(html, /Typical response today: 30–60 minutes/);
+  assert.match(html, /You can leave this screen/);
+  assert.doesNotMatch(html, /Dr\. Rao replied · 10:18 AM/);
 });
 
 test("renders a variation for a scenario", async () => {
@@ -64,6 +76,9 @@ test("renders the prototype case directory", async () => {
 
   const html = await response.text();
   assert.match(html, /Review by case\./);
+  assert.match(html, /Recommended interview path/);
+  assert.match(html, /Each tests a different idea/);
   assert.match(html, /\/cases\/symptom-intake\/classic/);
+  assert.match(html, /\/cases\/doctor-reviewing\/classic/);
   assert.match(html, /\/cases\/doctor-handoff\/concierge/);
 });
