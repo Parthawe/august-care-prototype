@@ -1,10 +1,11 @@
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { AugustPrototype } from "../../../AugustPrototype";
 import {
   getPrototypeCase,
   getPrototypeVariation,
   prototypeCases,
   prototypeVariations,
+  supportsVariationComparison,
 } from "../../../prototypeCases";
 
 type Props = {
@@ -49,10 +50,19 @@ export default async function PrototypeCaseVariationPage({ params }: Props) {
     notFound();
   }
 
+  if (
+    prototypeVariation.id !== "classic" &&
+    !supportsVariationComparison(prototypeCase.id)
+  ) {
+    redirect(`/cases/${prototypeCase.id}/classic`);
+  }
+
   return (
     <AugustPrototype
+      initialCaseId={prototypeCase.id}
       initialView={prototypeCase.view}
       initialConcern={prototypeCase.concern}
+      initialFixture={prototypeCase.fixture}
       variation={prototypeVariation.id}
     />
   );

@@ -19,7 +19,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "August — Care that continues",
     description:
-      "A clear, safe handoff from August AI to licensed clinical care.",
+      "A clear, safe handoff from August AI to human clinical care.",
     images: ["/og.png"],
   },
 };

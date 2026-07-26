@@ -5,7 +5,7 @@ import { getPrototypeCase, getPrototypeVariation } from "./prototypeCases";
 export const metadata: Metadata = {
   title: "August — Care that continues",
   description:
-    "An interactive prototype showing a safe, legible handoff from August AI to a licensed clinician.",
+    "An interactive prototype showing a clear handoff from August AI to human clinical care.",
 };
 
 export default async function Home({
@@ -22,8 +22,10 @@ export default async function Home({
 
   return (
     <AugustPrototype
+      initialCaseId={prototypeCase?.id ?? "home"}
       initialView={prototypeCase?.view}
       initialConcern={prototypeCase?.concern}
+      initialFixture={prototypeCase?.fixture}
       variation={prototypeVariation.id}
     />
   );

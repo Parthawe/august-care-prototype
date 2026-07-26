@@ -43,3 +43,5 @@ next-env.d.ts
 
 # Impeccable runtime output and local visual-review state
 /.impeccable/
+/test-results/
+/playwright-report/

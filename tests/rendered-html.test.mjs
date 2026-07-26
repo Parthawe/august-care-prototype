@@ -22,7 +22,7 @@ async function render(path = "/") {
   );
 }
 
-test("renders the August care prototype", async () => {
+test("renders the August encounter without unsupported claims", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
@@ -31,23 +31,23 @@ test("renders the August care prototype", async () => {
   assert.match(html, /<title>August — Care that continues<\/title>/i);
   assert.match(html, /Ask August anything\./);
   assert.match(html, /Good morning, Parth/);
-  assert.match(html, /Secure · Private · Built by doctors/);
-  assert.match(html, /Private by design/);
+  assert.match(html, /AI guide \+ human care/);
   assert.match(html, /Upload result/);
-  assert.match(html, /class="august-tab[^"]*".*?August<\/span><\/span><\/nav>/s);
-  assert.doesNotMatch(html, /Your site is taking shape/);
-  assert.doesNotMatch(html, /Product design prototype/);
+  assert.doesNotMatch(html, /Secure · Private · Built by doctors/i);
+  assert.doesNotMatch(html, /board.certified|licensed clinician|HIPAA/i);
+  assert.doesNotMatch(html, />Preview\b|>Prototype\b/i);
 });
 
-test("renders a direct clinician handoff case", async () => {
+test("renders a private August sidecar beside the clinician conversation", async () => {
   const response = await render("/cases/doctor-handoff");
   assert.equal(response.status, 200);
 
   const html = await response.text();
-  assert.match(html, /Maya Rao, MD/);
-  assert.match(html, /Dr\. Rao replied · 10:18 AM/);
+  assert.match(html, /Maya Rao/);
+  assert.match(html, /Human clinician conversation/);
   assert.match(html, /Ask August/);
-  assert.doesNotMatch(html, /Dr\. Rao is reviewing/);
+  assert.match(html, /Fictional sample clinician/);
+  assert.doesNotMatch(html, /Maya Rao, MD|board.certified/i);
 });
 
 test("separates clinician reviewing from clinician replies", async () => {
@@ -55,30 +55,33 @@ test("separates clinician reviewing from clinician replies", async () => {
   assert.equal(response.status, 200);
 
   const html = await response.text();
-  assert.match(html, /Dr\. Rao is reviewing/);
-  assert.match(html, /Typical response today: 30–60 minutes/);
+  assert.match(html, /Maya is reviewing/);
+  assert.match(html, /No reply has been sent yet/);
   assert.match(html, /You can leave this screen/);
-  assert.doesNotMatch(html, /Dr\. Rao replied · 10:18 AM/);
+  assert.doesNotMatch(html, /Typical response today|guaranteed response/i);
 });
 
-test("renders a variation for a scenario", async () => {
-  const response = await render("/cases/doctor-handoff/concierge");
-  assert.equal(response.status, 200);
+test("renders a variation only at a signature moment", async () => {
+  const comparison = await render("/cases/doctor-handoff/concierge");
+  assert.equal(comparison.status, 200);
+  assert.match(await comparison.text(), /variation-concierge/);
 
-  const html = await response.text();
-  assert.match(html, /variation-concierge/);
-  assert.match(html, /Maya Rao, MD/);
+  const resolved = await render("/cases/emergency/concierge");
+  assert.ok([301, 302, 307, 308].includes(resolved.status));
+  assert.match(resolved.headers.get("location") ?? "", /\/cases\/emergency\/classic$/);
 });
 
-test("renders the prototype case directory", async () => {
+test("renders the focused prototype review hub", async () => {
   const response = await render("/cases");
   assert.equal(response.status, 200);
 
   const html = await response.text();
-  assert.match(html, /Review by case\./);
-  assert.match(html, /Recommended interview path/);
-  assert.match(html, /Each tests a different idea/);
+  assert.match(html, /Review one care encounter\./);
+  assert.match(html, /One continuous care story/);
+  assert.match(html, /Four hypotheses, three moments/);
+  assert.match(html, /One recommended design per case/);
   assert.match(html, /\/cases\/symptom-intake\/classic/);
-  assert.match(html, /\/cases\/doctor-reviewing\/classic/);
   assert.match(html, /\/cases\/doctor-handoff\/concierge/);
+  assert.match(html, /\/cases\/emergency\/classic/);
+  assert.doesNotMatch(html, /\/cases\/emergency\/concierge/);
 });

@@ -1,5 +1,32 @@
 # August AI Prototype — Design Audit and Improvement Plan
 
+## Implementation status — July 25, 2026
+
+The improvement plan below has now been implemented in the code prototype.
+The current artifact uses one deterministic encounter model, separate
+clinician-visible and private-August message channels, chronological clinician
+states, origin-aware uploads, explicit eligibility and unchecked consent, and
+resolved emergency, report, medication, and unsupported-care paths.
+
+The review architecture now prioritizes one recommended end-to-end encounter.
+Classic, Ambient, Clinical, and Concierge are compared only at Home, safety
+intake, and clinician handoff; resolved edge cases use one recommended design.
+Legacy variation URLs redirect to the Classic resolved path.
+
+Validation currently includes:
+
+- reducer coverage for safety language, one-question intake, message privacy,
+  upload return origin, chronological plan signing, eligibility, and consent;
+- rendered-route checks for unsupported claims and focused review links;
+- 33 Playwright checks across 320×568, 390×844, and 430×932;
+- serious/critical axe checks, reduced-motion rendering, keyboard focus,
+  200% root text sizing, fixed-composer clearance, and visual captures.
+
+The remaining product layer—not silently assumed by this interview prototype—
+includes caregiver authorization, minors, offline recovery, payment failure,
+clinician unavailability, localization, real jurisdiction rules, verified
+credentials, and clinical/legal review.
+
 ## Executive Assessment
 
 The prototype has a strong product thesis, a coherent August-inspired palette, useful scenario deep links, and a clear AI-to-clinician story. Its largest interview risk is not missing screens. It is that several screens feel like polished storyboards rather than a working conversation, while the four visual variations currently test styling more than product hypotheses.

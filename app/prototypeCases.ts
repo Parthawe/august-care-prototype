@@ -1,18 +1,22 @@
-export type PrototypeView =
-  | "home"
+export type EncounterPhase =
+  | "entry"
+  | "safety"
   | "intake"
-  | "details"
   | "summary"
+  | "eligibility"
   | "checkout"
-  | "waiting"
-  | "clinician-reviewing"
-  | "clinician"
-  | "upload"
+  | "matching"
+  | "clinician_reviewing"
+  | "clinician_active"
+  | "plan_ready"
+  | "follow_up"
+  | "report"
   | "prescription"
-  | "plan"
-  | "followup"
   | "emergency"
   | "unsupported";
+
+// Kept as a compatibility alias for existing imports and shared links.
+export type PrototypeView = EncounterPhase;
 
 export type PrototypeVariationId =
   | "classic"
@@ -20,35 +24,58 @@ export type PrototypeVariationId =
   | "clinical"
   | "concierge";
 
+export type PrototypeFixture =
+  | "default"
+  | "upload-low-confidence"
+  | "prescription-appropriate"
+  | "prescription-test-first"
+  | "prescription-declined";
+
+export type PrototypeCase = {
+  id: string;
+  label: string;
+  phase: EncounterPhase;
+  view: EncounterPhase;
+  concern: string;
+  note: string;
+  fixture?: PrototypeFixture;
+  group: "walkthrough" | "edge" | "supporting";
+  compareVariations?: boolean;
+};
+
 export const prototypeVariations = [
   {
     id: "classic",
     label: "Classic",
-    note: "Balanced August baseline: premium chat, soft cards, restrained clinical detail.",
+    note: "Balanced August baseline: one continuous care encounter.",
     hypothesis: "Continuous care thread",
-    question: "Does familiar chat with light clinical structure feel trustworthy without feeling over-designed?",
+    question:
+      "Does familiar chat with restrained clinical structure feel trustworthy?",
     recommended: true,
   },
   {
     id: "ambient",
     label: "Ambient",
-    note: "Softer companion feel with more air, glow, and less visible structure.",
+    note: "Quieter surfaces, softer pacing, and less visible system structure.",
     hypothesis: "Quiet care companion",
-    question: "Can August collect medical context while feeling calmer and less like an intake form?",
+    question:
+      "Can August collect context while feeling calm and conversational?",
   },
   {
     id: "clinical",
     label: "Clinical",
-    note: "More trust-forward: clearer status, sharper surfaces, stronger care-system cues.",
+    note: "Stronger provenance, timestamps, and explicit care-system state.",
     hypothesis: "Transparent care system",
-    question: "Do stronger provenance, timing, and status cues increase trust without making the chat feel bureaucratic?",
+    question:
+      "Does visible provenance improve trust without feeling bureaucratic?",
   },
   {
     id: "concierge",
     label: "Concierge",
-    note: "High-touch and premium: darker green shell, elevated panels, guided service feel.",
+    note: "A more proactive, high-touch handoff with stronger care-team presence.",
     hypothesis: "Guided premium service",
-    question: "Does a more proactive handoff and stronger care-team presence make the experience feel worth paying for?",
+    question:
+      "Does proactive guidance make asynchronous care feel worth paying for?",
   },
 ] satisfies Array<{
   id: PrototypeVariationId;
@@ -63,184 +90,219 @@ export const prototypeCases = [
   {
     id: "home",
     label: "Home",
-    view: "home",
+    phase: "entry",
+    view: "entry",
     concern: "",
-    note: "Start state and August entry point.",
+    note: "Natural entry point for symptoms, reports, medication, or a doctor.",
+    group: "walkthrough",
+    compareVariations: true,
   },
   {
     id: "symptom-intake",
-    label: "Symptom intake",
-    view: "intake",
+    label: "Safety check",
+    phase: "safety",
+    view: "safety",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Human-feeling first safety question.",
+    note: "Free-text safety interruption before routine intake.",
+    group: "walkthrough",
+    compareVariations: true,
   },
   {
     id: "three-questions",
-    label: "Three-question intake",
-    view: "details",
+    label: "Focused intake",
+    phase: "intake",
+    view: "intake",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "August asks enough before recommending care.",
+    note: "One active question at a time before recommending care.",
+    group: "walkthrough",
   },
   {
     id: "visit-summary",
     label: "Visit summary",
+    phase: "summary",
     view: "summary",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Reviewable clinician handoff.",
+    note: "Patient-reviewable context before anything is shared.",
+    group: "walkthrough",
+  },
+  {
+    id: "eligibility",
+    label: "Eligibility",
+    phase: "eligibility",
+    view: "eligibility",
+    concern: "My throat has hurt for five days and I have a fever.",
+    note: "Care recipient, age, and current location are explicitly confirmed.",
+    group: "walkthrough",
   },
   {
     id: "pricing-checkout",
-    label: "Pricing handoff",
+    label: "Consent and price",
+    phase: "checkout",
     view: "checkout",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Expectation, consent, state, and no-guarantee framing.",
+    note: "Unchecked consent and a clearly documented example price.",
+    group: "walkthrough",
   },
   {
     id: "async-wait",
-    label: "Async wait",
-    view: "waiting",
+    label: "Matching",
+    phase: "matching",
+    view: "matching",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Clinician response expectation management.",
+    note: "An honest asynchronous state that the patient can leave.",
+    group: "walkthrough",
   },
   {
     id: "doctor-reviewing",
-    label: "Doctor reviewing",
-    view: "clinician-reviewing",
+    label: "Clinician reviewing",
+    phase: "clinician_reviewing",
+    view: "clinician_reviewing",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "A clinician is assigned, but has not replied yet.",
+    note: "A sample clinician is assigned but has not replied.",
+    group: "walkthrough",
   },
   {
     id: "doctor-handoff",
-    label: "Doctor handoff",
-    view: "clinician",
+    label: "Clinician conversation",
+    phase: "clinician_active",
+    view: "clinician_active",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Human clinician enters the thread.",
-  },
-  {
-    id: "async-clinician",
-    label: "Async clinician",
-    view: "clinician",
-    concern: "My throat has hurt for five days and I have a fever.",
-    note: "Human clinician enters the thread.",
-  },
-  {
-    id: "report-upload",
-    label: "Report upload",
-    view: "upload",
-    concern: "I want to upload my lab report.",
-    note: "August reads and summarizes an uploaded result.",
-  },
-  {
-    id: "lab-upload",
-    label: "Lab upload",
-    view: "upload",
-    concern: "I want to upload my lab report.",
-    note: "August reads and summarizes an uploaded result.",
-  },
-  {
-    id: "prescription-request",
-    label: "Prescription request",
-    view: "prescription",
-    concern: "I think I need an antibiotic prescription for my sore throat.",
-    note: "Assessment before medication, no prescription promise.",
-  },
-  {
-    id: "prescription-boundary",
-    label: "Prescription boundary",
-    view: "prescription",
-    concern: "I think I need an antibiotic prescription for my sore throat.",
-    note: "Assessment before medication, no prescription promise.",
+    note: "Human care and a private August sidecar in one encounter.",
+    group: "walkthrough",
+    compareVariations: true,
   },
   {
     id: "care-plan",
-    label: "Care plan",
-    view: "plan",
+    label: "Signed care plan",
+    phase: "plan_ready",
+    view: "plan_ready",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Doctor-signed next steps.",
+    note: "The plan appears only after the clinician receives the final answer.",
+    group: "walkthrough",
   },
   {
     id: "follow-up",
     label: "Follow-up",
-    view: "followup",
+    phase: "follow_up",
+    view: "follow_up",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "August checks back after care.",
+    note: "August checks back and can reopen safety or clinician care.",
+    group: "walkthrough",
+  },
+  {
+    id: "report-upload",
+    label: "Report workflow",
+    phase: "report",
+    view: "report",
+    concern: "I want to upload my lab report.",
+    note: "Attach, process, confirm, and return to the originating thread.",
+    group: "edge",
+  },
+  {
+    id: "report-low-confidence",
+    label: "Unreadable report",
+    phase: "report",
+    view: "report",
+    concern: "I want to upload my lab report.",
+    note: "A low-confidence extraction recovers without inventing a result.",
+    fixture: "upload-low-confidence",
+    group: "supporting",
+  },
+  {
+    id: "prescription-request",
+    label: "Medication assessment",
+    phase: "prescription",
+    view: "prescription",
+    concern: "I think I need an antibiotic prescription for my sore throat.",
+    note: "Assessment before any medication decision.",
+    group: "edge",
+  },
+  {
+    id: "prescription-appropriate",
+    label: "Medication appropriate",
+    phase: "clinician_active",
+    view: "clinician_active",
+    concern: "I think I need an antibiotic prescription for my sore throat.",
+    note: "Sample clinician decision with fulfillment next steps.",
+    fixture: "prescription-appropriate",
+    group: "supporting",
+  },
+  {
+    id: "prescription-test-first",
+    label: "Testing first",
+    phase: "clinician_active",
+    view: "clinician_active",
+    concern: "I think I need an antibiotic prescription for my sore throat.",
+    note: "Testing is required before a medication decision.",
+    fixture: "prescription-test-first",
+    group: "supporting",
+  },
+  {
+    id: "prescription-declined",
+    label: "Medication declined",
+    phase: "clinician_active",
+    view: "clinician_active",
+    concern: "I think I need an antibiotic prescription for my sore throat.",
+    note: "A clear clinical boundary with an alternative plan.",
+    fixture: "prescription-declined",
+    group: "supporting",
   },
   {
     id: "emergency",
-    label: "Emergency escalation",
+    label: "Emergency interruption",
+    phase: "emergency",
     view: "emergency",
     concern: "I have chest pain and trouble breathing.",
-    note: "Safety-first escalation.",
+    note: "Routine conversation stops and emergency action becomes primary.",
+    group: "edge",
   },
   {
     id: "unsupported",
-    label: "Unsupported request",
+    label: "Unsupported care",
+    phase: "unsupported",
     view: "unsupported",
     concern: "I need a refill for Adderall.",
-    note: "Clear boundary without apology language.",
+    note: "A concise boundary with an established-care next step.",
+    group: "edge",
   },
-  {
-    id: "unsupported-controlled",
-    label: "Unsupported controlled request",
-    view: "unsupported",
-    concern: "I need a refill for Adderall.",
-    note: "Clear boundary without apology language.",
-  },
-] satisfies Array<{
-  id: string;
-  label: string;
-  view: PrototypeView;
-  concern: string;
-  note: string;
-}>;
+] satisfies PrototypeCase[];
 
 export type PrototypeCaseId = (typeof prototypeCases)[number]["id"];
 
-export const primaryPrototypeCaseIds = [
-  "home",
-  "symptom-intake",
-  "three-questions",
-  "visit-summary",
-  "pricing-checkout",
-  "async-wait",
-  "doctor-reviewing",
-  "doctor-handoff",
-  "report-upload",
-  "prescription-request",
-  "care-plan",
-  "follow-up",
-  "emergency",
-  "unsupported",
-] as const;
+export const recommendedWalkthroughCases = prototypeCases.filter(
+  (prototypeCase) => prototypeCase.group === "walkthrough"
+);
 
-export const recommendedWalkthroughCaseIds = [
-  "home",
-  "symptom-intake",
-  "three-questions",
-  "visit-summary",
-  "pricing-checkout",
-  "async-wait",
-  "doctor-reviewing",
-  "doctor-handoff",
-  "care-plan",
-  "follow-up",
-] as const;
+export const variationComparisonCases = prototypeCases.filter(
+  (prototypeCase) => prototypeCase.compareVariations
+);
 
-export const recommendedWalkthroughCases = recommendedWalkthroughCaseIds
-  .map((caseId) => prototypeCases.find((prototypeCase) => prototypeCase.id === caseId))
-  .filter((prototypeCase): prototypeCase is (typeof prototypeCases)[number] =>
-    Boolean(prototypeCase)
-  );
+export const signatureEdgeCases = prototypeCases.filter(
+  (prototypeCase) => prototypeCase.group === "edge"
+);
 
-export const primaryPrototypeCases = primaryPrototypeCaseIds
-  .map((caseId) => prototypeCases.find((prototypeCase) => prototypeCase.id === caseId))
-  .filter((prototypeCase): prototypeCase is (typeof prototypeCases)[number] =>
-    Boolean(prototypeCase)
-  );
+export const supportingCases = prototypeCases.filter(
+  (prototypeCase) => prototypeCase.group === "supporting"
+);
 
-export function getPrototypeCase(caseId: string | string[] | null | undefined) {
-  const normalizedCaseId = Array.isArray(caseId) ? caseId[0] : caseId;
-  if (!normalizedCaseId) return undefined;
+export const primaryPrototypeCases = [
+  ...recommendedWalkthroughCases,
+  ...signatureEdgeCases,
+];
+
+const legacyCaseAliases: Record<string, string> = {
+  "async-clinician": "doctor-handoff",
+  "lab-upload": "report-upload",
+  "prescription-boundary": "prescription-request",
+  "unsupported-controlled": "unsupported",
+};
+
+export function getPrototypeCase(
+  caseId: string | string[] | null | undefined
+) {
+  const rawCaseId = Array.isArray(caseId) ? caseId[0] : caseId;
+  if (!rawCaseId) return undefined;
+  const normalizedCaseId = legacyCaseAliases[rawCaseId] ?? rawCaseId;
   return prototypeCases.find(
     (prototypeCase) => prototypeCase.id === normalizedCaseId
   );
@@ -258,4 +320,8 @@ export function getPrototypeVariation(
       (variation) => variation.id === normalizedVariationId
     ) ?? prototypeVariations[0]
   );
+}
+
+export function supportsVariationComparison(caseId: string) {
+  return Boolean(getPrototypeCase(caseId)?.compareVariations);
 }
