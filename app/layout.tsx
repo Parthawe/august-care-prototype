@@ -9,18 +9,18 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "August — Care that continues",
+  title: "August — One continuous care conversation",
   description:
-    "A product design prototype for a clear, safe AI-to-clinician care journey.",
+    "An interactive product design prototype showing August coordinating an asynchronous clinician conversation.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "August — Care that continues",
+    title: "August — One continuous care conversation",
     description:
-      "A clear, safe handoff from August AI to human clinical care.",
-    images: ["/og.png"],
+      "August gathers context, brings in a clinician, and stays available while care continues.",
+    images: ["/og-august-conversation.png"],
   },
 };
 
