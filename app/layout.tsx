@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Serif_Display, Poppins } from "next/font/google";
+import { DM_Serif_Display, Inter, Poppins } from "next/font/google";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -14,6 +14,12 @@ const editorial = DM_Serif_Display({
   weight: "400",
 });
 
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+});
+
 export const metadata: Metadata = {
   title: "August — Independent care flows",
   description:
@@ -26,7 +32,7 @@ export const metadata: Metadata = {
     title: "August — Independent care flows",
     description:
       "Review focused August flows for intake, clinician care, reports, decisions, and safety.",
-    images: ["/og-august-conversation.png"],
+    images: ["/og-august-independent-flows.png"],
   },
 };
 
@@ -37,7 +43,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${poppins.variable} ${editorial.variable}`}>
+      <body
+        className={`${poppins.variable} ${editorial.variable} ${inter.variable}`}
+      >
         {children}
       </body>
     </html>

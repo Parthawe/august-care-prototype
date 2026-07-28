@@ -1459,6 +1459,9 @@ export function UnifiedCarePrototype({
               ? styles.emergencyLight
               : styles.emergencyDark
           }`}
+          data-channel="emergency"
+          data-phase={phase}
+          data-scenario={initialScenario}
         >
           <StatusBar />
           <div className={styles.emergencyScreen}>
@@ -1631,7 +1634,13 @@ export function UnifiedCarePrototype({
 
   return (
     <main className={styles.stage}>
-      <section className={styles.viewport} aria-label="August care conversation">
+      <section
+        className={styles.viewport}
+        aria-label="August care conversation"
+        data-channel={channel}
+        data-phase={phase}
+        data-scenario={initialScenario}
+      >
         <StatusBar />
         <Header
           channel={channel === "care" ? "care" : channel}
@@ -1701,7 +1710,13 @@ export function UnifiedCarePrototype({
             </button>
           </div>
         ) : (
-          <div className={styles.conversation} ref={scrollRef} aria-live="polite">
+          <div
+            className={styles.conversation}
+            ref={scrollRef}
+            aria-label="Conversation messages"
+            aria-live="polite"
+            tabIndex={0}
+          >
             <div
               className={`${styles.transcript} ${
                 phase === "empty" ? styles.emptyTranscript : ""
