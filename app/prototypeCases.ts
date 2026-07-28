@@ -46,8 +46,8 @@ export const prototypeVariations = [
   {
     id: "classic",
     label: "Classic",
-    note: "Balanced August baseline: one continuous care encounter.",
-    hypothesis: "Continuous care thread",
+    note: "Balanced August baseline for a focused care flow.",
+    hypothesis: "Focused care thread",
     question:
       "Does familiar chat with restrained clinical structure feel trustworthy?",
     recommended: true,

@@ -1,61 +1,33 @@
-/* eslint-disable @next/next/no-html-link-for-pages -- These are resilient portfolio review links. */
 import type { Metadata } from "next";
-import { portfolioScenarios } from "../portfolioScenarios";
+import {
+  portfolioScenarioGroups,
+  portfolioScenarios,
+} from "../portfolioScenarios";
 
 export const metadata: Metadata = {
-  title: "August AI — Portfolio prototype scenarios",
+  title: "August AI — Independent prototype flows",
   description:
-    "Open focused August AI prototype journeys for symptoms, clinician care, medication, testing, follow-up, and safety.",
+    "Open independent August AI prototype flows for intake, clinician care, reports, decisions, and safety.",
 };
-
-const groups = [
-  {
-    id: "begin",
-    eyebrow: "Begin care",
-    title: "How the conversation starts",
-  },
-  {
-    id: "handoff",
-    eyebrow: "Human care",
-    title: "How August and Maya work together",
-  },
-  {
-    id: "outcome",
-    eyebrow: "Clinical outcomes",
-    title: "How decisions, testing, and follow-up continue",
-  },
-  {
-    id: "safety",
-    eyebrow: "Boundaries and safety",
-    title: "How the experience responds when routine care should stop",
-  },
-] as const;
 
 export default function PortfolioPrototypePage() {
   return (
     <main className="case-directory-shell">
       <section className="case-directory">
         <p className="eyebrow">August AI · Interactive portfolio</p>
-        <h1>Choose the moment you want to review.</h1>
+        <h1>Choose one small flow.</h1>
         <p>
-          Each link opens a focused, usable care scenario. Start fresh for the
-          natural experience, or jump directly to a decision point.
+          Every route stands on its own. It opens at the right context, stays
+          inside that flow, and has no case-to-case progression controls.
         </p>
 
-        <a className="portfolio-primary-link" href="/prototype/start">
-          <span>
-            <small>Recommended first</small>
-            <strong>Start with an empty August conversation</strong>
-          </span>
-          <b>Open prototype →</b>
-        </a>
-
         <div className="portfolio-scenario-groups">
-          {groups.map((group) => (
+          {portfolioScenarioGroups.map((group) => (
             <section className="interactive-group" key={group.id}>
               <div className="section-heading">
                 <span>{group.eyebrow}</span>
                 <h2>{group.title}</h2>
+                <p>{group.note}</p>
               </div>
               <div className="case-link-grid">
                 {portfolioScenarios
@@ -68,7 +40,7 @@ export default function PortfolioPrototypePage() {
                     >
                       <strong>{scenario.label}</strong>
                       <small>{scenario.note}</small>
-                      <span>Open scenario →</span>
+                      <span>Open this flow →</span>
                     </a>
                   ))}
               </div>

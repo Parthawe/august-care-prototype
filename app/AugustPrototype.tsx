@@ -20,7 +20,6 @@ import {
 } from "./encounterMachine";
 import {
   getPrototypeCase,
-  recommendedWalkthroughCases,
   type EncounterPhase,
   type PrototypeFixture,
   type PrototypeVariationId,
@@ -185,7 +184,7 @@ const variationExperience: Record<
     safetyCue: "One clear answer is enough.",
     clinicianStatus: "Human clinician conversation",
     replyEvent: "Maya replied · 10:18 AM",
-    handoffTitle: "One continuous visit",
+    handoffTitle: "One focused visit",
     handoffBody: "Messages to Maya become part of this clinician conversation.",
   },
   ambient: {
@@ -2525,20 +2524,6 @@ function ReviewerRail({
   initialCaseId: string;
 }) {
   const [copied, setCopied] = useState(false);
-  const walkthroughPhases = recommendedWalkthroughCases.map(
-    (prototypeCase) => prototypeCase.phase
-  );
-  const currentIndex = walkthroughPhases.indexOf(state.phase);
-  const previousPhase =
-    currentIndex > 0 ? walkthroughPhases[currentIndex - 1] : null;
-  const nextPhase =
-    currentIndex >= 0 && currentIndex < walkthroughPhases.length - 1
-      ? walkthroughPhases[currentIndex + 1]
-      : null;
-  const nextRequiresSimulation =
-    state.phase === "matching" ||
-    state.phase === "clinician_reviewing" ||
-    state.phase === "clinician_active";
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(window.location.href);
@@ -2551,7 +2536,8 @@ function ReviewerRail({
       <div className="reviewer-kicker">Reviewer controls</div>
       <h2>{phaseLabels[state.phase]}</h2>
       <p>
-        Patient UI stays realistic. Time and clinical decisions are simulated here.
+        This is an isolated review flow. Time and clinical decisions can be
+        simulated without moving into another case.
       </p>
       <div className="sample-data-note">
         <ClinicianPortrait small />
@@ -2648,33 +2634,6 @@ function ReviewerRail({
             </div>
           )}
       </div>
-      <div className="reviewer-stepper">
-        <button
-          onClick={() =>
-            previousPhase && dispatch({ type: "GO_TO", phase: previousPhase })
-          }
-          disabled={!previousPhase}
-          type="button"
-        >
-          <Icon name="back" />
-          Previous
-        </button>
-        <button
-          onClick={() =>
-            nextPhase && dispatch({ type: "GO_TO", phase: nextPhase })
-          }
-          disabled={!nextPhase || nextRequiresSimulation}
-          title={
-            nextRequiresSimulation
-              ? "Use the encounter control above to preserve chronology"
-              : undefined
-          }
-          type="button"
-        >
-          Next
-          <Icon name="arrow" />
-        </button>
-      </div>
       <div className="reviewer-utilities">
         <button
           onClick={() => dispatch({ type: "RESET", state: initialState })}
@@ -2693,7 +2652,7 @@ function ReviewerRail({
         onClick={() => window.location.assign("/cases")}
         type="button"
       >
-        All review links
+        Back to all flows
       </button>
     </aside>
   );

@@ -305,16 +305,18 @@ test("the default route opens the canonical August entry", async ({
   ).toBeVisible();
 });
 
-test("portfolio scenario directory exposes focused shareable routes", async ({
+test("portfolio directory exposes independent mini-flow routes", async ({
   page,
 }) => {
   await page.goto("/prototype");
 
   await expect(
     page.getByRole("link", {
-      name: /Start with an empty August conversation/,
+      name: /Start with a blank conversation/,
     }),
   ).toHaveAttribute("href", "/prototype/start");
+  await expect(page.getByText("Choose one small flow.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Every route stands on its own/)).toBeVisible();
 
   const routes = [
     "symptom",
@@ -332,6 +334,9 @@ test("portfolio scenario directory exposes focused shareable routes", async ({
   for (const route of routes) {
     await expect(page.locator(`a[href="/prototype/${route}"]`)).toHaveCount(1);
   }
+
+  await expect(page.getByText("One continuous care story")).toHaveCount(0);
+  await expect(page.getByRole("link", { name: /Begin walkthrough/ })).toHaveCount(0);
 });
 
 test("each portfolio scenario route opens the unified prototype", async ({
@@ -357,7 +362,33 @@ test("each portfolio scenario route opens the unified prototype", async ({
     await page.goto(`/prototype/${route}`);
     await expect(page.getByRole("main")).toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/prototype/${route}$`));
+    await expect(
+      page.getByRole("button", { name: "New conversation" }),
+    ).toHaveCount(0);
   }
+});
+
+test("mini-flows stop at their own review boundaries", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+
+  await page.goto("/prototype/symptom");
+  const composer = page.locator("form").filter({
+    has: page.getByRole("textbox", { name: "Message August" }),
+  });
+  await composer.getByRole("textbox").fill("102 F with white patches.");
+  await composer.getByRole("button", { name: "Send message" }).click();
+  await composer
+    .getByRole("textbox")
+    .fill("No medication allergies or major conditions.");
+  await composer.getByRole("button", { name: "Send message" }).click();
+  await expect(page.getByText("Intake flow complete.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Confirm summary" })).toHaveCount(0);
+
+  await page.goto("/prototype/report-review");
+  await expect(page.getByText("Report flow complete.", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Check for an update" })).toHaveCount(0);
 });
 
 test("emergency suppresses routine navigation and composer", async ({ page }) => {
@@ -440,6 +471,20 @@ test("direct care routes open with August active", async ({ page }) => {
     "page"
   );
   await expect(page.locator(".reviewer-rail h2")).toHaveText("Focused intake");
+});
+
+test("structured review routes do not navigate to neighboring cases", async ({
+  page,
+}) => {
+  await page.goto("/cases/three-questions/classic");
+
+  const reviewer = page.locator(".reviewer-rail");
+  await expect(reviewer.locator(".reviewer-stepper")).toHaveCount(0);
+  await expect(reviewer.getByRole("button", { name: "Previous" })).toHaveCount(0);
+  await expect(reviewer.getByRole("button", { name: "Next" })).toHaveCount(0);
+  await expect(reviewer.locator(".reviewer-directory-link")).toHaveText(
+    "Back to all flows",
+  );
 });
 
 test("reopening August from Home keeps clinician messages private", async ({

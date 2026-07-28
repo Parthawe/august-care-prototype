@@ -30,7 +30,7 @@ test("renders the canonical August care entry", async () => {
   const html = await response.text();
   assert.match(
     html,
-    /<title>August — One continuous care conversation<\/title>/i,
+    /<title>August — Independent care flows<\/title>/i,
   );
   assert.doesNotMatch(html, /Hi Parth—what would you like help with today\?/);
   assert.doesNotMatch(html, /My throat has been hurting\./);
@@ -76,8 +76,24 @@ test("renders the portfolio scenario directory", async () => {
   const response = await render("/prototype");
   assert.equal(response.status, 200);
   const html = await response.text();
-  assert.match(html, /Choose the moment you want to review\./);
+  assert.match(html, /Choose one small flow\./);
+  assert.match(html, /Every route stands on its own\./);
   assert.match(html, /\/prototype\/start/);
   assert.match(html, /\/prototype\/clinician-wait/);
   assert.match(html, /\/prototype\/emergency/);
+  assert.doesNotMatch(html, />Previous<|>Next<|One continuous care story/);
+});
+
+test("renders the case hub as independent flows, not a walkthrough", async () => {
+  const response = await render("/cases");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Choose one small flow\./);
+  assert.match(html, /Six small flow groups/);
+  assert.match(html, /\/prototype\/start/);
+  assert.match(html, /\/prototype\/report-review/);
+  assert.doesNotMatch(
+    html,
+    /Begin walkthrough|One continuous care story|Four hypotheses/,
+  );
 });

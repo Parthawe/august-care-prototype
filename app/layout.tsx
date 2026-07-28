@@ -15,17 +15,17 @@ const editorial = DM_Serif_Display({
 });
 
 export const metadata: Metadata = {
-  title: "August — One continuous care conversation",
+  title: "August — Independent care flows",
   description:
-    "An interactive product design prototype showing August coordinating an asynchronous clinician conversation.",
+    "An interactive product design prototype with focused August care flows for intake, clinician care, reports, decisions, and safety.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "August — One continuous care conversation",
+    title: "August — Independent care flows",
     description:
-      "August gathers context, brings in a clinician, and stays available while care continues.",
+      "Review focused August flows for intake, clinician care, reports, decisions, and safety.",
     images: ["/og-august-conversation.png"],
   },
 };

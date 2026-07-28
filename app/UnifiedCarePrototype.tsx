@@ -684,16 +684,18 @@ function BottomNav({
 }: {
   active: "august" | "care";
   hasCare: boolean;
-  onNew: () => void;
+  onNew?: () => void;
   onInfo: () => void;
   onCare: () => void;
   onAugust: () => void;
 }) {
   return (
     <nav className={styles.bottomNav} aria-label="Main navigation">
-      <button type="button" aria-label="New conversation" onClick={onNew}>
-        <Icon name="plus" />
-      </button>
+      {onNew ? (
+        <button type="button" aria-label="New conversation" onClick={onNew}>
+          <Icon name="plus" />
+        </button>
+      ) : null}
       <button
         type="button"
         aria-label="Conversation history"
@@ -864,6 +866,13 @@ export function UnifiedCarePrototype({
   initialScenario?: string;
 }) {
   const preset = getScenarioPreset(initialScenario);
+  const isolatedScenario = initialScenario !== undefined;
+  const isolatedIntake =
+    initialScenario === "symptom" || initialScenario === "prescription";
+  const isolatedReport =
+    initialScenario === "testing" ||
+    initialScenario === "upload-low-confidence" ||
+    initialScenario === "result-review";
   const [channel, setChannel] = useState<Channel>(preset.channel);
   const [flow, setFlow] = useState<Flow>(preset.flow);
   const [phase, setPhase] = useState<Phase>(preset.phase);
@@ -1136,6 +1145,12 @@ export function UnifiedCarePrototype({
       ]);
       replyAfter("august", () => {
         if (/worse|fever|new symptom|not better|pain/i.test(value)) {
+          if (initialScenario === "follow-up") {
+            addAugust(
+              "Because symptoms are worse, contact Maya in your existing care conversation. If you develop trouble breathing, cannot swallow liquids, feel faint, or have severe chest pain, seek emergency care now.",
+            );
+            return;
+          }
           addAugust(
             "I want to recheck safety before deciding what should happen next. Are you having trouble breathing, unable to swallow liquids, feeling faint, or having severe chest pain?",
           );
@@ -1712,9 +1727,16 @@ export function UnifiedCarePrototype({
                     Check this before anything is shared with Maya.
                   </p>
                   <div className={styles.cardActions}>
-                    <PrimaryButton onClick={() => setPhase("eligibility")}>
-                      Confirm summary
-                    </PrimaryButton>
+                    {isolatedIntake ? (
+                      <p className={styles.cardCopy}>
+                        <strong>Intake flow complete.</strong> This isolated
+                        route ends with a reviewable summary.
+                      </p>
+                    ) : (
+                      <PrimaryButton onClick={() => setPhase("eligibility")}>
+                        Confirm summary
+                      </PrimaryButton>
+                    )}
                     <PrimaryButton
                       secondary
                       onClick={() => setInput("Correction: ")}
@@ -1740,9 +1762,11 @@ export function UnifiedCarePrototype({
                     <PrimaryButton onClick={() => window.print()}>
                       Download a care summary
                     </PrimaryButton>
-                    <PrimaryButton secondary onClick={reset}>
-                      Start a different concern
-                    </PrimaryButton>
+                    {!isolatedScenario ? (
+                      <PrimaryButton secondary onClick={reset}>
+                        Start a different concern
+                      </PrimaryButton>
+                    ) : null}
                   </div>
                 </InlineCard>
               ) : null}
@@ -2044,9 +2068,16 @@ export function UnifiedCarePrototype({
                     >
                       Ask August while you wait
                     </PrimaryButton>
-                    <PrimaryButton onClick={() => checkForMaya(true)}>
-                      Check for an update
-                    </PrimaryButton>
+                    {!isolatedReport ? (
+                      <PrimaryButton onClick={() => checkForMaya(true)}>
+                        Check for an update
+                      </PrimaryButton>
+                    ) : (
+                      <p className={styles.cardCopy}>
+                        <strong>Report flow complete.</strong> Clinical
+                        interpretation is reviewed in its own flow.
+                      </p>
+                    )}
                   </div>
                 </InlineCard>
               ) : null}
@@ -2101,9 +2132,16 @@ export function UnifiedCarePrototype({
                     plan and arrange an in-person evaluation if symptoms worsen
                     or do not improve.
                   </p>
-                  <PrimaryButton onClick={openFollowUp}>
-                    View care plan
-                  </PrimaryButton>
+                  {initialScenario === "prescription-declined" ? (
+                    <p className={styles.cardCopy}>
+                      <strong>Decision flow complete.</strong> Follow-up is
+                      reviewed separately.
+                    </p>
+                  ) : (
+                    <PrimaryButton onClick={openFollowUp}>
+                      View care plan
+                    </PrimaryButton>
+                  )}
                 </InlineCard>
               ) : null}
 
@@ -2186,9 +2224,16 @@ export function UnifiedCarePrototype({
                       <dd>Pharmacy confirmation</dd>
                     </div>
                   </dl>
-                  <PrimaryButton onClick={openFollowUp}>
-                    View care plan
-                  </PrimaryButton>
+                  {initialScenario === "prescription-appropriate" ? (
+                    <p className={styles.cardCopy}>
+                      <strong>Fulfillment flow complete.</strong> Follow-up is
+                      reviewed separately.
+                    </p>
+                  ) : (
+                    <PrimaryButton onClick={openFollowUp}>
+                      View care plan
+                    </PrimaryButton>
+                  )}
                 </InlineCard>
               ) : null}
 
@@ -2215,7 +2260,8 @@ export function UnifiedCarePrototype({
             disabled={
               Boolean(pending) ||
               phase === "uploading" ||
-              phase === "upload-processing"
+              phase === "upload-processing" ||
+              (initialScenario === "empty" && phase !== "empty")
             }
             onChange={setInput}
             onSubmit={submit}
@@ -2224,7 +2270,7 @@ export function UnifiedCarePrototype({
           <BottomNav
             active={channel === "care" || channel === "maya" ? "care" : "august"}
             hasCare={connected}
-            onNew={reset}
+            onNew={isolatedScenario ? undefined : reset}
             onInfo={() => setSheet("info")}
             onCare={() => setChannel("care")}
             onAugust={openAugust}
