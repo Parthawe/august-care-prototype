@@ -197,6 +197,8 @@ test("uploads remember their origin and only notify the intended thread", () => 
     { type: "START_UPLOAD", origin: "clinician_active" }
   );
   assert.equal(clinician.upload?.returnTo, "clinician_active");
+  assert.equal(clinician.upload?.status, "selecting");
+  clinician = encounterReducer(clinician, { type: "USE_SAMPLE_UPLOAD" });
   clinician = encounterReducer(clinician, { type: "PROCESS_UPLOAD" });
   assert.equal(clinician.upload?.status, "processing");
   clinician = encounterReducer(clinician, { type: "COMPLETE_UPLOAD" });
@@ -233,7 +235,10 @@ test("report extraction cannot skip required processing and confirmation states"
   const cannotCompleteAttached = encounterReducer(state, {
     type: "COMPLETE_UPLOAD",
   });
-  assert.equal(cannotCompleteAttached.upload?.status, "attached");
+  assert.equal(cannotCompleteAttached.upload?.status, "selecting");
+
+  state = encounterReducer(state, { type: "USE_SAMPLE_UPLOAD" });
+  assert.equal(state.upload?.status, "attached");
 
   const cannotConfirmAttached = encounterReducer(state, {
     type: "CONFIRM_UPLOAD",
@@ -252,7 +257,79 @@ test("report extraction cannot skip required processing and confirmation states"
 
   state = encounterReducer(state, { type: "SET_UPLOAD_LOW_CONFIDENCE" });
   state = encounterReducer(state, { type: "RETRY_UPLOAD" });
-  assert.equal(state.upload?.status, "attached");
+  assert.equal(state.upload?.status, "selecting");
+});
+
+test("real selected files never produce fabricated extraction values", () => {
+  let state = encounterReducer(createEncounterState(), {
+    type: "START_UPLOAD",
+    origin: "entry",
+  });
+  state = encounterReducer(state, {
+    type: "SELECT_UPLOAD_FILE",
+    filename: "my-real-report.pdf",
+  });
+  assert.deepEqual(state.upload?.extractedFields, []);
+  assert.equal(state.upload?.source, "user-selected");
+
+  state = encounterReducer(state, { type: "PROCESS_UPLOAD" });
+  state = encounterReducer(state, { type: "COMPLETE_UPLOAD" });
+  assert.equal(state.upload?.status, "low_confidence");
+  assert.deepEqual(state.upload?.extractedFields, []);
+});
+
+test("safety routing applies to medication, report, and conversation messages", () => {
+  const medication = encounterReducer(
+    createEncounterState({ phase: "prescription" }),
+    {
+      type: "SUBMIT_PRESCRIPTION",
+      answer: "I took too much and think I overdosed.",
+    }
+  );
+  assert.equal(medication.phase, "emergency");
+  assert.equal(medication.safetyOrigin, "prescription");
+
+  const report = encounterReducer(
+    createEncounterState({ phase: "report" }),
+    {
+      type: "SUBMIT_REPORT_NOTE",
+      content: "I have chest pain now.",
+    }
+  );
+  assert.equal(report.phase, "emergency");
+  assert.equal(report.safetyOrigin, "report");
+
+  const followUp = encounterReducer(
+    createEncounterState({ phase: "follow_up" }),
+    {
+      type: "SEND_MESSAGE",
+      recipient: "august",
+      content: "My face is drooping and my speech is slurred.",
+    }
+  );
+  assert.equal(followUp.phase, "emergency");
+  assert.equal(followUp.safetyOrigin, "follow_up");
+});
+
+test("emergency exit preserves the originating care context", () => {
+  let state = encounterReducer(
+    createEncounterState({ phase: "prescription" }),
+    {
+      type: "SUBMIT_PRESCRIPTION",
+      answer: "I am having chest pain.",
+    }
+  );
+  state = encounterReducer(state, { type: "CONFIRM_EMERGENCY_EXIT" });
+  assert.equal(state.phase, "prescription");
+  assert.equal(state.safetyOrigin, null);
+});
+
+test("controlled medication requests route to an unpaid boundary", () => {
+  const state = encounterReducer(createEncounterState(), {
+    type: "START_CONCERN",
+    concern: "Can I refill Xanax?",
+  });
+  assert.equal(state.phase, "unsupported");
 });
 
 test("follow-up replies are contextual and clinician care can be reopened", () => {
@@ -294,8 +371,13 @@ test("eligibility and consent begin explicitly unconfirmed", () => {
   assert.deepEqual(state.eligibility, {
     careFor: null,
     adultConfirmed: false,
+    identityConfirmed: false,
     locationConfirmed: false,
     state: "California",
   });
-  assert.equal(state.consent, false);
+  assert.deepEqual(state.consent, {
+    shareSummary: false,
+    telehealth: false,
+    payment: false,
+  });
 });

@@ -20,6 +20,7 @@ export type ClinicianState =
   | "unavailable"
   | "delayed";
 export type UploadStatus =
+  | "selecting"
   | "attached"
   | "processing"
   | "review"
@@ -46,6 +47,7 @@ export type UploadContext = {
   origin: EncounterPhase;
   returnTo: EncounterPhase;
   status: UploadStatus;
+  source: "user-selected" | "review-fixture";
   confidence: number | null;
   filename: string;
   extractedFields: Array<{ label: string; value: string }>;
@@ -55,8 +57,15 @@ export type UploadContext = {
 export type EligibilityState = {
   careFor: "self" | "someone-else" | null;
   adultConfirmed: boolean;
+  identityConfirmed: boolean;
   locationConfirmed: boolean;
   state: string;
+};
+
+export type ConsentState = {
+  shareSummary: boolean;
+  telehealth: boolean;
+  payment: boolean;
 };
 
 export type EncounterState = {
@@ -64,6 +73,7 @@ export type EncounterState = {
   concern: string;
   safetyDecision: SafetyDecision | null;
   safetyClarification: boolean;
+  safetyOrigin: EncounterPhase | null;
   intakeStep: number;
   intakeAnswers: string[];
   summaryCorrections: string[];
@@ -72,13 +82,15 @@ export type EncounterState = {
   clinicianMessages: ConversationMessage[];
   augustMessages: ConversationMessage[];
   upload: UploadContext | null;
+  reportNotes: string[];
   eligibility: EligibilityState;
-  consent: boolean;
+  consent: ConsentState;
   prescriptionStep: number;
   prescriptionAnswers: string[];
   prescriptionOutcome: PrescriptionOutcome;
   emergencyActionStarted: boolean;
   emergencyExitConfirmed: boolean;
+  isReviewFixture: boolean;
 };
 
 export type EncounterAction =
@@ -98,17 +110,21 @@ export type EncounterAction =
   | { type: "CLINICIAN_REPLIED" }
   | { type: "SIGN_PLAN" }
   | { type: "SET_CLINICIAN_DELAYED" }
+  | { type: "SET_CLINICIAN_UNAVAILABLE" }
   | { type: "START_UPLOAD"; origin: EncounterPhase }
+  | { type: "SELECT_UPLOAD_FILE"; filename: string }
+  | { type: "USE_SAMPLE_UPLOAD" }
   | { type: "PROCESS_UPLOAD" }
   | { type: "COMPLETE_UPLOAD" }
   | { type: "SET_UPLOAD_LOW_CONFIDENCE" }
   | { type: "CONFIRM_UPLOAD" }
   | { type: "RETRY_UPLOAD" }
+  | { type: "SUBMIT_REPORT_NOTE"; content: string }
   | {
       type: "SET_ELIGIBILITY";
       eligibility: Partial<EligibilityState>;
     }
-  | { type: "SET_CONSENT"; consent: boolean }
+  | { type: "SET_CONSENT"; consent: Partial<ConsentState> }
   | { type: "SUBMIT_PRESCRIPTION"; answer: string }
   | { type: "SET_PRESCRIPTION_OUTCOME"; outcome: PrescriptionOutcome }
   | { type: "START_EMERGENCY_ACTION" }
@@ -133,9 +149,39 @@ const safetyConcepts = [
   },
   {
     positive:
-      /severe chest pain|chest pressure|pressure in (?:my )?chest/,
+      /(?:severe )?chest pain|chest pressure|pressure in (?:my )?chest/,
     negative:
       /no (?:severe )?chest pain|chest pain (?:is )?not severe|no chest pressure/,
+  },
+  {
+    positive:
+      /suicidal|kill myself|end my life|hurt myself|self[- ]harm|don't want to live|do not want to live/,
+    negative:
+      /not suicidal|not going to (?:kill|hurt) myself|no (?:thoughts|plans?) (?:of|to) (?:suicide|self[- ]harm|hurt myself)/,
+  },
+  {
+    positive:
+      /overdose|took too much|poisoned|poisoning|swallowed (?:bleach|cleaner|chemicals?)/,
+    negative:
+      /no overdose|did not overdose|didn't overdose|not poisoned|no poisoning/,
+  },
+  {
+    positive:
+      /face droop(?:ing)?|facial droop(?:ing)?|one[- ]sided weakness|slurred speech|speech (?:is )?slurred|can't speak|cannot speak/,
+    negative:
+      /no (?:face|facial) droop|no one[- ]sided weakness|speech (?:is )?(?:normal|clear)/,
+  },
+  {
+    positive:
+      /severe bleeding|bleeding (?:won't|will not) stop|uncontrolled bleeding/,
+    negative:
+      /no (?:severe|uncontrolled) bleeding|bleeding (?:has )?stopped/,
+  },
+  {
+    positive:
+      /severe allergic reaction|anaphylaxis|swollen tongue|tongue swelling|throat (?:is )?closing/,
+    negative:
+      /no (?:severe )?allergic reaction|no tongue swelling|throat (?:is )?not closing/,
   },
 ];
 
@@ -162,7 +208,7 @@ export function classifySafetyAnswer(answer: string): SafetyDecision {
   if (hasUnnegatedDanger) return "emergency";
 
   const hasSafetyLanguage =
-    /none of (?:these|those)|no (?:other )?(?:warning|danger|urgent) signs|breathing (?:is )?(?:normal|fine|okay)|can (?:still )?(?:swallow|drink|breathe)|able to (?:swallow|drink|breathe)|no fainting|did not faint|no (?:severe )?chest pain/.test(
+    /none of (?:these|those)|no (?:other )?(?:warning|danger|urgent) signs|breathing (?:is )?(?:normal|fine|okay)|can (?:still )?(?:swallow|drink|breathe)|able to (?:swallow|drink|breathe)|no fainting|did not faint|no (?:severe )?chest pain|not suicidal|no overdose|not poisoned|no one[- ]sided weakness|speech (?:is )?(?:normal|clear)|no (?:severe|uncontrolled) bleeding|no (?:severe )?allergic reaction/.test(
       normalized
     );
   return hasSafetyLanguage ? "safe" : "clarify";
@@ -170,6 +216,12 @@ export function classifySafetyAnswer(answer: string): SafetyDecision {
 
 export function hasEmergencySignal(answer: string) {
   return classifySafetyAnswer(answer) === "emergency";
+}
+
+function isUnsupportedMedicationRequest(value: string) {
+  return /adderall|amphetamine|ritalin|methylphenidate|oxycodone|hydrocodone|codeine|opioid|xanax|alprazolam|benzodiazepine|valium|diazepam|ambien|zolpidem|controlled (?:medication|substance)/.test(
+    value
+  );
 }
 
 function message(
@@ -256,6 +308,7 @@ export function createEncounterState({
 
   const uploadStatus: UploadStatus =
     fixture === "upload-low-confidence" ? "low_confidence" : "attached";
+  const isReviewFixture = phase !== "entry" || fixture !== "default";
   const clinicianHasReplied =
     phase === "clinician_active" ||
     phase === "plan_ready" ||
@@ -283,6 +336,7 @@ export function createEncounterState({
     concern,
     safetyDecision: phase === "intake" ? "safe" : null,
     safetyClarification: false,
+    safetyOrigin: null,
     intakeStep: phase === "intake" ? 0 : 0,
     intakeAnswers: [],
     summaryCorrections: [],
@@ -296,6 +350,7 @@ export function createEncounterState({
             origin: "summary",
             returnTo: "summary",
             status: uploadStatus,
+            source: "review-fixture",
             confidence:
               fixture === "upload-low-confidence" ? 0.42 : null,
             filename: "Rapid strep result.pdf",
@@ -306,18 +361,25 @@ export function createEncounterState({
             confirmed: false,
           }
         : null,
+    reportNotes: [],
     eligibility: {
       careFor: null,
       adultConfirmed: false,
+      identityConfirmed: false,
       locationConfirmed: false,
       state: "California",
     },
-    consent: false,
+    consent: {
+      shareSummary: false,
+      telehealth: false,
+      payment: false,
+    },
     prescriptionStep: 0,
     prescriptionAnswers: [],
     prescriptionOutcome,
     emergencyActionStarted: false,
     emergencyExitConfirmed: false,
+    isReviewFixture,
   };
 }
 
@@ -363,9 +425,15 @@ export function encounterReducer(
     case "START_CONCERN": {
       const normalized = action.concern.toLowerCase();
       if (hasEmergencySignal(normalized)) {
-        return { ...state, concern: action.concern, phase: "emergency" };
+        return {
+          ...state,
+          concern: action.concern,
+          phase: "emergency",
+          safetyDecision: "emergency",
+          safetyOrigin: "entry",
+        };
       }
-      if (/adderall|oxycodone|controlled medication/.test(normalized)) {
+      if (isUnsupportedMedicationRequest(normalized)) {
         return { ...state, concern: action.concern, phase: "unsupported" };
       }
       if (/upload|report|result|lab/.test(normalized)) {
@@ -376,13 +444,11 @@ export function encounterReducer(
           upload: {
             origin: "entry",
             returnTo: "summary",
-            status: "attached",
+            status: "selecting",
+            source: "user-selected",
             confidence: null,
-            filename: "Rapid strep result.pdf",
-            extractedFields: [
-              { label: "Rapid strep", value: "Negative" },
-              { label: "Collected", value: "Today" },
-            ],
+            filename: "",
+            extractedFields: [],
             confirmed: false,
           },
         };
@@ -409,6 +475,8 @@ export function encounterReducer(
         safetyDecision: decision,
         safetyClarification: decision === "clarify",
         phase: decision === "emergency" ? "emergency" : state.phase,
+        safetyOrigin:
+          decision === "emergency" ? "safety" : state.safetyOrigin,
         intakeStep: decision === "safe" ? 0 : state.intakeStep,
         intakeAnswers:
           decision === "safe"
@@ -424,6 +492,7 @@ export function encounterReducer(
           intakeAnswers: [...state.intakeAnswers, action.answer],
           phase: "emergency",
           safetyDecision: "emergency",
+          safetyOrigin: "intake",
         };
       }
       const answers = [...state.intakeAnswers, action.answer];
@@ -446,6 +515,14 @@ export function encounterReducer(
     case "SET_RECIPIENT":
       return { ...state, recipient: action.recipient };
     case "SEND_MESSAGE": {
+      if (hasEmergencySignal(action.content)) {
+        return {
+          ...state,
+          phase: "emergency",
+          safetyDecision: "emergency",
+          safetyOrigin: state.phase,
+        };
+      }
       const isClinician = action.recipient === "clinician";
       const next = message(
         nextMessageId(isClinician ? "patient-clinician" : "patient-august"),
@@ -521,6 +598,10 @@ export function encounterReducer(
       };
     case "SET_CLINICIAN_DELAYED":
       return { ...state, clinicianState: "delayed" };
+    case "SET_CLINICIAN_UNAVAILABLE":
+      return state.phase === "matching"
+        ? { ...state, clinicianState: "unavailable" }
+        : state;
     case "START_UPLOAD": {
       const returnTo =
         action.origin === "clinician_active"
@@ -540,17 +621,44 @@ export function encounterReducer(
         upload: {
           origin: action.origin,
           returnTo,
-          status: "attached",
+          status: "selecting",
+          source: "user-selected",
           confidence: null,
-          filename: "Rapid strep result.pdf",
-          extractedFields: [
-            { label: "Rapid strep", value: "Negative" },
-            { label: "Collected", value: "Today" },
-          ],
+          filename: "",
+          extractedFields: [],
           confirmed: false,
         },
       };
     }
+    case "SELECT_UPLOAD_FILE":
+      return state.upload?.status === "selecting"
+        ? {
+            ...state,
+            upload: {
+              ...state.upload,
+              status: "attached",
+              source: "user-selected",
+              filename: action.filename,
+              extractedFields: [],
+            },
+          }
+        : state;
+    case "USE_SAMPLE_UPLOAD":
+      return state.upload?.status === "selecting"
+        ? {
+            ...state,
+            upload: {
+              ...state.upload,
+              status: "attached",
+              source: "review-fixture",
+              filename: "Sample rapid strep result.pdf",
+              extractedFields: [
+                { label: "Rapid strep", value: "Negative" },
+                { label: "Collected", value: "Today" },
+              ],
+            },
+          }
+        : state;
     case "PROCESS_UPLOAD":
       return state.upload?.status === "attached"
         ? {
@@ -564,8 +672,12 @@ export function encounterReducer(
             ...state,
             upload: {
               ...state.upload,
-              status: "review",
-              confidence: 0.96,
+              status:
+                state.upload.source === "review-fixture"
+                  ? "review"
+                  : "low_confidence",
+              confidence:
+                state.upload.source === "review-fixture" ? 0.96 : null,
             },
           }
         : state;
@@ -609,24 +721,58 @@ export function encounterReducer(
             ...state,
             upload: {
               ...state.upload,
-              status: "attached",
+              status: "selecting",
               confidence: null,
+              filename: "",
+              extractedFields: [],
             },
           }
         : state;
+    case "SUBMIT_REPORT_NOTE":
+      if (hasEmergencySignal(action.content)) {
+        return {
+          ...state,
+          phase: "emergency",
+          safetyDecision: "emergency",
+          safetyOrigin: "report",
+        };
+      }
+      return {
+        ...state,
+        reportNotes: [...state.reportNotes, action.content.trim()].filter(
+          Boolean
+        ),
+      };
     case "SET_ELIGIBILITY":
       return {
         ...state,
         eligibility: { ...state.eligibility, ...action.eligibility },
       };
     case "SET_CONSENT":
-      return { ...state, consent: action.consent };
+      return {
+        ...state,
+        consent: { ...state.consent, ...action.consent },
+      };
     case "SUBMIT_PRESCRIPTION": {
+      if (hasEmergencySignal(action.answer)) {
+        return {
+          ...state,
+          phase: "emergency",
+          safetyDecision: "emergency",
+          safetyOrigin: "prescription",
+        };
+      }
+      if (isUnsupportedMedicationRequest(action.answer.toLowerCase())) {
+        return {
+          ...state,
+          phase: "unsupported",
+        };
+      }
       const answers = [...state.prescriptionAnswers, action.answer];
       return {
         ...state,
         prescriptionAnswers: answers,
-        prescriptionStep: Math.min(3, state.prescriptionStep + 1),
+        prescriptionStep: Math.min(4, state.prescriptionStep + 1),
       };
     }
     case "SET_PRESCRIPTION_OUTCOME":
@@ -639,7 +785,15 @@ export function encounterReducer(
     case "START_EMERGENCY_ACTION":
       return { ...state, emergencyActionStarted: true };
     case "CONFIRM_EMERGENCY_EXIT":
-      return { ...state, emergencyExitConfirmed: true, phase: "entry" };
+      return {
+        ...state,
+        emergencyExitConfirmed: true,
+        phase: state.safetyOrigin ?? "entry",
+        safetyDecision: null,
+        safetyClarification: false,
+        safetyOrigin: null,
+        emergencyActionStarted: false,
+      };
     default:
       return state;
   }

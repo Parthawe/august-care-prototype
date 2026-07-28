@@ -14,6 +14,7 @@ import {
   createEncounterState,
   encounterReducer,
   type ConversationMessage,
+  type ConsentState,
   type EncounterAction,
   type EncounterState,
   type PrescriptionOutcome,
@@ -132,9 +133,10 @@ const intakeSummaryLabels = [
 ];
 
 const prescriptionQuestions = [
-  "How long has your throat hurt, and have you had a fever or rash?",
-  "Can you swallow liquids, and is the swelling stronger on one side?",
-  "Any medication allergies or antibiotics that caused problems before?",
+  "Which medication are you asking about, what dose, and is this new or a refill?",
+  "What are you treating, and what symptoms are you having right now?",
+  "How long have you used it, how did it help, and have you had side effects?",
+  "What other medications do you take, and do you have any medication allergies?",
 ];
 
 const phaseLabels: Record<EncounterPhase, string> = {
@@ -478,6 +480,7 @@ function canContinueEligibility(state: EncounterState) {
   return (
     state.eligibility.careFor === "self" &&
     state.eligibility.adultConfirmed &&
+    state.eligibility.identityConfirmed &&
     state.eligibility.locationConfirmed
   );
 }
@@ -679,7 +682,7 @@ export function AugustPrototype({
               />
             )}
             {state.phase === "unsupported" && (
-              <UnsupportedScreen onBack={reset} />
+              <UnsupportedScreen concern={state.concern} onBack={reset} />
             )}
           </div>
           {showNavigation && (
@@ -711,7 +714,8 @@ function HomeScreen({
   const experience = variationExperience[variation];
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    onSubmit(value.trim() || "My throat has hurt for five days and I have a fever.");
+    if (!value.trim()) return;
+    onSubmit(value.trim());
   };
   return (
     <div className="screen home-screen">
@@ -743,7 +747,11 @@ function HomeScreen({
           >
             <Icon name="plus" />
           </button>
-          <button className="send-button" aria-label="Start conversation">
+          <button
+            className="send-button"
+            aria-label="Start conversation"
+            disabled={!value.trim()}
+          >
             <Icon name="send" />
           </button>
         </div>
@@ -765,11 +773,9 @@ function HomeScreen({
         {variation !== "ambient" && (
           <button
             onClick={() =>
-              onSubmit(
-                variation === "concierge"
-                  ? "I think I need a doctor for my sore throat."
-                  : "I think I need an antibiotic prescription for my sore throat."
-              )
+              onSubmit(variation === "concierge"
+                ? "I would like to talk with a clinician."
+                : "I have a medication question.")
             }
             type="button"
           >
@@ -790,7 +796,7 @@ function HomeScreen({
         {variation === "classic" && (
           <button
             onClick={() =>
-              onSubmit("I think I need a doctor for my sore throat.")
+              onSubmit("I would like to talk with a clinician.")
             }
             type="button"
           >
@@ -982,7 +988,7 @@ function SummaryScreen({
 }) {
   const [editing, setEditing] = useState(false);
   const [correction, setCorrection] = useState("");
-  const recordedSummary =
+  const recordedSummary: string[] =
     state.intakeAnswers.length > 0
       ? [
           state.concern || "Sore throat concern",
@@ -994,12 +1000,21 @@ function SummaryScreen({
                 `${intakeSummaryLabels[index]}: ${answer}`
             ),
         ]
-      : [
-          state.concern || "Sore throat for five days",
-          "Breathing normally; able to swallow liquids",
-          "No medication allergies reported",
-          "No rash or one-sided swelling reported",
-        ];
+      : state.isReviewFixture
+        ? [
+            state.concern || "Sore throat for five days",
+            "Breathing normally; able to swallow liquids",
+            "No medication allergies reported",
+            "No rash or one-sided swelling reported",
+          ]
+        : [
+            ...(state.concern ? [state.concern] : []),
+            ...(state.upload?.confirmed
+              ? state.upload.extractedFields.map(
+                  (field) => `${field.label}: ${field.value}`
+                )
+              : []),
+          ];
   const summaryItems = [
     ...recordedSummary,
     ...state.summaryCorrections.map(
@@ -1065,9 +1080,26 @@ function SummaryScreen({
           )}
           <div className="summary-source">
             <Icon name="shield" />
-            <span>Built from your answers{state.upload?.confirmed ? " and confirmed report" : ""}</span>
+            <span>
+              {state.isReviewFixture
+                ? "Sample scenario data for prototype review"
+                : `Built only from your answers${
+                    state.upload?.confirmed ? " and confirmed report" : ""
+                  }`}
+            </span>
           </div>
         </section>
+        {!state.isReviewFixture && state.intakeAnswers.length === 0 && (
+          <section className="unanswered-card">
+            <Icon name="clock" />
+            <div>
+              <strong>Still unanswered</strong>
+              <span>
+                Safety signs, medication allergies, and relevant history have not been provided.
+              </span>
+            </div>
+          </section>
+        )}
         <section className="clinician-recommendation">
           <Icon name="doctor" />
           <div>
@@ -1163,7 +1195,42 @@ function EligibilityScreen({
           <label className="confirm-row">
             <input
               type="checkbox"
+              checked={state.eligibility.identityConfirmed}
+              onChange={(event) =>
+                dispatch({
+                  type: "SET_ELIGIBILITY",
+                  eligibility: { identityConfirmed: event.target.checked },
+                })
+              }
+            />
+            <span>
+              <strong>My legal name and date of birth are correct</strong>
+              A production visit may require identity verification before a clinician accepts.
+            </span>
+          </label>
+          <label className="location-entry">
+            <span>Current physical location</span>
+            <input
+              type="text"
+              value={state.eligibility.state}
+              onChange={(event) =>
+                dispatch({
+                  type: "SET_ELIGIBILITY",
+                  eligibility: {
+                    state: event.target.value,
+                    locationConfirmed: false,
+                  },
+                })
+              }
+              placeholder="State"
+              autoComplete="address-level1"
+            />
+          </label>
+          <label className="confirm-row">
+            <input
+              type="checkbox"
               checked={state.eligibility.locationConfirmed}
+              disabled={!state.eligibility.state.trim()}
               onChange={(event) =>
                 dispatch({
                   type: "SET_ELIGIBILITY",
@@ -1172,8 +1239,10 @@ function EligibilityScreen({
               }
             />
             <span>
-              <strong>I am currently in California</strong>
-              Confirm where you are physically located now.
+              <strong>
+                I am physically located in {state.eligibility.state || "the state entered above"}
+              </strong>
+              Clinician availability depends on where you are during the consultation.
             </span>
           </label>
         </section>
@@ -1194,8 +1263,8 @@ function CheckoutScreen({
   onContinue,
   onBack,
 }: {
-  consent: boolean;
-  onConsent: (consent: boolean) => void;
+  consent: ConsentState;
+  onConsent: (consent: Partial<ConsentState>) => void;
   onContinue: () => void;
   onBack: () => void;
 }) {
@@ -1219,7 +1288,7 @@ function CheckoutScreen({
           <strong>$39</strong>
         </div>
         <section className="included-card">
-          <h3>What this includes</h3>
+          <h3>Your $39 clinician episode</h3>
           <div>
             <Icon name="file" />
             <span>Your confirmed summary is shared for review</span>
@@ -1230,28 +1299,70 @@ function CheckoutScreen({
           </div>
           <div>
             <Icon name="shield" />
-            <span>Payment does not guarantee a prescription</span>
+            <span>No charge if a clinician does not accept the case</span>
+          </div>
+        </section>
+        <section className="provider-disclosure">
+          <Icon name="doctor" />
+          <div>
+            <strong>Professional care is separate from August AI</strong>
+            <span>
+              If accepted, clinical care is provided by an MDI-affiliated clinician using independent medical judgment.
+            </span>
           </div>
         </section>
         <label className="consent-row">
           <input
             type="checkbox"
-            checked={consent}
-            onChange={(event) => onConsent(event.target.checked)}
+            checked={consent.shareSummary}
+            onChange={(event) =>
+              onConsent({ shareSummary: event.target.checked })
+            }
           />
           <span>
-            I consent to share this visit with an available clinician for review.
+            I reviewed the pre-visit summary and agree to share these selected details with the clinical provider.
+          </span>
+        </label>
+        <label className="consent-row">
+          <input
+            type="checkbox"
+            checked={consent.telehealth}
+            onChange={(event) =>
+              onConsent({ telehealth: event.target.checked })
+            }
+          />
+          <span>
+            I consent to a telehealth consultation and understand that a clinician-patient relationship begins only if a clinician accepts and starts review.
+          </span>
+        </label>
+        <label className="consent-row">
+          <input
+            type="checkbox"
+            checked={consent.payment}
+            onChange={(event) =>
+              onConsent({ payment: event.target.checked })
+            }
+          />
+          <span>
+            I authorize the $39 clinician consultation fee if my case is accepted. Medication, tests, and pharmacy costs may be separate.
           </span>
         </label>
         <div className="total-row">
           <span>Example total today</span>
           <strong>$39.00</strong>
         </div>
-        <PrimaryButton onClick={onContinue} disabled={!consent}>
-          Pay and send for review
+        <PrimaryButton
+          onClick={onContinue}
+          disabled={
+            !consent.shareSummary ||
+            !consent.telehealth ||
+            !consent.payment
+          }
+        >
+          Authorize $39 and submit
         </PrimaryButton>
         <p className="legal-line">
-          Example pricing. No charge is shown if the case is not accepted.
+          Prototype transaction. Final consent, refund, and episode terms require legal and operational approval.
         </p>
       </div>
     </div>
@@ -1268,6 +1379,7 @@ function MatchingScreen({
   onViewSummary: () => void;
 }) {
   const delayed = clinicianState === "delayed";
+  const unavailable = clinicianState === "unavailable";
   return (
     <div className="screen waiting-screen">
       <Header title="Sore throat" status="Finding a clinician" onBack={onBack} />
@@ -1277,13 +1389,36 @@ function MatchingScreen({
             <Icon name="doctor" />
           </span>
         </div>
-        <Pill>{delayed ? "Taking longer than expected" : "Case received"}</Pill>
-        <h2>{delayed ? "Your case is still in queue" : "Your visit is being matched"}</h2>
+        <Pill>
+          {unavailable
+            ? "No clinician available"
+            : delayed
+              ? "Taking longer than expected"
+              : "Case received"}
+        </Pill>
+        <h2>
+          {unavailable
+            ? "This consultation cannot start right now"
+            : delayed
+              ? "Your case is still in queue"
+              : "Your visit is being matched"}
+        </h2>
         <p className="page-intro">
-          {delayed
-            ? "You can keep waiting or return later. We’ll update this visit when a clinician is assigned."
-            : "You can leave this screen. This visit will update when a clinician is assigned."}
+          {unavailable
+            ? "No clinician accepted the case. The $39 fee will not be charged. You can review your summary or choose another care option."
+            : delayed
+              ? "You can keep waiting or return later. We’ll update this visit when a clinician is assigned."
+              : "You can leave this screen. This visit will update when a clinician is assigned."}
         </p>
+        <div className="wait-meta">
+          <span>Last updated</span>
+          <strong>Just now</strong>
+          <small>
+            {unavailable
+              ? "Consultation closed without charge"
+              : "Response time varies; no fixed time is promised in this prototype"}
+          </small>
+        </div>
         <section className="status-track">
           <div className="done">
             <i>
@@ -1308,8 +1443,16 @@ function MatchingScreen({
               <span />
             </i>
             <span>
-              <strong>Matching clinician</strong>
-              <small>{delayed ? "Still searching" : "Status updates appear here"}</small>
+              <strong>
+                {unavailable ? "No match available" : "Matching clinician"}
+              </strong>
+              <small>
+                {unavailable
+                  ? "No clinician accepted"
+                  : delayed
+                    ? "Still searching"
+                    : "Status updates appear here"}
+              </small>
             </span>
           </div>
           <div>
@@ -1330,6 +1473,11 @@ function MatchingScreen({
         <button className="text-button" onClick={onViewSummary} type="button">
           View submitted summary
         </button>
+        {unavailable && (
+          <button className="text-button" onClick={onBack} type="button">
+            Review payment and care options
+          </button>
+        )}
       </div>
     </div>
   );
@@ -1349,8 +1497,8 @@ function ClinicianReviewingScreen({
   return (
     <div className="screen conversation-screen clinician-screen">
       <Header
-        title="Maya Rao"
-        status="Human clinician · Reviewing"
+        title="Maya Rao · Sample"
+        status="Clinical review · MDI-affiliated care"
         onBack={onBack}
         person
       />
@@ -1360,11 +1508,20 @@ function ClinicianReviewingScreen({
           <Pill tone="white">Assigned · 10:16 AM</Pill>
           <span className="line" />
         </div>
+        <section className="clinical-start-event">
+          <Icon name="shield" />
+          <div>
+            <strong>Clinical review starts here</strong>
+            <span>
+              This sample clinician has accepted the consultation. Messages below are part of the clinical conversation.
+            </span>
+          </div>
+        </section>
         <section className="doctor-profile-card">
           <ClinicianPortrait />
           <div>
             <strong>Maya Rao</strong>
-            <span>Human clinician</span>
+            <span>Sample clinician · MDI-affiliated care</span>
             <small>Reviewing your confirmed summary and any uploaded files.</small>
           </div>
         </section>
@@ -1429,7 +1586,7 @@ function ClinicianScreen({
         status={
           privateToAugust
             ? "Private August explanation"
-            : experience.clinicianStatus
+            : `${experience.clinicianStatus} · Sample`
         }
         onBack={onBack}
         person={!privateToAugust}
@@ -1463,11 +1620,13 @@ function ClinicianScreen({
       <div className="conversation-body" aria-live="polite">
         {privateToAugust ? (
           <>
-            <section className="private-sidecar">
+              <section className="private-sidecar">
               <Icon name="shield" />
               <div>
                 <strong>Private to August</strong>
-                <span>Maya cannot see messages in this sidecar.</span>
+                <span>
+                  Maya cannot see messages in this sidecar unless you choose to share them.
+                </span>
               </div>
             </section>
             <ThreadMessages messages={state.augustMessages} />
@@ -1590,7 +1749,7 @@ function PlanScreen({
     <div className="screen plan-screen">
       <Header
         title="Your care plan"
-        status="Signed by Maya Rao"
+        status="Sample plan · Signed by Maya Rao"
         onBack={onBack}
         person
       />
@@ -1599,7 +1758,7 @@ function PlanScreen({
           <div className="success-seal">
             <Icon name="check" />
           </div>
-          <Pill>Care plan signed</Pill>
+          <Pill>Sample care plan signed</Pill>
           <h2>Your next 48 hours</h2>
           <p>Maya reviewed your final answer before signing this plan.</p>
         </div>
@@ -1754,7 +1913,6 @@ function ReportScreen({
   onBack: () => void;
 }) {
   const upload = state.upload;
-  const [note, setNote] = useState("");
 
   useEffect(() => {
     if (upload?.status !== "processing") return;
@@ -1779,7 +1937,14 @@ function ReportScreen({
           <span>Report</span>
           <div>
             <i className="active" />
-            <i className={upload.status !== "attached" ? "active" : ""} />
+            <i
+              className={
+                upload.status !== "selecting" &&
+                upload.status !== "attached"
+                  ? "active"
+                  : ""
+              }
+            />
             <i
               className={
                 upload.status === "review" || upload.status === "confirmed"
@@ -1790,28 +1955,71 @@ function ReportScreen({
           </div>
           <span>{upload.status.replace("_", " ")}</span>
         </div>
-        <Message author="You" role="Patient" patient>
-          I added a rapid strep report.
-        </Message>
-        <section className="upload-preview">
-          <div className="report-thumb">
-            <Icon name="lab" />
-            <span>PDF</span>
-          </div>
-          <div>
-            <strong>{upload.filename}</strong>
-            <span>1 page · ready to review</span>
-          </div>
-          <Pill>{upload.status === "attached" ? "Attached" : "Added"}</Pill>
-        </section>
+        {upload.status === "selecting" && (
+          <section className="upload-picker">
+            <Icon name="file" />
+            <h3>Choose the report you want to add</h3>
+            <p>
+              Nothing is attached until you select a file. This public prototype does not read real health documents.
+            </p>
+            <label className="file-picker-button">
+              Select a PDF or image
+              <input
+                type="file"
+                accept=".pdf,image/*"
+                onChange={(event) => {
+                  const file = event.currentTarget.files?.[0];
+                  if (!file) return;
+                  dispatch({
+                    type: "SELECT_UPLOAD_FILE",
+                    filename: file.name,
+                  });
+                }}
+              />
+            </label>
+            <PrimaryButton
+              secondary
+              onClick={() => dispatch({ type: "USE_SAMPLE_UPLOAD" })}
+            >
+              Use sample strep report
+            </PrimaryButton>
+          </section>
+        )}
+
+        {upload.status !== "selecting" && (
+          <>
+            <Message author="You" role="Patient" patient>
+              I added {upload.filename}.
+            </Message>
+            <section className="upload-preview">
+              <div className="report-thumb">
+                <Icon name="lab" />
+                <span>FILE</span>
+              </div>
+              <div>
+                <strong>{upload.filename}</strong>
+                <span>
+                  {upload.source === "review-fixture"
+                    ? "Sample document · prototype only"
+                    : "Selected on this device"}
+                </span>
+              </div>
+              <Pill>{upload.status === "attached" ? "Attached" : "Added"}</Pill>
+            </section>
+          </>
+        )}
 
         {upload.status === "attached" && (
           <>
             <Message author="August AI" role="AI care guide">
-              I can look for the test name, result, and collection date. You’ll confirm everything before it is shared.
+              {upload.source === "review-fixture"
+                ? "This sample lets you review the extraction and confirmation interaction. No real health document is being processed."
+                : "I can attach this file to the encounter, but this public prototype will not read or extract real health information from it."}
             </Message>
             <PrimaryButton onClick={() => dispatch({ type: "PROCESS_UPLOAD" })}>
-              Read this report
+              {upload.source === "review-fixture"
+                ? "Review sample extraction"
+                : "Check this attachment"}
             </PrimaryButton>
           </>
         )}
@@ -1868,9 +2076,15 @@ function ReportScreen({
         {upload.status === "low_confidence" && (
           <section className="upload-recovery">
             <Icon name="file" />
-            <h3>I couldn’t read this reliably</h3>
+            <h3>
+              {upload.source === "user-selected"
+                ? "Real document reading is disabled in this prototype"
+                : "I couldn’t read this reliably"}
+            </h3>
             <p>
-              The result is too unclear to add. Try a brighter photo with the full page visible, or continue without it.
+              {upload.source === "user-selected"
+                ? "Use the sample report to test extraction, or continue without adding this file."
+                : "The result is too unclear to add. Try a brighter photo with the full page visible, or continue without it."}
             </p>
             <PrimaryButton onClick={() => dispatch({ type: "RETRY_UPLOAD" })}>
               Try another file
@@ -1889,15 +2103,22 @@ function ReportScreen({
           </section>
         )}
 
-        {note && (
-          <Message author="You" role="Note with report" patient>
+        {state.reportNotes.map((note, index) => (
+          <Message
+            author="You"
+            role="Note with report"
+            patient
+            key={`${note}-${index}`}
+          >
             {note}
           </Message>
-        )}
+        ))}
       </div>
       <Composer
         placeholder="Add a note about this report…"
-        onSubmit={setNote}
+        onSubmit={(content) =>
+          dispatch({ type: "SUBMIT_REPORT_NOTE", content })
+        }
         recipient="To August"
       />
     </div>
@@ -1950,7 +2171,7 @@ function PrescriptionScreen({
             </Message>
           </div>
         ))}
-        {state.prescriptionStep < 3 ? (
+        {state.prescriptionStep < 4 ? (
           <Message author="August AI" role="AI care guide">
             {prescriptionQuestions[state.prescriptionStep]}
           </Message>
@@ -1974,7 +2195,7 @@ function PrescriptionScreen({
       </div>
       <Composer
         placeholder={
-          state.prescriptionStep < 3
+          state.prescriptionStep < 4
             ? "Answer in your own words…"
             : "Add anything else…"
         }
@@ -1995,7 +2216,9 @@ function EmergencyScreen({
   state: EncounterState;
   dispatch: React.Dispatch<EncounterAction>;
 }) {
-  const [locationConfirmed, setLocationConfirmed] = useState(false);
+  const [location, setLocation] = useState(
+    state.eligibility.locationConfirmed ? state.eligibility.state : ""
+  );
   const [showExit, setShowExit] = useState(false);
   return (
     <div className="screen emergency-screen">
@@ -2012,31 +2235,35 @@ function EmergencyScreen({
         <p>
           Trouble breathing, fainting, or severe chest pain can be urgent. August cannot contact emergency services for you.
         </p>
-        <button
+        <a
           className="emergency-call"
+          href="tel:911"
           onClick={() => dispatch({ type: "START_EMERGENCY_ACTION" })}
-          type="button"
         >
           <Icon name="phone" />
           <span>
             <small>Call emergency services</small>
             911
           </span>
-        </button>
-        <label className="emergency-confirm">
+        </a>
+        <label className="emergency-location-field">
+          <span>Where are you physically located right now?</span>
           <input
-            type="checkbox"
-            checked={locationConfirmed}
-            onChange={(event) => setLocationConfirmed(event.target.checked)}
+            type="text"
+            value={location}
+            onChange={(event) => setLocation(event.target.value)}
+            placeholder="City and state"
+            autoComplete="address-level2"
           />
-          <span>I am currently in San Francisco, California</span>
         </label>
         <button
           className="emergency-location"
-          disabled={!locationConfirmed}
+          disabled={!location.trim()}
           onClick={() =>
             window.open(
-              "https://maps.apple.com/?q=emergency+department",
+              `https://maps.apple.com/?q=${encodeURIComponent(
+                `emergency department near ${location}`
+              )}`,
               "_blank",
               "noopener,noreferrer"
             )
@@ -2046,7 +2273,11 @@ function EmergencyScreen({
           <Icon name="pin" />
           <span>
             <strong>Find the nearest emergency department</strong>
-            <small>Available after you confirm your location</small>
+            <small>
+              {location.trim()
+                ? `Search near ${location}`
+                : "Enter your current location first"}
+            </small>
           </span>
           <Icon name="arrow" />
         </button>
@@ -2097,10 +2328,18 @@ function EmergencyScreen({
   );
 }
 
-function UnsupportedScreen({ onBack }: { onBack: () => void }) {
+function UnsupportedScreen({
+  concern,
+  onBack,
+}: {
+  concern: string;
+  onBack: () => void;
+}) {
   const downloadSummary = () => {
     const summaryText =
-      "August care summary\n\nMedication requested: Adderall refill\nCare boundary: this medication request is not supported through August\nSuggested next step: contact the established prescriber or ongoing primary care";
+      `August care summary\n\nPatient request: ${
+        concern || "Controlled medication request"
+      }\nCare boundary: this medication request is not supported through August\nSuggested next step: contact the established prescriber or ongoing primary care`;
     const blob = new Blob([summaryText], {
       type: "text/plain;charset=utf-8",
     });
@@ -2235,6 +2474,14 @@ function ReviewerRail({
               type="button"
             >
               Simulate delay
+            </button>
+            <button
+              onClick={() =>
+                dispatch({ type: "SET_CLINICIAN_UNAVAILABLE" })
+              }
+              type="button"
+            >
+              No clinician available
             </button>
           </>
         )}

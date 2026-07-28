@@ -134,8 +134,15 @@ test("visit summary is derived from the patient's answers", async ({
 test("checkout consent starts unchecked and blocks progress", async ({ page }) => {
   await page.goto("/cases/pricing-checkout/classic");
   const consent = page.locator(".consent-row input");
-  await expect(consent).not.toBeChecked();
-  await expect(page.getByRole("button", { name: /Pay and send/ })).toBeDisabled();
+  await expect(consent).toHaveCount(3);
+  expect(
+    await consent.evaluateAll((inputs) =>
+      inputs.every((input) => !(input as HTMLInputElement).checked)
+    )
+  ).toBe(true);
+  await expect(
+    page.getByRole("button", { name: "Authorize $39 and submit" })
+  ).toBeDisabled();
 });
 
 test("composer remains available in the clinician conversation", async ({ page }) => {
@@ -143,7 +150,9 @@ test("composer remains available in the clinician conversation", async ({ page }
   await expect(page.locator(".composer")).toBeVisible();
   await expect(page.getByText("Private to August", { exact: true })).toHaveCount(0);
   await page.getByRole("button", { name: /Ask August/ }).click();
-  await expect(page.getByText("Maya cannot see messages in this sidecar.")).toBeVisible();
+  await expect(
+    page.getByText("Maya cannot see messages in this sidecar unless you choose to share them.")
+  ).toBeVisible();
   await expect(page.locator(".composer")).toBeVisible();
 });
 
@@ -359,8 +368,51 @@ test("emergency suppresses routine navigation and composer", async ({ page }) =>
   await page.getByRole("button", { name: /Use a different concern/ }).click();
   await expect(page.getByText("Confirm before leaving")).toBeVisible();
   await page.getByRole("button", { name: /Stay on this screen/ }).click();
-  await page.getByRole("button", { name: /Call emergency services/ }).click();
-  await expect(page.getByText(/After you contact emergency services/)).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: /Call emergency services/ })
+  ).toHaveAttribute("href", "tel:911");
+});
+
+test("blank entry cannot create a fabricated concern", async ({ page }) => {
+  await page.goto("/");
+  const start = page.getByRole("button", { name: "Start conversation" });
+  await expect(start).toBeDisabled();
+  await expect(page.getByText("My throat has hurt for five days")).toHaveCount(0);
+});
+
+test("medication answers use the same emergency interruption", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Medication Assessment first" })
+    .click();
+  const composer = page.locator(".composer");
+  await composer
+    .getByRole("textbox")
+    .fill("I took too much medication and think I overdosed.");
+  await composer.getByRole("button", { name: "Send message" }).click();
+  await expect(
+    page.getByText("This may need emergency care now.", { exact: true })
+  ).toBeVisible();
+});
+
+test("patient upload starts with a real file choice or explicit sample", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await page
+    .getByRole("button", { name: "Upload result Review together" })
+    .click();
+  await expect(
+    page.getByText("Nothing is attached until you select a file.", {
+      exact: false,
+    })
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Use sample strep report" }).click();
+  await expect(
+    page.getByText("Sample document · prototype only", { exact: true })
+  ).toBeVisible();
 });
 
 test("supports keyboard focus and 200% root text sizing", async ({
