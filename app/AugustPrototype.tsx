@@ -14,7 +14,6 @@ import {
   createEncounterState,
   encounterReducer,
   type ConversationMessage,
-  type ConsentState,
   type EncounterAction,
   type EncounterState,
   type PrescriptionOutcome,
@@ -146,8 +145,7 @@ const phaseLabels: Record<EncounterPhase, string> = {
   safety: "Safety check",
   intake: "Focused intake",
   summary: "Visit summary",
-  eligibility: "Eligibility",
-  checkout: "Consent and price",
+  eligibility: "Eligibility and consent",
   matching: "Matching",
   clinician_reviewing: "Clinician reviewing",
   clinician_active: "Clinician conversation",
@@ -674,20 +672,10 @@ export function AugustPrototype({
                 onBack={() => backTo("summary")}
               />
             )}
-            {activeSurface === "august" && state.phase === "checkout" && (
-              <CheckoutScreen
-                consent={state.consent}
-                onConsent={(consent) =>
-                  dispatch({ type: "SET_CONSENT", consent })
-                }
-                onContinue={() => backTo("matching")}
-                onBack={() => backTo("eligibility")}
-              />
-            )}
             {activeSurface === "august" && state.phase === "matching" && (
               <MatchingScreen
                 clinicianState={state.clinicianState}
-                onBack={() => backTo("checkout")}
+                onBack={() => backTo("eligibility")}
                 onViewSummary={() => backTo("summary")}
               />
             )}
@@ -1328,7 +1316,10 @@ function EligibilityScreen({
   dispatch: React.Dispatch<EncounterAction>;
   onBack: () => void;
 }) {
-  const eligible = canContinueEligibility(state);
+  const eligible =
+    canContinueEligibility(state) &&
+    state.consent.shareSummary &&
+    state.consent.telehealth;
   return (
     <div className="screen summary-screen">
       <Header
@@ -1337,10 +1328,10 @@ function EligibilityScreen({
         onBack={onBack}
       />
       <div className="page-body">
-        <span className="eyebrow">Eligibility</span>
-        <h2>Three quick confirmations</h2>
+        <span className="eyebrow">Eligibility and consent</span>
+        <h2>Review before clinician matching</h2>
         <p className="page-intro">
-          These details determine whether this visit can continue.
+          Confirm who and where you are, then choose what can be shared.
         </p>
         <section className="eligibility-card">
           <fieldset>
@@ -1448,125 +1439,45 @@ function EligibilityScreen({
               Clinician availability depends on where you are during the consultation.
             </span>
           </label>
+          <label className="confirm-row">
+            <input
+              type="checkbox"
+              checked={state.consent.shareSummary}
+              onChange={(event) =>
+                dispatch({
+                  type: "SET_CONSENT",
+                  consent: { shareSummary: event.target.checked },
+                })
+              }
+            />
+            <span>
+              <strong>Share my confirmed visit summary</strong>
+              Only the details reviewed on the previous screen are shared with the clinical provider.
+            </span>
+          </label>
+          <label className="confirm-row">
+            <input
+              type="checkbox"
+              checked={state.consent.telehealth}
+              onChange={(event) =>
+                dispatch({
+                  type: "SET_CONSENT",
+                  consent: { telehealth: event.target.checked },
+                })
+              }
+            />
+            <span>
+              <strong>I consent to a telehealth consultation</strong>
+              A clinician-patient relationship begins only if a clinician accepts and starts review.
+            </span>
+          </label>
         </section>
         <PrimaryButton
           disabled={!eligible}
-          onClick={() => dispatch({ type: "GO_TO", phase: "checkout" })}
+          onClick={() => dispatch({ type: "GO_TO", phase: "matching" })}
         >
-          Continue to consent and price
+          Confirm and find a clinician
         </PrimaryButton>
-      </div>
-    </div>
-  );
-}
-
-function CheckoutScreen({
-  consent,
-  onConsent,
-  onContinue,
-  onBack,
-}: {
-  consent: ConsentState;
-  onConsent: (consent: Partial<ConsentState>) => void;
-  onContinue: () => void;
-  onBack: () => void;
-}) {
-  return (
-    <div className="screen summary-screen">
-      <Header
-        title="Clinician review"
-        status="Consent and example price"
-        onBack={onBack}
-      />
-      <div className="page-body">
-        <div className="visit-profile">
-          <div className="profile-avatar">
-            <Icon name="doctor" />
-          </div>
-          <div>
-            <span>Asynchronous visit</span>
-            <h2>Clinician review</h2>
-            <p>You can leave and return after sending.</p>
-          </div>
-          <strong>$39</strong>
-        </div>
-        <section className="included-card">
-          <h3>Your $39 clinician episode</h3>
-          <div>
-            <Icon name="file" />
-            <span>Your confirmed summary is shared for review</span>
-          </div>
-          <div>
-            <Icon name="clock" />
-            <span>You’ll see status updates while you wait</span>
-          </div>
-          <div>
-            <Icon name="shield" />
-            <span>No charge if a clinician does not accept the case</span>
-          </div>
-        </section>
-        <section className="provider-disclosure">
-          <Icon name="doctor" />
-          <div>
-            <strong>Professional care is separate from August AI</strong>
-            <span>
-              If accepted, clinical care is provided by an MDI-affiliated clinician using independent medical judgment.
-            </span>
-          </div>
-        </section>
-        <label className="consent-row">
-          <input
-            type="checkbox"
-            checked={consent.shareSummary}
-            onChange={(event) =>
-              onConsent({ shareSummary: event.target.checked })
-            }
-          />
-          <span>
-            I reviewed the pre-visit summary and agree to share these selected details with the clinical provider.
-          </span>
-        </label>
-        <label className="consent-row">
-          <input
-            type="checkbox"
-            checked={consent.telehealth}
-            onChange={(event) =>
-              onConsent({ telehealth: event.target.checked })
-            }
-          />
-          <span>
-            I consent to a telehealth consultation and understand that a clinician-patient relationship begins only if a clinician accepts and starts review.
-          </span>
-        </label>
-        <label className="consent-row">
-          <input
-            type="checkbox"
-            checked={consent.payment}
-            onChange={(event) =>
-              onConsent({ payment: event.target.checked })
-            }
-          />
-          <span>
-            I authorize the $39 clinician consultation fee if my case is accepted. Medication, tests, and pharmacy costs may be separate.
-          </span>
-        </label>
-        <div className="total-row">
-          <span>Example total today</span>
-          <strong>$39.00</strong>
-        </div>
-        <PrimaryButton
-          onClick={onContinue}
-          disabled={
-            !consent.shareSummary ||
-            !consent.telehealth ||
-            !consent.payment
-          }
-        >
-          Authorize $39 and submit
-        </PrimaryButton>
-        <p className="legal-line">
-          Prototype transaction. Final consent, refund, and episode terms require legal and operational approval.
-        </p>
       </div>
     </div>
   );
@@ -1608,7 +1519,7 @@ function MatchingScreen({
         </h2>
         <p className="page-intro">
           {unavailable
-            ? "No clinician accepted the case. The $39 fee will not be charged. You can review your summary or choose another care option."
+            ? "No clinician accepted the case. You can review your summary or choose another care option."
             : delayed
               ? "You can keep waiting or return later. We’ll update this visit when a clinician is assigned."
               : "You can leave this screen. This visit will update when a clinician is assigned."}
@@ -1618,7 +1529,7 @@ function MatchingScreen({
           <strong>Just now</strong>
           <small>
             {unavailable
-              ? "Consultation closed without charge"
+              ? "Consultation closed"
               : "Response time varies; no fixed time is promised in this prototype"}
           </small>
         </div>
@@ -1678,7 +1589,7 @@ function MatchingScreen({
         </button>
         {unavailable && (
           <button className="text-button" onClick={onBack} type="button">
-            Review payment and care options
+            Review eligibility and care details
           </button>
         )}
       </div>
@@ -1920,7 +1831,7 @@ function PrescriptionOutcomeCard({
     "test-first": {
       label: "Testing first",
       title: "A rapid test is needed before medication",
-      body: "The result will return to this visit for Maya to review. Payment did not guarantee a prescription.",
+      body: "The result will return to this visit for Maya to review before any medication decision.",
     },
     declined: {
       label: "Different care recommended",
@@ -2646,7 +2557,7 @@ function ReviewerRail({
         <ClinicianPortrait small />
         <span>
           <strong>Fictional sample clinician</strong>
-          Portrait, identity, timing, price, and care decisions are demonstration data.
+          Portrait, identity, timing, and care decisions are demonstration data.
         </span>
       </div>
       <dl className="reviewer-status">

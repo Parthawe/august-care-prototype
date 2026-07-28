@@ -19,7 +19,6 @@ type Phase =
   | "asking"
   | "summary"
   | "eligibility"
-  | "consent"
   | "waiting"
   | "maya-active"
   | "lab-choice"
@@ -1789,41 +1788,14 @@ export function UnifiedCarePrototype({
                     </label>
                   </div>
                   <p className={styles.cardCopy}>
-                    The $39 clinician review does not guarantee medication or a
-                    specific outcome.
+                    A clinician uses independent medical judgment. Review does
+                    not guarantee medication or a specific outcome.
                   </p>
                   <PrimaryButton
                     disabled={!careForSelf || !adult || !location || !consent}
                     onClick={connect}
                   >
-                    Confirm and connect · $39
-                  </PrimaryButton>
-                </InlineCard>
-              ) : null}
-
-              {channel === "august" && phase === "consent" ? (
-                <InlineCard
-                  icon="shield"
-                  eyebrow="Clinical review"
-                  title="$39 today"
-                >
-                  <p className={styles.cardCopy}>
-                    Payment covers Maya’s review. It does not guarantee a
-                    prescription or a specific outcome.
-                  </p>
-                  <label className={styles.consentRow}>
-                    <input
-                      type="checkbox"
-                      checked={consent}
-                      onChange={(event) => setConsent(event.target.checked)}
-                    />
-                    <span>
-                      I consent to clinician review and sharing the confirmed
-                      summary with Maya.
-                    </span>
-                  </label>
-                  <PrimaryButton disabled={!consent} onClick={connect}>
-                    Pay and send for review · $39
+                    Confirm and connect
                   </PrimaryButton>
                 </InlineCard>
               ) : null}

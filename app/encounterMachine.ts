@@ -65,7 +65,6 @@ export type EligibilityState = {
 export type ConsentState = {
   shareSummary: boolean;
   telehealth: boolean;
-  payment: boolean;
 };
 
 export type EncounterState = {
@@ -372,7 +371,6 @@ export function createEncounterState({
     consent: {
       shareSummary: false,
       telehealth: false,
-      payment: false,
     },
     prescriptionStep: 0,
     prescriptionAnswers: [],

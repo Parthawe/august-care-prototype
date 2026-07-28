@@ -20,7 +20,6 @@ const patientUiPaths = [
   "/cases/three-questions/classic",
   "/cases/visit-summary/classic",
   "/cases/eligibility/classic",
-  "/cases/pricing-checkout/classic",
   "/cases/async-wait/classic",
   "/cases/doctor-reviewing/classic",
   "/cases/doctor-handoff/classic",
@@ -131,18 +130,20 @@ test("visit summary is derived from the patient's answers", async ({
   await expect(page.getByText(/101\.5°F/)).toHaveCount(0);
 });
 
-test("checkout consent starts unchecked and blocks progress", async ({ page }) => {
-  await page.goto("/cases/pricing-checkout/classic");
-  const consent = page.locator(".consent-row input");
-  await expect(consent).toHaveCount(3);
+test("eligibility and clinical consent start unchecked without payment", async ({ page }) => {
+  await page.goto("/cases/eligibility/classic");
+  const consent = page.locator(".eligibility-card input[type='checkbox']");
+  await expect(consent).toHaveCount(5);
   expect(
     await consent.evaluateAll((inputs) =>
       inputs.every((input) => !(input as HTMLInputElement).checked)
     )
   ).toBe(true);
   await expect(
-    page.getByRole("button", { name: "Authorize $39 and submit" })
+    page.getByRole("button", { name: "Confirm and find a clinician" })
   ).toBeDisabled();
+  await expect(page.getByText("$39", { exact: false })).toHaveCount(0);
+  await expect(page.getByText("payment", { exact: false })).toHaveCount(0);
 });
 
 test("composer remains available in the clinician conversation", async ({ page }) => {

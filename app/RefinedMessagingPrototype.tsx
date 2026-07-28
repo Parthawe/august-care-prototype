@@ -581,10 +581,10 @@ function ConnectionCard({ onContinue }: { onContinue: () => void }) {
         </div>
       </div>
       <p>
-        $39 covers the clinical review, not a prescription or specific outcome.
+        Maya will review the confirmed summary using independent clinical judgment.
       </p>
       <button type="button" onClick={onContinue}>
-        Review details · $39
+        Review clinician details
       </button>
     </div>
   );
@@ -1295,13 +1295,13 @@ export function RefinedMessagingPrototype() {
                 <strong>Your answers and attachments</strong>
               </p>
               <p>
-                <span>Clinical review</span>
-                <strong>$39</strong>
+                <span>Care model</span>
+                <strong>Asynchronous clinician review</strong>
               </p>
             </div>
             <p className={styles.sheetFinePrint}>
-              Payment covers Maya’s review. It does not guarantee a
-              prescription or a specific outcome.
+              Maya uses independent clinical judgment. Review does not
+              guarantee a prescription or a specific outcome.
             </p>
             <button
               type="button"
@@ -1312,7 +1312,7 @@ export function RefinedMessagingPrototype() {
                 setStep("care-inbox");
               }}
             >
-              Confirm and connect · $39
+              Confirm and connect
             </button>
           </OverlaySheet>
         ) : null}

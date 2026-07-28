@@ -324,7 +324,7 @@ test("emergency exit preserves the originating care context", () => {
   assert.equal(state.safetyOrigin, null);
 });
 
-test("controlled medication requests route to an unpaid boundary", () => {
+test("controlled medication requests route to an ongoing-care boundary", () => {
   const state = encounterReducer(createEncounterState(), {
     type: "START_CONCERN",
     concern: "Can I refill Xanax?",
@@ -367,7 +367,7 @@ test("all medication decision outcomes resolve inside the clinician encounter", 
 });
 
 test("eligibility and consent begin explicitly unconfirmed", () => {
-  const state = createEncounterState({ phase: "checkout" });
+  const state = createEncounterState({ phase: "eligibility" });
   assert.deepEqual(state.eligibility, {
     careFor: null,
     adultConfirmed: false,
@@ -378,6 +378,5 @@ test("eligibility and consent begin explicitly unconfirmed", () => {
   assert.deepEqual(state.consent, {
     shareSummary: false,
     telehealth: false,
-    payment: false,
   });
 });

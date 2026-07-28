@@ -4,7 +4,6 @@ export type EncounterPhase =
   | "intake"
   | "summary"
   | "eligibility"
-  | "checkout"
   | "matching"
   | "clinician_reviewing"
   | "clinician_active"
@@ -75,7 +74,7 @@ export const prototypeVariations = [
     note: "A more proactive, high-touch handoff with stronger care-team presence.",
     hypothesis: "Guided premium service",
     question:
-      "Does proactive guidance make asynchronous care feel worth paying for?",
+      "Does proactive guidance make asynchronous care feel more supported and reassuring?",
   },
 ] satisfies Array<{
   id: PrototypeVariationId;
@@ -127,20 +126,11 @@ export const prototypeCases = [
   },
   {
     id: "eligibility",
-    label: "Eligibility",
+    label: "Eligibility and consent",
     phase: "eligibility",
     view: "eligibility",
     concern: "My throat has hurt for five days and I have a fever.",
-    note: "Care recipient, age, and current location are explicitly confirmed.",
-    group: "walkthrough",
-  },
-  {
-    id: "pricing-checkout",
-    label: "Consent and price",
-    phase: "checkout",
-    view: "checkout",
-    concern: "My throat has hurt for five days and I have a fever.",
-    note: "Unchecked consent and a clearly documented example price.",
+    note: "Care recipient, location, summary sharing, and telehealth consent are explicitly confirmed.",
     group: "walkthrough",
   },
   {
