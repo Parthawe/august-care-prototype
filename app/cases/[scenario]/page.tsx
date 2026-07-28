@@ -1,6 +1,9 @@
-import { notFound } from "next/navigation";
-import { AugustPrototype } from "../../AugustPrototype";
-import { getPrototypeCase, prototypeCases } from "../../prototypeCases";
+import { notFound, redirect } from "next/navigation";
+import {
+  getPortfolioFlowForPrototypeCase,
+  getPrototypeCase,
+  prototypeCases,
+} from "../../prototypeCases";
 
 type Props = {
   params: Promise<{
@@ -38,13 +41,10 @@ export default async function PrototypeCasePage({ params }: Props) {
     notFound();
   }
 
-  return (
-    <AugustPrototype
-      initialCaseId={prototypeCase.id}
-      initialView={prototypeCase.view}
-      initialConcern={prototypeCase.concern}
-      initialFixture={prototypeCase.fixture}
-      variation="classic"
-    />
-  );
+  const flow = getPortfolioFlowForPrototypeCase(prototypeCase.id);
+  if (!flow) {
+    notFound();
+  }
+
+  redirect(`/prototype/${flow}`);
 }

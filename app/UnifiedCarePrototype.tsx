@@ -40,7 +40,8 @@ type Phase =
   | "emergency-location"
   | "emergency-contacted"
   | "emergency-exit"
-  | "emergency-refused";
+  | "emergency-refused"
+  | "emergency-complete";
 type Sender = "august" | "patient" | "maya" | "system";
 
 type ChatMessage = {
@@ -734,11 +735,13 @@ function Header({
   privateMode,
   onCare,
   onBack,
+  showCareNavigation,
 }: {
   channel: "august" | "maya" | "care";
   privateMode: boolean;
   onCare: () => void;
   onBack: () => void;
+  showCareNavigation: boolean;
 }) {
   if (channel === "care") {
     return (
@@ -754,14 +757,16 @@ function Header({
   const maya = channel === "maya";
   return (
     <header className={styles.header}>
-      <button
-        type="button"
-        className={styles.backButton}
-        aria-label="Back to conversations"
-        onClick={onBack}
-      >
-        <Icon name="back" />
-      </button>
+      {showCareNavigation ? (
+        <button
+          type="button"
+          className={styles.backButton}
+          aria-label="Back to conversations"
+          onClick={onBack}
+        >
+          <Icon name="back" />
+        </button>
+      ) : null}
       <Avatar person={maya ? "maya" : "august"} />
       <div className={styles.headerCopy}>
         <strong>{maya ? "Maya (Clinician)" : "August"}</strong>
@@ -773,14 +778,16 @@ function Header({
               : "Care guide"}
         </span>
       </div>
-      <button
-        type="button"
-        className={styles.headerButton}
-        aria-label="Open Care conversations"
-        onClick={onCare}
-      >
-        <Icon name="message" />
-      </button>
+      {showCareNavigation ? (
+        <button
+          type="button"
+          className={styles.headerButton}
+          aria-label="Open Care conversations"
+          onClick={onCare}
+        >
+          <Icon name="message" />
+        </button>
+      ) : null}
     </header>
   );
 }
@@ -1379,6 +1386,15 @@ export function UnifiedCarePrototype({
     setSafeToExit(false);
   };
 
+  const finishEmergency = () => {
+    if (isolatedScenario) {
+      setPhase("emergency-complete");
+      setSafeToExit(false);
+      return;
+    }
+    reset();
+  };
+
   const openAugust = () => {
     setChannel("august");
     setPrivateMode(connected);
@@ -1551,7 +1567,10 @@ export function UnifiedCarePrototype({
                     Urgent warning signs stopped or help was contacted.
                   </span>
                 </label>
-                <PrimaryButton disabled={!safeToExit} onClick={reset}>
+                <PrimaryButton
+                  disabled={!safeToExit}
+                  onClick={finishEmergency}
+                >
                   Confirm signs stopped
                 </PrimaryButton>
                 <button
@@ -1588,10 +1607,20 @@ export function UnifiedCarePrototype({
                   type="button"
                   className={styles.emergencyTextButton}
                   disabled={!safeToExit}
-                  onClick={reset}
+                  onClick={finishEmergency}
                 >
                   Exit urgent guidance
                 </button>
+              </>
+            ) : null}
+            {phase === "emergency-complete" ? (
+              <>
+                <span className={styles.emergencyEyebrow}>Flow complete</span>
+                <h1>Urgent guidance is complete.</h1>
+                <p>
+                  This emergency flow ends here. No routine conversation is
+                  opened from this state.
+                </p>
               </>
             ) : null}
           </div>
@@ -1607,6 +1636,7 @@ export function UnifiedCarePrototype({
         <Header
           channel={channel === "care" ? "care" : channel}
           privateMode={privateThread}
+          showCareNavigation={!isolatedScenario || initialScenario === "care"}
           onCare={() => setChannel("care")}
           onBack={() => {
             setChannel("care");
@@ -1640,21 +1670,6 @@ export function UnifiedCarePrototype({
                   </span>
                   <Icon name="arrow" />
                 </button>
-                <button
-                  type="button"
-                  className={styles.threadRow}
-                  onClick={() => {
-                    setChannel("maya");
-                    setPrivateMode(false);
-                  }}
-                >
-                  <span className={styles.doctorInitials}>DC</span>
-                  <span>
-                    <strong>Dr. Chen <small>Clinician</small></strong>
-                    <p>Please upload one clear photo in natural light.</p>
-                  </span>
-                  <Icon name="arrow" />
-                </button>
               </>
             ) : (
               <div className={styles.emptyCare}>
@@ -1680,7 +1695,7 @@ export function UnifiedCarePrototype({
               <Avatar person="august" size="large" />
               <span>
                 <strong>August <small>Care guide</small></strong>
-                <p>Ask anything or start a new concern.</p>
+                <p>Ask August privately about this care flow.</p>
               </span>
               <Icon name="arrow" />
             </button>
@@ -1700,6 +1715,21 @@ export function UnifiedCarePrototype({
                 ))
               )}
               {pending && channel !== "care" ? <Typing person={pending} /> : null}
+
+              {initialScenario === "empty" &&
+              phase === "asking" &&
+              !pending ? (
+                <InlineCard
+                  icon="check"
+                  eyebrow="Flow complete"
+                  title="The opening is ready"
+                >
+                  <p className={styles.cardCopy}>
+                    August identified the first focused question. This start
+                    flow ends here.
+                  </p>
+                </InlineCard>
+              ) : null}
 
               {privateThread ? (
                 <button
@@ -1843,9 +1873,16 @@ export function UnifiedCarePrototype({
                     >
                       Ask August while you wait
                     </PrimaryButton>
-                    <PrimaryButton onClick={() => checkForMaya()}>
-                      Check for a reply
-                    </PrimaryButton>
+                    {!isolatedScenario ? (
+                      <PrimaryButton onClick={() => checkForMaya()}>
+                        Check for a reply
+                      </PrimaryButton>
+                    ) : (
+                      <p className={styles.cardCopy}>
+                        <strong>Handoff flow complete.</strong> This route ends
+                        before a clinician response begins.
+                      </p>
+                    )}
                   </div>
                 </InlineCard>
               ) : null}
@@ -2244,8 +2281,9 @@ export function UnifiedCarePrototype({
                   title="August will check in"
                 >
                   <p className={styles.cardCopy}>
-                    Tell August how you feel, or return to Maya in Care if the
-                    treatment plan needs attention.
+                    {initialScenario === "follow-up"
+                      ? "Tell August how you feel. This route stays inside the follow-up flow."
+                      : "Tell August how you feel, or return to Maya in Care if the treatment plan needs attention."}
                   </p>
                 </InlineCard>
               ) : null}
@@ -2267,14 +2305,18 @@ export function UnifiedCarePrototype({
             onSubmit={submit}
             onFile={startUpload}
           />
-          <BottomNav
-            active={channel === "care" || channel === "maya" ? "care" : "august"}
-            hasCare={connected}
-            onNew={isolatedScenario ? undefined : reset}
-            onInfo={() => setSheet("info")}
-            onCare={() => setChannel("care")}
-            onAugust={openAugust}
-          />
+          {!isolatedScenario ? (
+            <BottomNav
+              active={
+                channel === "care" || channel === "maya" ? "care" : "august"
+              }
+              hasCare={connected}
+              onNew={reset}
+              onInfo={() => setSheet("info")}
+              onCare={() => setChannel("care")}
+              onAugust={openAugust}
+            />
+          ) : null}
         </footer>
 
         {sheet === "info" ? (

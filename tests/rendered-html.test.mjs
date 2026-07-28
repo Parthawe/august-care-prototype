@@ -22,32 +22,13 @@ async function render(path = "/") {
   );
 }
 
-test("renders the canonical August care entry", async () => {
+test("the canonical entry redirects to the isolated flow directory", async () => {
   const response = await render();
-  assert.equal(response.status, 200);
-  assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
-
-  const html = await response.text();
-  assert.match(
-    html,
-    /<title>August — Independent care flows<\/title>/i,
+  assert.ok([307, 308].includes(response.status));
+  assert.equal(
+    new URL(response.headers.get("location")).pathname,
+    "/prototype",
   );
-  assert.doesNotMatch(html, /Hi Parth—what would you like help with today\?/);
-  assert.doesNotMatch(html, /My throat has been hurting\./);
-  assert.match(html, /Ask August anything\./);
-  assert.match(html, /Describe what’s going on…/);
-  assert.match(html, /AI guide \+ human care/);
-  assert.doesNotMatch(html, /Secure · Private · Built by doctors/i);
-  assert.doesNotMatch(html, /board.certified|licensed clinician|HIPAA/i);
-  assert.doesNotMatch(html, />Preview\b|>Prototype\b/i);
-});
-
-test("the initial screen does not fabricate an active clinician", async () => {
-  const response = await render();
-  assert.equal(response.status, 200);
-  const html = await response.text();
-  assert.doesNotMatch(html, /Maya \(Clinician\)/);
-  assert.doesNotMatch(html, /Plan signed by Maya/);
 });
 
 test("renders one-click supporting scenarios", async () => {
@@ -56,6 +37,7 @@ test("renders one-click supporting scenarios", async () => {
   const emptyHtml = await emptyResponse.text();
   assert.doesNotMatch(emptyHtml, /Ask August anything\./);
   assert.match(emptyHtml, /Message August…/);
+  assert.doesNotMatch(emptyHtml, /Main navigation|New conversation/);
 
   const waitingResponse = await render("/prototype/clinician-wait");
   assert.equal(waitingResponse.status, 200);
@@ -63,6 +45,8 @@ test("renders one-click supporting scenarios", async () => {
   assert.match(waitingHtml, /Maya \(Clinician\)/);
   assert.match(waitingHtml, /Usually replies in 2–4 hours/);
   assert.match(waitingHtml, /Ask August while you wait/);
+  assert.match(waitingHtml, /Handoff flow complete/);
+  assert.doesNotMatch(waitingHtml, /Check for a reply|Main navigation/);
 
   const emergencyResponse = await render("/prototype/emergency");
   assert.equal(emergencyResponse.status, 200);
@@ -70,6 +54,15 @@ test("renders one-click supporting scenarios", async () => {
   assert.match(emergencyHtml, /This may need emergency care now\./);
   assert.match(emergencyHtml, /Call emergency services/);
   assert.doesNotMatch(emergencyHtml, /Message August…|Main navigation/);
+});
+
+test("legacy case links redirect into isolated flows", async () => {
+  const response = await render("/cases/doctor-handoff/concierge");
+  assert.ok([307, 308].includes(response.status));
+  assert.equal(
+    new URL(response.headers.get("location")).pathname,
+    "/prototype/care-inbox",
+  );
 });
 
 test("renders the portfolio scenario directory", async () => {

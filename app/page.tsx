@@ -1,5 +1,5 @@
-import { AugustPrototype } from "./AugustPrototype";
+import { redirect } from "next/navigation";
 
 export default function Home() {
-  return <AugustPrototype initialView="entry" variation="classic" />;
+  redirect("/prototype");
 }

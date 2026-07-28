@@ -1,11 +1,10 @@
 import { notFound, redirect } from "next/navigation";
-import { AugustPrototype } from "../../../AugustPrototype";
 import {
+  getPortfolioFlowForPrototypeCase,
   getPrototypeCase,
   getPrototypeVariation,
   prototypeCases,
   prototypeVariations,
-  supportsVariationComparison,
 } from "../../../prototypeCases";
 
 type Props = {
@@ -42,28 +41,17 @@ export async function generateMetadata({ params }: Props) {
 }
 
 export default async function PrototypeCaseVariationPage({ params }: Props) {
-  const { scenario, variation } = await params;
+  const { scenario } = await params;
   const prototypeCase = getPrototypeCase(scenario);
-  const prototypeVariation = getPrototypeVariation(variation);
 
   if (!prototypeCase) {
     notFound();
   }
 
-  if (
-    prototypeVariation.id !== "classic" &&
-    !supportsVariationComparison(prototypeCase.id)
-  ) {
-    redirect(`/cases/${prototypeCase.id}/classic`);
+  const flow = getPortfolioFlowForPrototypeCase(prototypeCase.id);
+  if (!flow) {
+    notFound();
   }
 
-  return (
-    <AugustPrototype
-      initialCaseId={prototypeCase.id}
-      initialView={prototypeCase.view}
-      initialConcern={prototypeCase.concern}
-      initialFixture={prototypeCase.fixture}
-      variation={prototypeVariation.id}
-    />
-  );
+  redirect(`/prototype/${flow}`);
 }

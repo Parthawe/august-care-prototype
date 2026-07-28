@@ -259,6 +259,34 @@ export const prototypeCases = [
 
 export type PrototypeCaseId = (typeof prototypeCases)[number]["id"];
 
+const portfolioFlowByPrototypeCase: Record<PrototypeCaseId, string> = {
+  home: "start",
+  "symptom-intake": "symptom",
+  "three-questions": "symptom",
+  "visit-summary": "symptom",
+  eligibility: "symptom",
+  "async-wait": "clinician-wait",
+  "doctor-reviewing": "clinician-wait",
+  "doctor-handoff": "care-inbox",
+  "care-plan": "medication-appropriate",
+  "follow-up": "follow-up",
+  "report-upload": "testing",
+  "report-low-confidence": "unreadable-report",
+  "prescription-request": "prescription",
+  "prescription-appropriate": "medication-appropriate",
+  "prescription-test-first": "testing",
+  "prescription-declined": "medication-declined",
+  emergency: "emergency",
+  unsupported: "unsupported",
+};
+
+export function getPortfolioFlowForPrototypeCase(caseId: string) {
+  const prototypeCase = getPrototypeCase(caseId);
+  return prototypeCase
+    ? portfolioFlowByPrototypeCase[prototypeCase.id]
+    : undefined;
+}
+
 export const recommendedWalkthroughCases = prototypeCases.filter(
   (prototypeCase) => prototypeCase.group === "walkthrough"
 );
