@@ -22,7 +22,7 @@ async function render(path = "/") {
   );
 }
 
-test("renders the focused August-first messaging encounter", async () => {
+test("renders a blank August-first messaging entry", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
@@ -32,10 +32,11 @@ test("renders the focused August-first messaging encounter", async () => {
     html,
     /<title>August — One continuous care conversation<\/title>/i,
   );
-  assert.match(html, /Hi Parth—what would you like help with today\?/);
-  assert.match(html, /Any trouble breathing or swallowing liquids\?/);
+  assert.doesNotMatch(html, /Hi Parth—what would you like help with today\?/);
+  assert.doesNotMatch(html, /My throat has been hurting\./);
+  assert.doesNotMatch(html, /Ask August anything\./);
   assert.match(html, /Message August…/);
-  assert.match(html, /Care conversations/);
+  assert.match(html, /Care/);
   assert.doesNotMatch(html, /Secure · Private · Built by doctors/i);
   assert.doesNotMatch(html, /board.certified|licensed clinician|HIPAA/i);
   assert.doesNotMatch(html, />Preview\b|>Prototype\b/i);
@@ -47,4 +48,36 @@ test("the initial screen does not fabricate an active clinician", async () => {
   const html = await response.text();
   assert.doesNotMatch(html, /Maya \(Clinician\)/);
   assert.doesNotMatch(html, /Plan signed by Maya/);
+});
+
+test("renders one-click review scenarios", async () => {
+  const emptyResponse = await render("/?scenario=empty");
+  assert.equal(emptyResponse.status, 200);
+  const emptyHtml = await emptyResponse.text();
+  assert.doesNotMatch(emptyHtml, /Ask August anything\./);
+  assert.match(emptyHtml, /Message August…/);
+
+  const waitingResponse = await render("/?scenario=clinician-wait");
+  assert.equal(waitingResponse.status, 200);
+  const waitingHtml = await waitingResponse.text();
+  assert.match(waitingHtml, /Maya \(Clinician\)/);
+  assert.match(waitingHtml, /Usually replies in 2–4 hours/);
+  assert.match(waitingHtml, /Ask August while you wait/);
+
+  const emergencyResponse = await render("/?scenario=emergency");
+  assert.equal(emergencyResponse.status, 200);
+  const emergencyHtml = await emergencyResponse.text();
+  assert.match(emergencyHtml, /This may need emergency care now\./);
+  assert.match(emergencyHtml, /Call emergency services/);
+  assert.doesNotMatch(emergencyHtml, /Message August…|Main navigation/);
+});
+
+test("renders the portfolio scenario directory", async () => {
+  const response = await render("/prototype");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Choose the moment you want to review\./);
+  assert.match(html, /\/prototype\/start/);
+  assert.match(html, /\/prototype\/clinician-wait/);
+  assert.match(html, /\/prototype\/emergency/);
 });

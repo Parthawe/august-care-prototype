@@ -26,6 +26,7 @@ type Step =
   | "maya-team";
 
 type Author = "august" | "patient" | "maya" | "chen";
+type Overlay = "visit" | "connect" | "history" | "plan" | null;
 
 type Message = {
   id: string;
@@ -187,9 +188,11 @@ function StatusBar() {
 function AugustHeader({
   subtitle = "AI care guide",
   onCare,
+  onDetails,
 }: {
   subtitle?: string;
   onCare: () => void;
+  onDetails: () => void;
 }) {
   return (
     <header className={styles.header}>
@@ -207,6 +210,14 @@ function AugustHeader({
         <Icon name="message" />
         <i className={styles.unreadDot} />
       </button>
+      <button
+        className={styles.headerAction}
+        type="button"
+        aria-label="Open conversation details"
+        onClick={onDetails}
+      >
+        <Icon name="file" />
+      </button>
     </header>
   );
 }
@@ -215,10 +226,12 @@ function MayaHeader({
   status,
   team = false,
   onBack,
+  onDetails,
 }: {
   status: string;
   team?: boolean;
   onBack: () => void;
+  onDetails: () => void;
 }) {
   return (
     <header className={styles.header}>
@@ -242,6 +255,7 @@ function MayaHeader({
         type="button"
         className={styles.headerAction}
         aria-label="Open visit details"
+        onClick={onDetails}
       >
         <Icon name="file" />
       </button>
@@ -249,7 +263,7 @@ function MayaHeader({
   );
 }
 
-function CareHeader() {
+function CareHeader({ onHistory }: { onHistory: () => void }) {
   return (
     <header className={`${styles.header} ${styles.careHeader}`}>
       <div className={styles.headerCopy}>
@@ -260,6 +274,7 @@ function CareHeader() {
         type="button"
         className={styles.headerAction}
         aria-label="Conversation history"
+        onClick={onHistory}
       >
         <Icon name="history" />
       </button>
@@ -344,16 +359,36 @@ function Composer({
   disabled,
   onChange,
   onSubmit,
+  onAttachment,
 }: {
   placeholder: string;
   value: string;
   disabled?: boolean;
   onChange: (value: string) => void;
   onSubmit: (event: FormEvent<HTMLFormElement>) => void;
+  onAttachment: (name: string) => void;
 }) {
+  const attachmentRef = useRef<HTMLInputElement>(null);
+
   return (
     <form className={styles.composer} onSubmit={onSubmit}>
-      <button type="button" aria-label="Add attachment">
+      <input
+        ref={attachmentRef}
+        className={styles.fileInput}
+        type="file"
+        accept="image/*,.pdf"
+        aria-label="Choose a photo or PDF"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+          if (file) onAttachment(file.name);
+          event.target.value = "";
+        }}
+      />
+      <button
+        type="button"
+        aria-label="Add attachment"
+        onClick={() => attachmentRef.current?.click()}
+      >
         <Icon name="plus" />
       </button>
       <input
@@ -390,8 +425,12 @@ function BottomNav({
 }) {
   return (
     <nav className={styles.bottomNav} aria-label="Main navigation">
-      <button type="button" aria-label="Restart prototype" onClick={onReset}>
-        <Icon name="history" />
+      <button
+        type="button"
+        aria-label="Start a new conversation"
+        onClick={onReset}
+      >
+        <Icon name="plus" />
       </button>
       <button
         type="button"
@@ -545,7 +584,7 @@ function ConnectionCard({ onContinue }: { onContinue: () => void }) {
         $40 covers the clinical review, not a prescription or specific outcome.
       </p>
       <button type="button" onClick={onContinue}>
-        Review and connect · $40
+        Review details · $40
       </button>
     </div>
   );
@@ -591,11 +630,45 @@ function Conversation({
   );
 }
 
+function OverlaySheet({
+  title,
+  children,
+  onClose,
+}: {
+  title: string;
+  children: ReactNode;
+  onClose: () => void;
+}) {
+  return (
+    <div className={styles.overlay} role="presentation" onMouseDown={onClose}>
+      <section
+        className={styles.sheet}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        onMouseDown={(event) => event.stopPropagation()}
+      >
+        <div className={styles.sheetHandle} />
+        <div className={styles.sheetHeader}>
+          <strong>{title}</strong>
+          <button type="button" onClick={onClose} aria-label={`Close ${title}`}>
+            ×
+          </button>
+        </div>
+        {children}
+      </section>
+    </div>
+  );
+}
+
 export function RefinedMessagingPrototype() {
   const [step, setStep] = useState<Step>("august-intake");
   const [input, setInput] = useState("");
   const [pending, setPending] = useState<"august" | "maya" | null>(null);
   const [connected, setConnected] = useState(false);
+  const [overlay, setOverlay] = useState<Overlay>(null);
+  const [planReady, setPlanReady] = useState(false);
+  const [sharedWithMaya, setSharedWithMaya] = useState(false);
   const [answers, setAnswers] = useState({
     detail: "",
     allergies: "",
@@ -604,6 +677,7 @@ export function RefinedMessagingPrototype() {
   });
   const [privateMessages, setPrivateMessages] = useState<Message[]>([]);
   const [mayaExtras, setMayaExtras] = useState<Message[]>([]);
+  const [augustExtras, setAugustExtras] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const timers = useRef<number[]>([]);
 
@@ -614,6 +688,18 @@ export function RefinedMessagingPrototype() {
       node.scrollTo({ top: node.scrollHeight, behavior: "smooth" });
     });
   }, [step, pending, privateMessages, mayaExtras]);
+
+  useEffect(() => {
+    if (!answers.mayaSecond || planReady) return;
+    const timer = window.setTimeout(() => {
+      setPlanReady(true);
+      setStep((current) =>
+        current === "maya-reviewing" ? "maya-plan" : current,
+      );
+    }, 9000);
+    timers.current.push(timer);
+    return () => window.clearTimeout(timer);
+  }, [answers.mayaSecond, planReady]);
 
   useEffect(
     () => () => {
@@ -686,10 +772,10 @@ export function RefinedMessagingPrototype() {
         time: "9:52",
       });
     }
-    return messages;
+    return [...messages, ...augustExtras];
     // The sequence is intentionally derived from the encounter step.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, answers.detail, answers.allergies]);
+  }, [step, answers.detail, answers.allergies, augustExtras]);
 
   const mayaMessages = useMemo(() => {
     const messages: Message[] = [
@@ -772,6 +858,9 @@ export function RefinedMessagingPrototype() {
     setInput("");
     setPending(null);
     setConnected(false);
+    setOverlay(null);
+    setPlanReady(false);
+    setSharedWithMaya(false);
     setAnswers({
       detail: "",
       allergies: "",
@@ -780,6 +869,7 @@ export function RefinedMessagingPrototype() {
     });
     setPrivateMessages([]);
     setMayaExtras([]);
+    setAugustExtras([]);
   };
 
   const openCare = () => {
@@ -788,7 +878,13 @@ export function RefinedMessagingPrototype() {
   };
 
   const openAugust = () => {
-    if (step === "maya-reviewing" || step === "august-private") {
+    if (
+      connected ||
+      step === "maya-reviewing" ||
+      step === "maya-plan" ||
+      step === "maya-team" ||
+      step === "august-private"
+    ) {
       setStep("august-private");
     } else if (answers.allergies) {
       setStep("august-ready");
@@ -797,6 +893,42 @@ export function RefinedMessagingPrototype() {
     } else {
       setStep("august-intake");
     }
+  };
+
+  const addAttachment = (name: string) => {
+    const message: Message = {
+      id: `attachment-${Date.now()}`,
+      author: "patient",
+      text: `Attached: ${name}`,
+      time: "Now",
+    };
+    if (isMaya) {
+      setMayaExtras((current) => [...current, message]);
+    } else if (step === "august-private") {
+      setPrivateMessages((current) => [...current, message]);
+    } else {
+      setAugustExtras((current) => [...current, message]);
+    }
+  };
+
+  const shareQuestionWithMaya = () => {
+    const latestQuestion = [...privateMessages]
+      .reverse()
+      .find((message) => message.author === "patient");
+    if (!latestQuestion) return;
+    if (!sharedWithMaya) {
+      setMayaExtras((current) => [
+        ...current,
+        {
+          id: "shared-august-question",
+          author: "patient",
+          text: `I asked August: “${latestQuestion.text}” I’d like your view too.`,
+          time: planReady ? "10:40" : "10:36",
+        },
+      ]);
+      setSharedWithMaya(true);
+    }
+    setStep(planReady ? "maya-plan" : "maya-reviewing");
   };
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -813,6 +945,31 @@ export function RefinedMessagingPrototype() {
     if (step === "august-follow-up") {
       setAnswers((current) => ({ ...current, allergies: value }));
       runReply("august", "august-ready");
+      return;
+    }
+    if (step === "august-ready" || step === "august-connect") {
+      const id = `august-extra-${Date.now()}`;
+      setAugustExtras((current) => [
+        ...current,
+        { id, author: "patient", text: value, time: "Now" },
+      ]);
+      setPending("august");
+      const timer = window.setTimeout(() => {
+        setAugustExtras((current) => [
+          ...current,
+          {
+            id: `${id}-reply`,
+            author: "august",
+            text:
+              step === "august-connect"
+                ? "You can keep asking me questions before you connect. Maya will only receive the health details you confirmed."
+                : "I can explain the next step before you decide. Connecting starts a separate conversation with Maya in Care.",
+            time: "Now",
+          },
+        ]);
+        setPending(null);
+      }, 680);
+      timers.current.push(timer);
       return;
     }
     if (step === "maya-first") {
@@ -847,7 +1004,11 @@ export function RefinedMessagingPrototype() {
       timers.current.push(timer);
       return;
     }
-    if (step === "maya-plan" || step === "maya-team") {
+    if (
+      step === "maya-reviewing" ||
+      step === "maya-plan" ||
+      step === "maya-team"
+    ) {
       setMayaExtras((current) => [
         ...current,
         {
@@ -857,6 +1018,26 @@ export function RefinedMessagingPrototype() {
           time: "11:22",
         },
       ]);
+      if (step !== "maya-reviewing") {
+        setPending("maya");
+        const id = `extra-reply-${Date.now()}`;
+        const timer = window.setTimeout(() => {
+          setMayaExtras((current) => [
+            ...current,
+            {
+              id,
+              author: "maya",
+              text:
+                step === "maya-team"
+                  ? "Yes—keep using this conversation. I’ll coordinate the final recommendation here."
+                  : "Yes. Send the result here when it is ready and I’ll review the next step with you.",
+              time: "11:23",
+            },
+          ]);
+          setPending(null);
+        }, 850);
+        timers.current.push(timer);
+      }
     }
   };
 
@@ -869,22 +1050,14 @@ export function RefinedMessagingPrototype() {
     step === "maya-team";
 
   const composerPlaceholder = isMaya ? "Message Maya…" : "Message August…";
-  const showComposer =
-    step === "august-intake" ||
-    step === "august-follow-up" ||
-    step === "august-private" ||
-    step === "maya-first" ||
-    step === "maya-follow-up" ||
-    step === "maya-reviewing" ||
-    step === "maya-plan" ||
-    step === "maya-team";
+  const showComposer = !isCare;
 
   return (
     <main className={styles.stage}>
       <section className={styles.viewport} aria-label="August care prototype">
         <StatusBar />
 
-        {isCare ? <CareHeader /> : null}
+        {isCare ? <CareHeader onHistory={() => setOverlay("history")} /> : null}
         {!isCare && !isMaya ? (
           <AugustHeader
             subtitle={
@@ -897,6 +1070,7 @@ export function RefinedMessagingPrototype() {
                     : "AI care guide"
             }
             onCare={openCare}
+            onDetails={() => setOverlay("visit")}
           />
         ) : null}
         {isMaya ? (
@@ -912,6 +1086,7 @@ export function RefinedMessagingPrototype() {
                     : "Usually replies in 2–4 hours"
             }
             onBack={openCare}
+            onDetails={() => setOverlay("visit")}
           />
         ) : null}
 
@@ -953,10 +1128,7 @@ export function RefinedMessagingPrototype() {
             ) : null}
             {step === "august-connect" ? (
               <ConnectionCard
-                onContinue={() => {
-                  setConnected(true);
-                  setStep("care-inbox");
-                }}
+                onContinue={() => setOverlay("connect")}
               />
             ) : null}
             {step === "august-private" ? (
@@ -968,28 +1140,10 @@ export function RefinedMessagingPrototype() {
                 </div>
                 {[
                   {
-                    id: "private-question",
-                    author: "patient" as const,
-                    text: "What does testing first mean?",
-                    time: "10:34",
-                  },
-                  {
-                    id: "private-answer",
+                    id: "private-intro",
                     author: "august" as const,
-                    text: "Maya may want a rapid throat test before deciding whether medication is appropriate. That result helps her choose the safest next step.",
+                    text: "Maya is reviewing your visit. You can ask me questions here while you wait—this stays private unless you choose to share something.",
                     time: "10:34",
-                  },
-                  {
-                    id: "private-visibility",
-                    author: "patient" as const,
-                    text: "Will Maya see this question?",
-                    time: "10:35",
-                  },
-                  {
-                    id: "private-visibility-answer",
-                    author: "august" as const,
-                    text: "No. This stays with me unless you choose to share it. Maya’s conversation is waiting exactly where you left it.",
-                    time: "10:35",
                   },
                   ...privateMessages,
                 ].map((message) => (
@@ -997,10 +1151,31 @@ export function RefinedMessagingPrototype() {
                 ))}
                 {pending === "august" ? <Typing person="august" /> : null}
                 <div className={styles.privateActions}>
-                  <button type="button" onClick={() => setStep("maya-plan")}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setStep(
+                        planReady
+                          ? "maya-plan"
+                          : answers.mayaFirst
+                            ? "maya-reviewing"
+                            : "care-inbox",
+                      )
+                    }
+                  >
                     Back to Maya
                   </button>
-                  <button type="button">Share question</button>
+                  <button
+                    type="button"
+                    onClick={shareQuestionWithMaya}
+                    disabled={
+                      !privateMessages.some(
+                        (message) => message.author === "patient",
+                      )
+                    }
+                  >
+                    {sharedWithMaya ? "Shared with Maya" : "Share question"}
+                  </button>
                 </div>
               </>
             ) : null}
@@ -1077,7 +1252,7 @@ export function RefinedMessagingPrototype() {
               </>
             ) : null}
             {step === "maya-plan" ? (
-              <PlanCard onOpen={() => setStep("care-multiple")} />
+              <PlanCard onOpen={() => setOverlay("plan")} />
             ) : null}
           </Conversation>
         ) : null}
@@ -1089,6 +1264,7 @@ export function RefinedMessagingPrototype() {
               value={input}
               onChange={setInput}
               onSubmit={handleSubmit}
+              onAttachment={addAttachment}
               disabled={Boolean(pending)}
             />
           ) : null}
@@ -1100,6 +1276,131 @@ export function RefinedMessagingPrototype() {
             onReset={reset}
           />
         </footer>
+
+        {overlay === "connect" ? (
+          <OverlaySheet
+            title="Clinical review"
+            onClose={() => setOverlay(null)}
+          >
+            <div className={styles.sheetPerson}>
+              <Avatar person="maya" size="large" />
+              <span>
+                <strong>Maya</strong>
+                <small>Clinician · usually replies in 2–4 hours</small>
+              </span>
+            </div>
+            <div className={styles.sheetRows}>
+              <p>
+                <span>What is shared</span>
+                <strong>Your answers and attachments</strong>
+              </p>
+              <p>
+                <span>Clinical review</span>
+                <strong>$40</strong>
+              </p>
+            </div>
+            <p className={styles.sheetFinePrint}>
+              Payment covers Maya’s review. It does not guarantee a
+              prescription or a specific outcome.
+            </p>
+            <button
+              type="button"
+              className={styles.sheetPrimary}
+              onClick={() => {
+                setConnected(true);
+                setOverlay(null);
+                setStep("care-inbox");
+              }}
+            >
+              Confirm and connect · $40
+            </button>
+          </OverlaySheet>
+        ) : null}
+
+        {overlay === "visit" ? (
+          <OverlaySheet
+            title={connected ? "Sore throat visit" : "Conversation details"}
+            onClose={() => setOverlay(null)}
+          >
+            <div className={styles.detailList}>
+              <p>
+                <span>Concern</span>
+                <strong>Sore throat · five days</strong>
+              </p>
+              <p>
+                <span>Current safety</span>
+                <strong>Breathing and drinking normally</strong>
+              </p>
+              <p>
+                <span>Reported</span>
+                <strong>Fever, white patches, tender neck</strong>
+              </p>
+              <p>
+                <span>Clinician</span>
+                <strong>{connected ? "Maya · reviewing" : "Not connected"}</strong>
+              </p>
+            </div>
+          </OverlaySheet>
+        ) : null}
+
+        {overlay === "history" ? (
+          <OverlaySheet
+            title="Conversation history"
+            onClose={() => setOverlay(null)}
+          >
+            <button
+              type="button"
+              className={styles.historyRow}
+              onClick={() => {
+                setOverlay(null);
+                setStep(connected ? "maya-first" : "august-intake");
+              }}
+            >
+              <span>
+                <strong>Sore throat</strong>
+                <small>{connected ? "Active · Maya" : "In progress · August"}</small>
+              </span>
+              <b>›</b>
+            </button>
+            <button
+              type="button"
+              className={styles.historyRow}
+              onClick={() => {
+                setOverlay(null);
+                setStep("maya-team");
+              }}
+            >
+              <span>
+                <strong>Skin concern</strong>
+                <small>Yesterday · Dr. Chen</small>
+              </span>
+              <b>›</b>
+            </button>
+          </OverlaySheet>
+        ) : null}
+
+        {overlay === "plan" ? (
+          <OverlaySheet title="Rapid throat test" onClose={() => setOverlay(null)}>
+            <div className={styles.planDetails}>
+              <span className={styles.planStatus}>Plan signed by Maya</span>
+              <h2>Test before deciding on medication</h2>
+              <p>
+                Complete a rapid throat test. Send the result in this
+                conversation so Maya can review it and recommend the next step.
+              </p>
+            </div>
+            <button
+              type="button"
+              className={styles.sheetPrimary}
+              onClick={() => {
+                setOverlay(null);
+                setStep("care-multiple");
+              }}
+            >
+              Done
+            </button>
+          </OverlaySheet>
+        ) : null}
       </section>
     </main>
   );

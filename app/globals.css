@@ -1880,6 +1880,65 @@ svg {
   backdrop-filter: blur(18px) saturate(1.2);
 }
 
+.portfolio-primary-link {
+  display: flex;
+  min-height: 132px;
+  align-items: center;
+  justify-content: space-between;
+  gap: 32px;
+  margin: 42px 0 56px;
+  padding: 28px 32px;
+  border: 1px solid rgba(153, 211, 190, 0.32);
+  border-radius: 28px;
+  background:
+    radial-gradient(circle at 85% 20%, rgba(145, 213, 188, 0.2), transparent 36%),
+    #0b3f31;
+  box-shadow: 0 24px 64px rgba(4, 39, 29, 0.2);
+  color: #fff;
+  text-decoration: none;
+}
+
+.portfolio-primary-link span {
+  display: grid;
+  gap: 9px;
+}
+
+.portfolio-primary-link small {
+  color: #a7ddc9;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.portfolio-primary-link strong {
+  max-width: 620px;
+  font-size: clamp(24px, 4vw, 40px);
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.portfolio-primary-link b {
+  flex: 0 0 auto;
+  padding: 14px 20px;
+  border-radius: 999px;
+  background: #fff;
+  color: #0b3f31;
+  font-size: 14px;
+}
+
+.portfolio-scenario-groups {
+  display: grid;
+  gap: 54px;
+}
+
+@media (max-width: 720px) {
+  .portfolio-primary-link {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+
 .case-directory h1 {
   max-width: 520px;
   margin: 10px 0 8px;
@@ -3034,6 +3093,7 @@ svg {
 }
 
 .recommended-walkthrough,
+.interactive-review,
 .focused-comparison,
 .edge-paths,
 .supporting-states {
@@ -3041,6 +3101,38 @@ svg {
   padding: 26px;
   border: 1px solid var(--line);
   border-radius: 26px;
+}
+
+.interactive-review {
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.interactive-review .section-heading {
+  max-width: 720px;
+}
+
+.interactive-review .section-heading p {
+  margin: 7px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.interactive-group {
+  margin-top: 26px;
+}
+
+.interactive-group h3 {
+  margin: 0;
+  color: var(--green);
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.interactive-group .case-link-grid {
+  margin-top: 10px;
 }
 
 .walkthrough-heading > a {
