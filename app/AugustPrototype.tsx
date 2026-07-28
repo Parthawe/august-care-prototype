@@ -334,7 +334,9 @@ function Header({
       {person ? (
         <ClinicianPortrait small />
       ) : (
-        <div className="header-avatar">A</div>
+        <div className="header-avatar" aria-hidden="true">
+          <Icon name="spark" />
+        </div>
       )}
       <div className="header-copy">
         <strong>{title}</strong>
@@ -804,11 +806,23 @@ function HomeScreen({
   onUpload: () => void;
 }) {
   const [value, setValue] = useState("");
+  const concernInputRef = useRef<HTMLTextAreaElement>(null);
   const experience = variationExperience[variation];
+
+  useEffect(() => {
+    const pendingValue = concernInputRef.current?.value.trim();
+    if (pendingValue) setValue(pendingValue);
+  }, []);
+
   const submit = (event: FormEvent) => {
     event.preventDefault();
-    if (!value.trim()) return;
-    onSubmit(value.trim());
+    const submittedValue =
+      value.trim() ||
+      String(
+        new FormData(event.currentTarget as HTMLFormElement).get("concern") ?? ""
+      ).trim();
+    if (!submittedValue) return;
+    onSubmit(submittedValue);
   };
 
   if (activeEncounter) {
@@ -890,8 +904,10 @@ function HomeScreen({
       </section>
       <form className="hero-composer glass" onSubmit={submit}>
         <textarea
+          name="concern"
+          ref={concernInputRef}
           value={value}
-          onChange={(event) => setValue(event.target.value)}
+          onInput={(event) => setValue(event.currentTarget.value)}
           placeholder="Describe what’s going on…"
           aria-label="Describe what’s going on"
         />
@@ -905,7 +921,7 @@ function HomeScreen({
             <Icon name="plus" />
           </button>
           <button
-            className="send-button"
+            className={`send-button ${!value.trim() ? "send-button-idle" : ""}`}
             aria-label="Start conversation"
             disabled={!value.trim()}
           >
