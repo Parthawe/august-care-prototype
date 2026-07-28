@@ -380,6 +380,20 @@ test("blank entry cannot create a fabricated concern", async ({ page }) => {
   await expect(page.getByText("My throat has hurt for five days")).toHaveCount(0);
 });
 
+test("August remains a distinct action beside the primary navigation", async ({
+  page,
+}) => {
+  await page.goto("/");
+  await expect(page.locator(".bottom-nav-main")).toBeVisible();
+  const assistant = page.locator(".bottom-nav-assistant");
+  await expect(assistant).toHaveAttribute("aria-label", "Open August chat");
+  await page
+    .getByRole("button", { name: "Check a symptom Start in your words" })
+    .click();
+  await expect(assistant).toHaveClass(/active/);
+  await expect(assistant).toHaveAttribute("aria-label", "August chat, current");
+});
+
 test("medication answers use the same emergency interruption", async ({
   page,
 }) => {

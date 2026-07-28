@@ -258,22 +258,33 @@ function Pill({
 
 function BottomNav({ active }: { active: "home" | "august" }) {
   return (
-    <nav className="bottom-nav glass" aria-label="August navigation">
-      <span className={active === "home" ? "active" : ""}>
-        <Icon name="home" />
-        <span>Home</span>
-      </span>
-      <span>
-        <Icon name="file" />
-        <span>Visits</span>
-      </span>
-      <span>
-        <Icon name="clock" />
-        <span>Updates</span>
-      </span>
-      <span className={active === "august" ? "august-tab active" : "august-tab"}>
+    <nav className="bottom-nav" aria-label="August navigation">
+      <div className="bottom-nav-main glass">
+        <span className={active === "home" ? "active" : ""}>
+          <Icon name="home" />
+          <span>Home</span>
+        </span>
+        <span>
+          <Icon name="file" />
+          <span>Visits</span>
+        </span>
+        <span>
+          <Icon name="clock" />
+          <span>Updates</span>
+        </span>
+      </div>
+      <span
+        className={
+          active === "august"
+            ? "bottom-nav-assistant active"
+            : "bottom-nav-assistant"
+        }
+        aria-label={
+          active === "august" ? "August chat, current" : "Open August chat"
+        }
+      >
         <Icon name="spark" />
-        <span>August</span>
+        <span className="bottom-nav-assistant-label">August</span>
       </span>
     </nav>
   );
