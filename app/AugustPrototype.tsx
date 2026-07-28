@@ -240,6 +240,17 @@ function Icon({ name }: { name: keyof typeof icons }) {
   return <span className="icon">{icons[name]}</span>;
 }
 
+function AugustOrb({ compact = false }: { compact?: boolean }) {
+  return (
+    <span
+      className={`august-orb ${compact ? "august-orb-compact" : ""}`}
+      aria-hidden="true"
+    >
+      <span />
+    </span>
+  );
+}
+
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <div className={`brand ${compact ? "brand-compact" : ""}`}>
@@ -294,7 +305,7 @@ function BottomNav({
         onClick={onAugust}
         type="button"
       >
-        <Icon name="spark" />
+        <AugustOrb compact />
         <span className="bottom-nav-assistant-label">August</span>
       </button>
     </nav>
@@ -334,9 +345,7 @@ function Header({
       {person ? (
         <ClinicianPortrait small />
       ) : (
-        <div className="header-avatar" aria-hidden="true">
-          <Icon name="spark" />
-        </div>
+        <AugustOrb compact />
       )}
       <div className="header-copy">
         <strong>{title}</strong>
@@ -845,9 +854,7 @@ function HomeScreen({
         </section>
         <section className="continuity-card glass" aria-label="Current encounter">
           <div className="continuity-card-heading">
-            <span className="shortcut-icon">
-              <Icon name="spark" />
-            </span>
+            <AugustOrb compact />
             <div>
               <small>Continue with August</small>
               <strong>{activeEncounter.phaseLabel}</strong>
@@ -897,7 +904,27 @@ function HomeScreen({
         </nav>
       )}
       <section className="home-hero">
-        <Pill>{focused ? "Your private August conversation" : experience.homePill}</Pill>
+        <div className="home-hero-topline">
+          <Pill>
+            {focused
+              ? "Your private August conversation"
+              : experience.homePill}
+          </Pill>
+          {!focused && (
+            <button
+              className="home-presence"
+              onClick={onContinue}
+              type="button"
+              aria-label="August is ready. Open private chat"
+            >
+              <AugustOrb />
+              <span>
+                <small>August</small>
+                <strong>Ready</strong>
+              </span>
+            </button>
+          )}
+        </div>
         <span className="home-greeting">Good morning, Parth</span>
         <h2>{experience.homeTitle}</h2>
         <p>{experience.homeIntro}</p>
