@@ -57,7 +57,7 @@ Confirmed capabilities:
 - Safety and emergency routing.
 - Clinician-required and unsupported-care routing.
 - Patient-reviewable visit summary.
-- Identity, location, consent, eligibility, and payment steps when required.
+- Identity, location, eligibility, and clinical-consent steps when required.
 - Asynchronous clinician matching, waiting, and handoff.
 - Clear separation between August AI and licensed-clinician authorship.
 - Prescription assessment flow without promising medication.
@@ -68,15 +68,13 @@ Confirmed constraints:
 
 - August does not diagnose, prescribe, or represent itself as a clinician.
 - The experience may feel conversationally human but must not conceal that August is AI.
-- Free text is the default; structured controls are reserved for precision, consent, payment, identity, location, pharmacy, uploads, and safety-critical confirmation.
+- Free text is the default; structured controls are reserved for precision, consent, identity, location, pharmacy, uploads, and safety-critical confirmation.
 - Routine recommendations should follow at least three meaningful questions unless a safety or scope decision must happen sooner.
 - Declines and boundaries avoid apology or liability-admitting language such as “sorry” and instead state the boundary and safest next step.
-- Payment does not guarantee a prescription, test, diagnosis, or specific clinical outcome.
 - The prototype must not claim HIPAA, legal, regulatory, telehealth, prescribing, or clinical compliance. Those requirements need specialist review.
 
 Open product decisions:
 
-- The current prototype baseline is a $39 clinician visit. Any membership or staged-payment model remains a separate product concept.
 - Exact supported specialties, conditions, states, clinician availability rules, escalation destinations, and service-level response windows are not finalized.
 - The final relationship between August-only guidance, clinician review, and clinician-visible group-chat behavior remains a design hypothesis to test.
 

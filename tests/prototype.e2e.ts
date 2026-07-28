@@ -130,7 +130,7 @@ test("visit summary is derived from the patient's answers", async ({
   await expect(page.getByText(/101\.5°F/)).toHaveCount(0);
 });
 
-test("eligibility and clinical consent start unchecked without payment", async ({ page }) => {
+test("eligibility and clinical consent start unchecked without a transaction step", async ({ page }) => {
   await page.goto("/cases/eligibility/classic");
   const consent = page.locator(".eligibility-card input[type='checkbox']");
   await expect(consent).toHaveCount(5);
@@ -142,8 +142,7 @@ test("eligibility and clinical consent start unchecked without payment", async (
   await expect(
     page.getByRole("button", { name: "Confirm and find a clinician" })
   ).toBeDisabled();
-  await expect(page.getByText("$39", { exact: false })).toHaveCount(0);
-  await expect(page.getByText("payment", { exact: false })).toHaveCount(0);
+  await expect(page.locator(".total-row")).toHaveCount(0);
 });
 
 test("composer remains available in the clinician conversation", async ({ page }) => {

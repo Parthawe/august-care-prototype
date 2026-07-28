@@ -216,22 +216,18 @@ The summary should show:
 
 Replace a single “Correct” note with field-level correction. A correction should update the affected fact and preserve an audit history, not append a disconnected line.
 
-### 8. Define the paid episode
+### 8. Define the clinical episode
 
-The $39 price is clear, but the product contract is not. State:
+The clinician-care contract should state:
 
-- when the charge occurs;
 - when clinical review begins;
 - what happens if no clinician accepts;
 - whether cancellation is possible;
-- refund and reassignment behavior;
+- reassignment behavior;
 - expected response range;
 - included follow-up period;
 - whether clinician-ordered test-result review is included;
-- what counts as a new concern and new fee;
-- whether labs, pharmacy, and medication costs are separate.
-
-The checkout CTA should reflect the actual sequence. If payment is only authorized pending acceptance, say “Authorize $39 and submit.” If charged immediately, say so.
+- what counts as a new concern or separate episode.
 
 ### 9. Make waiting an active service state
 
@@ -572,7 +568,7 @@ Care home
 
 - Signed clinical artifact with specific instructions and version history.
 - Direct order/fulfillment actions.
-- Follow-up window and cost boundary.
+- Follow-up window and episode-closure rules.
 - Better/same/worse/side-effect/pharmacy-issue routes.
 
 ## Research plan
@@ -585,11 +581,11 @@ Recruit 5–7 adults across health literacy levels. Test:
 - Who is the clinician?
 - When did medical care begin?
 - What was shared?
-- What did the $39 cover?
+- What did clinician review include?
 - Can the patient safely leave while waiting?
 - Which messages are private?
 
-Target: at least 80% unaided comprehension for every authority, privacy, and payment question.
+Target: at least 80% unaided comprehension for every authority, privacy, and care-episode question.
 
 ### Round 2 — Safety and recovery
 
@@ -599,7 +595,7 @@ Use scripted scenarios:
 - urgent medication request;
 - self-harm language;
 - upload-first;
-- failed payment;
+- blocked eligibility or consent;
 - no clinician available;
 - delayed result;
 - worsening follow-up.
@@ -627,7 +623,7 @@ Measure completion, comprehension, trust, perceived fairness, abandonment, suppo
 - Decide channel model and MDI handoff.
 - Define clinical-relationship start.
 - Define adult, geographic, and service scope.
-- Define the $39 episode, refunds, and included follow-up.
+- Define the clinician episode, reassignment, and included follow-up.
 - Approve safety responsibilities and escalation destinations.
 - Map consumer AI data versus clinical record.
 

@@ -32,7 +32,7 @@ August presents itself as:
 - "Ask August anything."
 - "Tell me your symptoms. Get a clear plan. A licensed doctor reviews and prescribes."
 - Free AI symptom guidance.
-- Doctor visit from $39 when needed.
+- Access to clinician review when needed.
 - HIPAA/private trust positioning.
 - Board-certified doctors across states.
 - Lab report, prescription, and health-context analysis.
@@ -666,7 +666,7 @@ Priority 3:
 - Rounded pills/search fields.
 - "Ask anything" mental model.
 - Doctor-backed trust.
-- Free AI first, doctor from $39.
+- AI guidance first, clinician care when needed.
 - Privacy/HIPAA trust cues.
 - Report/prescription upload capability.
 
@@ -684,11 +684,11 @@ In-product:
 
 Marketing:
 
-> See a doctor from $39.
+> See a doctor when needed.
 
 In-product:
 
-> Clinician review is $39. Prescriptions, tests, or pharmacy costs may be separate.
+> August prepares the context. A clinician makes clinical decisions.
 
 Marketing:
 
