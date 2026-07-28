@@ -385,6 +385,11 @@ test("August remains a distinct action beside the primary navigation", async ({
 }) => {
   await page.goto("/");
   await expect(page.locator(".bottom-nav-main")).toBeVisible();
+  await expect(
+    page.getByRole("navigation", { name: "August navigation" }).getByRole("button")
+  ).toHaveCount(2);
+  await expect(page.getByText("Visits", { exact: true })).toHaveCount(0);
+  await expect(page.getByText("Updates", { exact: true })).toHaveCount(0);
   const assistant = page.locator(".bottom-nav-assistant");
   await expect(assistant).toHaveAttribute("aria-label", "Open August chat");
   await page
@@ -392,6 +397,69 @@ test("August remains a distinct action beside the primary navigation", async ({
     .click();
   await expect(assistant).toHaveClass(/active/);
   await expect(assistant).toHaveAttribute("aria-label", "August chat, current");
+});
+
+test("Home and August preserve the current encounter", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/");
+  await page
+    .getByRole("textbox", { name: "Describe what’s going on" })
+    .fill("I have had a headache for two days.");
+  await page.getByRole("button", { name: "Start conversation" }).click();
+  await expect(page.getByText("Before we continue", { exact: false })).toBeVisible();
+
+  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await expect(page.getByText("Your care is waiting.", { exact: true })).toBeVisible();
+  await expect(
+    page.getByText("I have had a headache for two days.", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page
+      .getByRole("region", { name: "Current encounter" })
+      .getByText("Safety check", { exact: true })
+  ).toBeVisible();
+  await expect(
+    page.getByRole("textbox", { name: "Describe what’s going on" })
+  ).toHaveCount(0);
+
+  await page
+    .getByRole("button", { name: "Continue with August", exact: true })
+    .click();
+  await expect(
+    page.getByText("I have had a headache for two days.", { exact: true })
+  ).toBeVisible();
+  await expect(page.getByText("Before we continue", { exact: false })).toBeVisible();
+});
+
+test("direct care routes open with August active", async ({ page }) => {
+  await page.goto("/cases/three-questions/classic");
+  await expect(page.locator(".bottom-nav-assistant")).toHaveAttribute(
+    "aria-current",
+    "page"
+  );
+  await expect(page.locator(".reviewer-rail h2")).toHaveText("Focused intake");
+});
+
+test("reopening August from Home keeps clinician messages private", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/cases/doctor-handoff/classic");
+  await page.getByRole("button", { name: "Home", exact: true }).click();
+  await expect(page.getByText("Your care is waiting.", { exact: true })).toBeVisible();
+  await page
+    .getByRole("button", { name: "Continue with August", exact: true })
+    .click();
+  await expect(page.locator(".composer-recipient")).toHaveText(
+    "Private to August"
+  );
+  await expect(
+    page.getByText(
+      "Maya cannot see messages in this sidecar unless you choose to share them."
+    )
+  ).toBeVisible();
 });
 
 test("medication answers use the same emergency interruption", async ({

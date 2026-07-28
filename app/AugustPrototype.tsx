@@ -27,6 +27,8 @@ import {
   type PrototypeVariationId,
 } from "./prototypeCases";
 
+type ShellSurface = "home" | "august";
+
 const icons: Record<string, ReactNode> = {
   home: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -256,36 +258,45 @@ function Pill({
   return <span className={`pill pill-${tone}`}>{children}</span>;
 }
 
-function BottomNav({ active }: { active: "home" | "august" }) {
+function BottomNav({
+  active,
+  onHome,
+  onAugust,
+}: {
+  active: ShellSurface;
+  onHome: () => void;
+  onAugust: () => void;
+}) {
   return (
     <nav className="bottom-nav" aria-label="August navigation">
       <div className="bottom-nav-main glass">
-        <span className={active === "home" ? "active" : ""}>
+        <button
+          aria-current={active === "home" ? "page" : undefined}
+          aria-label="Home"
+          className={active === "home" ? "active" : ""}
+          onClick={onHome}
+          type="button"
+        >
           <Icon name="home" />
           <span>Home</span>
-        </span>
-        <span>
-          <Icon name="file" />
-          <span>Visits</span>
-        </span>
-        <span>
-          <Icon name="clock" />
-          <span>Updates</span>
-        </span>
+        </button>
       </div>
-      <span
+      <button
+        aria-current={active === "august" ? "page" : undefined}
+        aria-label={
+          active === "august" ? "August chat, current" : "Open August chat"
+        }
         className={
           active === "august"
             ? "bottom-nav-assistant active"
             : "bottom-nav-assistant"
         }
-        aria-label={
-          active === "august" ? "August chat, current" : "Open August chat"
-        }
+        onClick={onAugust}
+        type="button"
       >
         <Icon name="spark" />
         <span className="bottom-nav-assistant-label">August</span>
-      </span>
+      </button>
     </nav>
   );
 }
@@ -377,46 +388,51 @@ function Composer({
 }) {
   const [value, setValue] = useState("");
   return (
-    <form
-      className="composer glass"
-      onSubmit={(event) => {
-        event.preventDefault();
-        if (!value.trim()) return;
-        onSubmit(value.trim());
-        setValue("");
-      }}
-    >
-      {onAttach ? (
-        <button
-          type="button"
-          className="attach-button"
-          onClick={onAttach}
-          aria-label="Attach a file"
-        >
-          <Icon name="plus" />
-        </button>
-      ) : (
-        <span className="attach-button composer-decoration" aria-hidden="true">
-          <Icon name="plus" />
-        </span>
-      )}
-      <label>
-        {recipient && <span className="composer-recipient">{recipient}</span>}
-        <input
-          value={value}
-          onChange={(event) => setValue(event.target.value)}
-          placeholder={placeholder}
-          aria-label={placeholder}
-        />
-      </label>
-      <button
-        className="send-button"
-        disabled={!value.trim()}
-        aria-label="Send message"
+    <div className="composer-stack">
+      <form
+        className="composer glass"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!value.trim()) return;
+          onSubmit(value.trim());
+          setValue("");
+        }}
       >
-        <Icon name="send" />
-      </button>
-    </form>
+        {onAttach ? (
+          <button
+            type="button"
+            className="attach-button"
+            onClick={onAttach}
+            aria-label="Attach a file"
+          >
+            <Icon name="plus" />
+          </button>
+        ) : (
+          <span className="attach-button composer-decoration" aria-hidden="true">
+            <Icon name="plus" />
+          </span>
+        )}
+        <label>
+          {recipient && <span className="composer-recipient">{recipient}</span>}
+          <input
+            value={value}
+            onChange={(event) => setValue(event.target.value)}
+            placeholder={placeholder}
+            aria-label={placeholder}
+          />
+        </label>
+        <button
+          className="send-button"
+          disabled={!value.trim()}
+          aria-label="Send message"
+        >
+          <Icon name="send" />
+        </button>
+      </form>
+      <p className="composer-boundary">
+        Not emergency care · Call 911 for emergencies.
+      </p>
+    </div>
   );
 }
 
@@ -519,20 +535,42 @@ export function AugustPrototype({
     [initialConcern, initialFixture, initialView]
   );
   const [state, dispatch] = useReducer(encounterReducer, initialEncounter);
+  const [surface, setSurface] = useState<ShellSurface>(() =>
+    initialView === "entry" ? "home" : "august"
+  );
   const contentRef = useRef<HTMLDivElement>(null);
+  const activeSurface = state.phase === "emergency" ? "august" : surface;
 
   useEffect(() => {
     contentRef.current?.scrollTo({ top: 0, behavior: "smooth" });
-  }, [state.phase]);
+  }, [activeSurface, state.phase]);
 
-  const reset = () =>
+  const reset = () => {
     dispatch({
       type: "RESET",
       state: createEncounterState(),
     });
+    setSurface("home");
+  };
 
-  const openUpload = (origin: EncounterPhase) =>
+  const openHome = () => setSurface("home");
+
+  const openAugust = () => {
+    if (state.phase === "clinician_active" && state.recipient !== "august") {
+      dispatch({ type: "SET_RECIPIENT", recipient: "august" });
+    }
+    setSurface("august");
+  };
+
+  const startConcern = (concern: string) => {
+    setSurface("august");
+    dispatch({ type: "START_CONCERN", concern });
+  };
+
+  const openUpload = (origin: EncounterPhase) => {
+    setSurface("august");
     dispatch({ type: "START_UPLOAD", origin });
+  };
 
   const backTo = (phase: EncounterPhase) =>
     dispatch({ type: "GO_TO", phase });
@@ -552,16 +590,41 @@ export function AugustPrototype({
             </div>
           </div>
           <div className="phone-content" ref={contentRef}>
-            {state.phase === "entry" && (
+            {activeSurface === "home" && (
               <HomeScreen
-                variation={variation}
-                onSubmit={(concern) =>
-                  dispatch({ type: "START_CONCERN", concern })
+                activeEncounter={
+                  state.phase === "entry"
+                    ? null
+                    : {
+                        concern:
+                          state.concern ||
+                          (state.upload
+                            ? `Report: ${state.upload.filename || "Not yet selected"}`
+                            : "Current care conversation"),
+                        phaseLabel: phaseLabels[state.phase],
+                      }
                 }
+                focused={false}
+                onContinue={openAugust}
+                onStartOver={reset}
+                variation={variation}
+                onSubmit={startConcern}
                 onUpload={() => openUpload("entry")}
               />
             )}
-            {state.phase === "safety" && (
+            {activeSurface === "august" && state.phase === "entry" && (
+              <HomeScreen
+                activeEncounter={null}
+                focused
+                onContinue={openAugust}
+                onStartOver={reset}
+                variation={variation}
+                onSubmit={startConcern}
+                onUpload={() => openUpload("entry")}
+                onHome={openHome}
+              />
+            )}
+            {activeSurface === "august" && state.phase === "safety" && (
               <SafetyScreen
                 variation={variation}
                 concern={state.concern}
@@ -570,10 +633,10 @@ export function AugustPrototype({
                   dispatch({ type: "SUBMIT_SAFETY", answer })
                 }
                 onUpload={() => openUpload("safety")}
-                onBack={reset}
+                onBack={openHome}
               />
             )}
-            {state.phase === "intake" && (
+            {activeSurface === "august" && state.phase === "intake" && (
               <IntakeScreen
                 concern={state.concern}
                 answers={state.intakeAnswers}
@@ -585,7 +648,7 @@ export function AugustPrototype({
                 onBack={() => backTo("safety")}
               />
             )}
-            {state.phase === "summary" && (
+            {activeSurface === "august" && state.phase === "summary" && (
               <SummaryScreen
                 state={state}
                 dispatch={dispatch}
@@ -593,14 +656,14 @@ export function AugustPrototype({
                 onBack={() => backTo("intake")}
               />
             )}
-            {state.phase === "eligibility" && (
+            {activeSurface === "august" && state.phase === "eligibility" && (
               <EligibilityScreen
                 state={state}
                 dispatch={dispatch}
                 onBack={() => backTo("summary")}
               />
             )}
-            {state.phase === "checkout" && (
+            {activeSurface === "august" && state.phase === "checkout" && (
               <CheckoutScreen
                 consent={state.consent}
                 onConsent={(consent) =>
@@ -610,14 +673,15 @@ export function AugustPrototype({
                 onBack={() => backTo("eligibility")}
               />
             )}
-            {state.phase === "matching" && (
+            {activeSurface === "august" && state.phase === "matching" && (
               <MatchingScreen
                 clinicianState={state.clinicianState}
                 onBack={() => backTo("checkout")}
                 onViewSummary={() => backTo("summary")}
               />
             )}
-            {state.phase === "clinician_reviewing" && (
+            {activeSurface === "august" &&
+              state.phase === "clinician_reviewing" && (
               <ClinicianReviewingScreen
                 messages={state.clinicianMessages.filter(
                   (item) => item.author === "patient"
@@ -633,7 +697,8 @@ export function AugustPrototype({
                 onUpload={() => openUpload("clinician_active")}
               />
             )}
-            {state.phase === "clinician_active" && (
+            {activeSurface === "august" &&
+              state.phase === "clinician_active" && (
               <ClinicianScreen
                 variation={variation}
                 state={state}
@@ -642,17 +707,17 @@ export function AugustPrototype({
                 onUpload={() => openUpload("clinician_active")}
               />
             )}
-            {state.phase === "plan_ready" && (
+            {activeSurface === "august" && state.phase === "plan_ready" && (
               <PlanScreen
                 onBack={() => backTo("clinician_active")}
                 onFollowUp={() => backTo("follow_up")}
                 onExplain={() =>
                   dispatch({ type: "SET_RECIPIENT", recipient: "august" })
                 }
-                onHome={reset}
+                onHome={openHome}
               />
             )}
-            {state.phase === "follow_up" && (
+            {activeSurface === "august" && state.phase === "follow_up" && (
               <FollowUpScreen
                 state={state}
                 dispatch={dispatch}
@@ -666,10 +731,10 @@ export function AugustPrototype({
                   });
                   backTo("clinician_active");
                 }}
-                onHome={reset}
+                onHome={openHome}
               />
             )}
-            {state.phase === "report" && (
+            {activeSurface === "august" && state.phase === "report" && (
               <ReportScreen
                 state={state}
                 dispatch={dispatch}
@@ -678,11 +743,11 @@ export function AugustPrototype({
                 }
               />
             )}
-            {state.phase === "prescription" && (
+            {activeSurface === "august" && state.phase === "prescription" && (
               <PrescriptionScreen
                 state={state}
                 dispatch={dispatch}
-                onBack={reset}
+                onBack={openHome}
                 onUpload={() => openUpload("prescription")}
               />
             )}
@@ -692,12 +757,16 @@ export function AugustPrototype({
                 dispatch={dispatch}
               />
             )}
-            {state.phase === "unsupported" && (
-              <UnsupportedScreen concern={state.concern} onBack={reset} />
+            {activeSurface === "august" && state.phase === "unsupported" && (
+              <UnsupportedScreen concern={state.concern} onBack={openHome} />
             )}
           </div>
           {showNavigation && (
-            <BottomNav active={state.phase === "entry" ? "home" : "august"} />
+            <BottomNav
+              active={activeSurface}
+              onAugust={openAugust}
+              onHome={openHome}
+            />
           )}
         </div>
         <ReviewerRail
@@ -713,10 +782,23 @@ export function AugustPrototype({
 }
 
 function HomeScreen({
+  activeEncounter,
+  focused,
+  onContinue,
+  onHome,
+  onStartOver,
   variation,
   onSubmit,
   onUpload,
 }: {
+  activeEncounter: {
+    concern: string;
+    phaseLabel: string;
+  } | null;
+  focused: boolean;
+  onContinue: () => void;
+  onHome?: () => void;
+  onStartOver: () => void;
   variation: PrototypeVariationId;
   onSubmit: (value: string) => void;
   onUpload: () => void;
@@ -728,16 +810,80 @@ function HomeScreen({
     if (!value.trim()) return;
     onSubmit(value.trim());
   };
+
+  if (activeEncounter) {
+    return (
+      <div className="screen home-screen continuity-home">
+        <nav className="home-nav">
+          <Brand />
+          <span className="avatar" aria-label="Parth profile">
+            P
+          </span>
+        </nav>
+        <section className="home-hero">
+          <Pill>Conversation saved</Pill>
+          <span className="home-greeting">Welcome back, Parth</span>
+          <h2>Your care is waiting.</h2>
+          <p>
+            Return whenever you are ready. Your answers and current step are
+            still here.
+          </p>
+        </section>
+        <section className="continuity-card glass" aria-label="Current encounter">
+          <div className="continuity-card-heading">
+            <span className="shortcut-icon">
+              <Icon name="spark" />
+            </span>
+            <div>
+              <small>Continue with August</small>
+              <strong>{activeEncounter.phaseLabel}</strong>
+            </div>
+          </div>
+          <p>{activeEncounter.concern}</p>
+          <PrimaryButton onClick={onContinue}>
+            Continue with August
+          </PrimaryButton>
+        </section>
+        <button
+          className="start-over-button"
+          onClick={onStartOver}
+          type="button"
+        >
+          Start a new question
+        </button>
+        <div className="privacy-note">
+          <Icon name="shield" />
+          <p>
+            <strong>Your conversation is unchanged.</strong>
+            Nothing is shared with a clinician unless the care flow says so.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="screen home-screen">
-      <nav className="home-nav">
-        <Brand />
-        <span className="avatar" aria-label="Parth profile">
-          P
-        </span>
-      </nav>
+    <div
+      className={`screen home-screen ${
+        focused ? "focused-august-screen" : ""
+      }`}
+    >
+      {focused ? (
+        <Header
+          title="August"
+          status="Private AI care guide"
+          onBack={onHome ?? onStartOver}
+        />
+      ) : (
+        <nav className="home-nav">
+          <Brand />
+          <span className="avatar" aria-label="Parth profile">
+            P
+          </span>
+        </nav>
+      )}
       <section className="home-hero">
-        <Pill>{experience.homePill}</Pill>
+        <Pill>{focused ? "Your private August conversation" : experience.homePill}</Pill>
         <span className="home-greeting">Good morning, Parth</span>
         <h2>{experience.homeTitle}</h2>
         <p>{experience.homeIntro}</p>
@@ -767,6 +913,9 @@ function HomeScreen({
           </button>
         </div>
       </form>
+      <p className="hero-care-boundary">
+        Not emergency care · Call 911 for emergencies.
+      </p>
       <div className={`shortcut-grid shortcut-grid-${variation}`}>
         <button
           onClick={() =>
