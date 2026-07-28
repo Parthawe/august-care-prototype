@@ -116,7 +116,7 @@ test("visit summary is derived from the patient's answers", async ({
     await expect(send).toBeEnabled();
     await send.click();
     if (index === answers.length - 1) {
-      await expect(page.getByText("What August collected", { exact: true })).toBeVisible();
+      await expect(page.getByText("Pre-visit summary", { exact: true })).toBeVisible();
     } else {
       await expect(page.getByText(answer, { exact: true })).toBeVisible();
     }
@@ -271,29 +271,27 @@ test("patient-facing controls provide 44px touch targets", async ({
   expect(failures, JSON.stringify(failures)).toEqual([]);
 });
 
-test("the default August entry is blank until the patient writes", async ({
+test("the default route opens the canonical August entry", async ({
   page,
 }) => {
   await page.goto("/");
 
-  const conversation = page.locator('[aria-live="polite"]');
-  await expect(conversation).toBeVisible();
-  await expect(conversation).toHaveText("");
   await expect(
-    page.getByRole("textbox", { name: "Message August" }),
+    page.getByRole("textbox", { name: "Describe what’s going on" }),
   ).toBeVisible();
+  await expect(page.getByText("Ask August anything.", { exact: true })).toBeVisible();
 
   await page
-    .getByRole("textbox", { name: "Message August" })
+    .getByRole("textbox", { name: "Describe what’s going on" })
     .fill("My throat has been hurting.");
-  await page.getByRole("button", { name: "Send message" }).click();
+  await page.getByRole("button", { name: "Start conversation" }).click();
 
   await expect(
     page.getByText("My throat has been hurting.", { exact: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("When did it start, and have you had a fever?", {
-      exact: true,
+    page.getByText("Before we continue", {
+      exact: false,
     }),
   ).toBeVisible();
 });
@@ -418,14 +416,27 @@ test("unified scenario shortcuts open every major review state", async ({
     { id: "emergency", text: "This may need emergency care now." },
   ];
 
-  await page.goto("/?scenario=empty");
+  await page.goto("/prototype/start");
   await expect(
     page.getByRole("textbox", { name: "Message August" }),
   ).toBeVisible();
   await expect(page.locator('[aria-live="polite"]')).toHaveText("");
 
   for (const scenario of scenarios) {
-    await page.goto(`/?scenario=${scenario.id}`);
+    const routes: Record<string, string> = {
+      symptom: "symptom",
+      prescription: "prescription",
+      unsupported: "unsupported",
+      "clinician-wait": "clinician-wait",
+      testing: "testing",
+      "result-review": "report-review",
+      "prescription-appropriate": "medication-appropriate",
+      "prescription-declined": "medication-declined",
+      "follow-up": "follow-up",
+      care: "care-inbox",
+      emergency: "emergency",
+    };
+    await page.goto(`/prototype/${routes[scenario.id]}`);
     await expect(page.getByText(scenario.text, { exact: false }).first()).toBeVisible();
     await expect(page.getByText(/Preview|prototype/i)).toHaveCount(0);
   }
@@ -435,7 +446,7 @@ test("unified clinician delay keeps August private", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
-  await page.goto("/?scenario=clinician-wait");
+  await page.goto("/prototype/clinician-wait");
   await page.getByRole("button", { name: "Ask August while you wait" }).click();
   await expect(page.getByText("Private · Maya cannot see this", { exact: true })).toBeVisible();
   await expect(
@@ -454,7 +465,7 @@ test("unified upload separates processing, confirmation, and clinician review", 
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
-  await page.goto("/?scenario=upload");
+  await page.goto("/prototype/testing");
   await page.locator('input[type="file"]').last().setInputFiles({
     name: "rapid-strep-result.pdf",
     mimeType: "application/pdf",
@@ -477,7 +488,7 @@ test("unified emergency removes routine chat until urgent action begins", async 
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
-  await page.goto("/?scenario=emergency");
+  await page.goto("/prototype/emergency");
   await expect(page.getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("navigation", { name: "Main navigation" })).toHaveCount(0);
   await page.getByRole("button", { name: "Call emergency services" }).click();
@@ -490,7 +501,7 @@ test("conversation header returns to the Care inbox", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
-  await page.goto("/?scenario=symptom");
+  await page.goto("/prototype/symptom");
   await page.getByRole("button", { name: "Back to conversations" }).click();
   await expect(page.getByText("Your clinician conversations", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Back to conversations" })).toHaveCount(0);

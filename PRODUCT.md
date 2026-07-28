@@ -47,7 +47,7 @@ Its distinct mechanism is the continuity of one care conversation: August prepar
 - August asks multiple meaningful questions before suggesting a routine next step, except when an emergency or clearly unsupported condition requires earlier routing.
 - A clinician may respond within minutes or much later; the interface must communicate status, response windows, notifications, and worsening-symptom guidance.
 - Patients may upload lab reports, medical images, prescription photos, or other documents. August summarizes relevant information, asks the patient to confirm important extracted details, and routes significant findings for clinician review.
-- August prepares a patient-reviewable summary and a clinician-facing SOAP-style handoff containing the transcript, relevant negatives, safety flags, medications, allergies, and uploads.
+- August prepares a patient-reviewable pre-visit summary and a clinician-facing structured handoff containing the transcript, relevant negatives, safety flags, medications, allergies, and uploads.
 
 ## Capabilities and Constraints
 
@@ -76,7 +76,7 @@ Confirmed constraints:
 
 Open product decisions:
 
-- Pricing is not finalized. Options under consideration include a single $40 charge and a staged model such as $20 to begin plus smaller charges as care continues.
+- The current prototype baseline is a $39 clinician visit. Any membership or staged-payment model remains a separate product concept.
 - Exact supported specialties, conditions, states, clinician availability rules, escalation destinations, and service-level response windows are not finalized.
 - The final relationship between August-only guidance, clinician review, and clinician-visible group-chat behavior remains a design hypothesis to test.
 

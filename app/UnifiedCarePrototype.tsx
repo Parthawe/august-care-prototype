@@ -1789,14 +1789,14 @@ export function UnifiedCarePrototype({
                     </label>
                   </div>
                   <p className={styles.cardCopy}>
-                    The $40 clinician review does not guarantee medication or a
+                    The $39 clinician review does not guarantee medication or a
                     specific outcome.
                   </p>
                   <PrimaryButton
                     disabled={!careForSelf || !adult || !location || !consent}
                     onClick={connect}
                   >
-                    Confirm and connect · $40
+                    Confirm and connect · $39
                   </PrimaryButton>
                 </InlineCard>
               ) : null}
@@ -1805,7 +1805,7 @@ export function UnifiedCarePrototype({
                 <InlineCard
                   icon="shield"
                   eyebrow="Clinical review"
-                  title="$40 today"
+                  title="$39 today"
                 >
                   <p className={styles.cardCopy}>
                     Payment covers Maya’s review. It does not guarantee a
@@ -1823,7 +1823,7 @@ export function UnifiedCarePrototype({
                     </span>
                   </label>
                   <PrimaryButton disabled={!consent} onClick={connect}>
-                    Pay and send for review · $40
+                    Pay and send for review · $39
                   </PrimaryButton>
                 </InlineCard>
               ) : null}

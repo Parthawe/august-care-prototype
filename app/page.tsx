@@ -1,14 +1,5 @@
-import { UnifiedCarePrototype } from "./UnifiedCarePrototype";
+import { AugustPrototype } from "./AugustPrototype";
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ scenario?: string | string[] }>;
-}) {
-  const params = await searchParams;
-  const scenario = Array.isArray(params.scenario)
-    ? params.scenario[0]
-    : params.scenario;
-
-  return <UnifiedCarePrototype initialScenario={scenario} />;
+export default function Home() {
+  return <AugustPrototype initialView="entry" variation="classic" />;
 }

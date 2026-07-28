@@ -1014,8 +1014,8 @@ function SummaryScreen({
         onBack={onBack}
       />
       <div className="page-body">
-        <span className="eyebrow">Your review</span>
-        <h2>What August collected</h2>
+        <span className="eyebrow">Review before sharing</span>
+        <h2>Pre-visit summary</h2>
         <p className="page-intro">
           Check the timing, safety answers, and details before they go to a clinician.
         </p>
@@ -1023,7 +1023,7 @@ function SummaryScreen({
           <div className="card-heading">
             <span>
               <Icon name="file" />
-              <strong>Visit summary</strong>
+              <strong>Patient-reported details</strong>
             </span>
             <button type="button" onClick={() => setEditing(!editing)}>
               {editing ? "Close" : "Correct"}
@@ -1216,7 +1216,7 @@ function CheckoutScreen({
             <h2>Clinician review</h2>
             <p>You can leave and return after sending.</p>
           </div>
-          <strong>$40</strong>
+          <strong>$39</strong>
         </div>
         <section className="included-card">
           <h3>What this includes</h3>
@@ -1245,7 +1245,7 @@ function CheckoutScreen({
         </label>
         <div className="total-row">
           <span>Example total today</span>
-          <strong>$40.00</strong>
+          <strong>$39.00</strong>
         </div>
         <PrimaryButton onClick={onContinue} disabled={!consent}>
           Pay and send for review

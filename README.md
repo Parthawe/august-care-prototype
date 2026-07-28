@@ -13,7 +13,7 @@ Open `/cases` for a review index, or use direct links:
 - `/cases/three-questions` — three natural follow-up questions
 - `/cases/visit-summary` — editable clinician handoff summary
 - `/cases/eligibility` — care-for-self, age, and current-state gates
-- `/cases/pricing-checkout` — unchecked consent and $40 example price
+- `/cases/pricing-checkout` — unchecked consent and $39 visit price
 - `/cases/async-wait` — clinician matching and async wait state
 - `/cases/doctor-reviewing` — assigned clinician reviewing asynchronously
 - `/cases/doctor-handoff` — human clinician joins the thread

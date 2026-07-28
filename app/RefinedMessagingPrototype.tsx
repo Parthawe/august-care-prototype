@@ -581,10 +581,10 @@ function ConnectionCard({ onContinue }: { onContinue: () => void }) {
         </div>
       </div>
       <p>
-        $40 covers the clinical review, not a prescription or specific outcome.
+        $39 covers the clinical review, not a prescription or specific outcome.
       </p>
       <button type="button" onClick={onContinue}>
-        Review details · $40
+        Review details · $39
       </button>
     </div>
   );
@@ -1296,7 +1296,7 @@ export function RefinedMessagingPrototype() {
               </p>
               <p>
                 <span>Clinical review</span>
-                <strong>$40</strong>
+                <strong>$39</strong>
               </p>
             </div>
             <p className={styles.sheetFinePrint}>
@@ -1312,7 +1312,7 @@ export function RefinedMessagingPrototype() {
                 setStep("care-inbox");
               }}
             >
-              Confirm and connect · $40
+              Confirm and connect · $39
             </button>
           </OverlaySheet>
         ) : null}

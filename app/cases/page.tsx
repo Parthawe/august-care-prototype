@@ -19,21 +19,25 @@ const interactiveScenarios = [
     items: [
       {
         id: "empty",
+        route: "start",
         label: "No messages yet",
         note: "Start naturally or use one of the three prompts.",
       },
       {
         id: "symptom",
+        route: "symptom",
         label: "Symptom intake",
         note: "Continue the adaptive one-question-at-a-time interview.",
       },
       {
         id: "prescription",
+        route: "prescription",
         label: "Prescription request",
         note: "Assess the request before any medication decision.",
       },
       {
         id: "unsupported",
+        route: "unsupported",
         label: "Unsupported request",
         note: "Give a neutral boundary and a useful next step.",
       },
@@ -44,21 +48,25 @@ const interactiveScenarios = [
     items: [
       {
         id: "clinician-wait",
+        route: "clinician-wait",
         label: "Maya is reviewing",
         note: "Test delayed response and private Ask August.",
       },
       {
         id: "testing",
+        route: "testing",
         label: "Testing choices",
         note: "Arrange a lab, order a kit, or upload a result.",
       },
       {
         id: "result-review",
+        route: "report-review",
         label: "Result awaiting review",
         note: "Keep the plan pending until Maya finishes.",
       },
       {
         id: "care",
+        route: "care-inbox",
         label: "Care inbox",
         note: "Switch between August and clinician conversations.",
       },
@@ -69,21 +77,25 @@ const interactiveScenarios = [
     items: [
       {
         id: "prescription-appropriate",
+        route: "medication-appropriate",
         label: "Medication appropriate",
         note: "Review plan, choose pharmacy, send, and follow up.",
       },
       {
         id: "prescription-declined",
+        route: "medication-declined",
         label: "Medication declined",
         note: "Show reasoning, alternative care, and follow-up.",
       },
       {
         id: "follow-up",
+        route: "follow-up",
         label: "August follow-up",
         note: "Test better and worse responses after treatment.",
       },
       {
         id: "emergency",
+        route: "emergency",
         label: "Emergency interruption",
         note: "Normal chat pauses; location and urgent actions take over.",
       },
@@ -120,7 +132,7 @@ export default function PrototypeCasesPage() {
                 {scenarioGroup.items.map((scenario) => (
                   <a
                     className="case-link-card"
-                    href={`/?scenario=${scenario.id}`}
+                    href={`/prototype/${scenario.route}`}
                     key={scenario.id}
                   >
                     <strong>{scenario.label}</strong>
