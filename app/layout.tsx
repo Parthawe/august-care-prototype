@@ -21,18 +21,38 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "August — Independent care flows",
+  metadataBase: new URL(
+    "https://august-care-handoff.pawar-d-parth.chatgpt.site",
+  ),
+  title: {
+    default: "August Care — Interactive Prototype",
+    template: "%s · August Care",
+  },
   description:
-    "An interactive product design prototype with focused August care flows for intake, clinician care, reports, decisions, and safety.",
+    "A fictional product-design prototype for conversational intake, direct clinician care, prescriptions, and nearby testing.",
   icons: {
     icon: "/favicon.svg",
     shortcut: "/favicon.svg",
   },
   openGraph: {
-    title: "August — Independent care flows",
+    title: "August Care — Interactive Prototype",
     description:
-      "Review focused August flows for intake, clinician care, reports, decisions, and safety.",
-    images: ["/og-august-independent-flows.png"],
+      "Care that starts with a conversation, then moves directly to a human clinician.",
+    images: [
+      {
+        url: "/og-august-care-v2.png",
+        width: 1200,
+        height: 630,
+        alt: "August Care conversational prototype",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "August Care — Interactive Prototype",
+    description:
+      "Care that starts with a conversation, then moves directly to a human clinician.",
+    images: ["/og-august-care-v2.png"],
   },
 };
 

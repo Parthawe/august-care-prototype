@@ -2,7 +2,7 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests",
-  testMatch: /prototype\.e2e\.ts/,
+  testMatch: /prototype(?:-v2)?\.e2e\.ts/,
   fullyParallel: true,
   retries: 0,
   reporter: [["list"]],
