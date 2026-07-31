@@ -2,7 +2,6 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createPrototypeV2Encounter,
-  movePrototypeV2State,
   normalizePrototypeV2State,
   prototypeV2States,
 } from "../app/prototypeV2Machine";
@@ -43,13 +42,6 @@ test("invalid state URLs normalize to each flow start", () => {
     "recommended",
   );
   assert.equal(normalizePrototypeV2State("lab", "sent"), "recommended");
-});
-
-test("reviewer movement remains bounded within its flow", () => {
-  assert.equal(movePrototypeV2State("intake", "empty", -1), "empty");
-  assert.equal(movePrototypeV2State("intake", "empty", 1), "concern");
-  assert.equal(movePrototypeV2State("prescription", "sent", 1), "sent");
-  assert.equal(movePrototypeV2State("lab", "confirmed", -1), "nearby-lab");
 });
 
 test("confirmed context and clinician ownership are honest", () => {

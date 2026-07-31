@@ -5,7 +5,6 @@ import {
   isPrototypeV2Flow,
   normalizePrototypeV2State,
   prototypeV2Flows,
-  prototypeV2StateLabels,
 } from "../../prototypeV2Machine";
 
 type Props = {
@@ -20,7 +19,7 @@ export function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { flow } = await params;
   if (!isPrototypeV2Flow(flow)) {
-    return { title: "August Care — Prototype V2" };
+    return { title: "August Care" };
   }
   const labels = {
     intake: "Start with August",
@@ -30,7 +29,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return {
     title: `August Care — ${labels[flow]}`,
     description:
-      "A focused, high-fidelity August Care interaction prototype.",
+      "Mobile care that starts with a conversation and continues with a human clinician.",
   };
 }
 
@@ -45,11 +44,5 @@ export default async function PrototypeV2FlowPage({
 
   const initialState = normalizePrototypeV2State(flow, query.state);
 
-  return (
-    <AugustV2Prototype
-      initialFlow={flow}
-      initialState={initialState}
-      initialLabel={prototypeV2StateLabels[flow][initialState]}
-    />
-  );
+  return <AugustV2Prototype initialFlow={flow} initialState={initialState} />;
 }

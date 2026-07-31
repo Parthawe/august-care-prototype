@@ -110,17 +110,6 @@ export function getPrototypeV2StateIndex(
   return (prototypeV2States[flow] as readonly string[]).indexOf(state);
 }
 
-export function movePrototypeV2State(
-  flow: PrototypeV2Flow,
-  state: PrototypeV2State,
-  direction: -1 | 1,
-) {
-  const states = prototypeV2States[flow] as readonly PrototypeV2State[];
-  const current = Math.max(0, states.indexOf(state));
-  const next = Math.min(states.length - 1, Math.max(0, current + direction));
-  return states[next];
-}
-
 export function createPrototypeV2Encounter(
   flow: PrototypeV2Flow,
   state?: string,

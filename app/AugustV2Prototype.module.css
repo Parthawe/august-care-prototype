@@ -4,13 +4,10 @@
   --august-mint: #dceee6;
   --august-cream: #fbfaf4;
   --august-line: rgba(22, 63, 53, 0.13);
-  min-height: 100svh;
+  min-height: 100dvh;
   display: grid;
-  grid-template-columns: minmax(260px, 360px) 390px;
-  justify-content: center;
-  align-items: center;
-  gap: clamp(48px, 8vw, 124px);
-  padding: 56px;
+  place-items: center;
+  padding: 24px;
   color: var(--august-ink);
   background:
     radial-gradient(circle at 78% 17%, rgba(178, 218, 199, 0.55), transparent 29%),
@@ -18,100 +15,32 @@
   font-family: var(--font-inter), Inter, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-.contextPanel {
-  align-self: stretch;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  max-height: 844px;
-  padding: 18px 0;
-}
-
-.wordmark {
-  width: fit-content;
-  color: var(--august-green);
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: 31px;
-  letter-spacing: -1.2px;
-  text-decoration: none;
-}
-
-.contextPanel > div > small,
 .screenIntro small,
 .detailCard > small,
 .summaryCard small,
-.successPanel > small,
-.reviewerControls small {
+.successPanel > small {
   color: #567168;
   font-size: 10px;
   font-weight: 750;
   letter-spacing: 0.12em;
 }
 
-.contextPanel h1 {
-  max-width: 330px;
-  margin: 14px 0 15px;
-  font-family: var(--font-editorial), Georgia, serif;
-  font-size: clamp(48px, 5vw, 72px);
-  font-weight: 400;
-  line-height: 0.94;
-  letter-spacing: -0.045em;
-}
-
-.contextPanel > div > p {
-  max-width: 320px;
-  margin: 0;
-  color: #51645e;
-  font-size: 15px;
-  line-height: 1.6;
-}
-
-.contextPanel dl {
-  margin: 0;
-  border-top: 1px solid var(--august-line);
-}
-
-.contextPanel dl div {
-  display: grid;
-  grid-template-columns: 110px 1fr;
-  gap: 18px;
-  padding: 15px 0;
-  border-bottom: 1px solid var(--august-line);
-}
-
-.contextPanel dt,
-.contextPanel dd {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.45;
-}
-
-.contextPanel dt {
-  color: #6f817b;
-}
-
-.contextPanel dd {
-  font-weight: 650;
-}
-
-.prototypeNote {
-  max-width: 290px;
-  margin: 0;
-  color: #72827c;
-  font-size: 10px;
-  line-height: 1.45;
-}
-
 .deviceColumn {
-  width: 390px;
+  width: min(390px, 100vw);
+  height: min(844px, 100dvh);
 }
 
 .phone {
   position: relative;
-  width: 390px;
-  height: 844px;
+  width: 100%;
+  height: 100%;
   display: grid;
-  grid-template-rows: 32px 61px minmax(0, 1fr) auto 57px;
+  grid-template-rows:
+    calc(32px + env(safe-area-inset-top))
+    61px
+    minmax(0, 1fr)
+    auto
+    calc(57px + env(safe-area-inset-bottom));
   overflow: hidden;
   border: 1px solid rgba(21, 56, 47, 0.18);
   border-radius: 39px;
@@ -125,7 +54,7 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 23px 0;
+  padding: calc(8px + env(safe-area-inset-top)) 23px 0;
   color: #14251f;
   font-size: 11px;
   font-weight: 700;
@@ -732,7 +661,7 @@
   color: var(--august-ink);
   background: transparent;
   font: inherit;
-  font-size: 12px;
+  font-size: 16px;
 }
 
 .composer input::placeholder {
@@ -774,6 +703,7 @@
   grid-template-columns: repeat(3, 1fr);
   border-top: 1px solid var(--august-line);
   background: #f6f6ef;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .bottomNav > span {
@@ -814,73 +744,6 @@
 
 .bottomNav .activeNav .avatar {
   filter: none;
-}
-
-.reviewerControls {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 12px 18px;
-  margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--august-line);
-  border-radius: 18px;
-  background: rgba(255, 255, 252, 0.72);
-  box-shadow: 0 8px 22px rgba(26, 65, 53, 0.06);
-}
-
-.reviewerControls > div:first-child {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.reviewerControls strong {
-  font-size: 12px;
-}
-
-.reviewerControls span {
-  overflow: hidden;
-  color: #708079;
-  font-size: 9px;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.controlButtons {
-  display: flex;
-  gap: 5px;
-}
-
-.controlButtons button,
-.reviewerControls > a {
-  min-height: 44px;
-  padding: 0 11px;
-  border: 1px solid var(--august-line);
-  border-radius: 12px;
-  color: var(--august-green);
-  background: #fff;
-  font: inherit;
-  font-size: 9px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.controlButtons button:disabled {
-  opacity: 0.38;
-  cursor: not-allowed;
-}
-
-.reviewerControls > a {
-  grid-column: 1 / -1;
-  min-height: auto;
-  width: fit-content;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 .sheetBackdrop {
@@ -943,8 +806,6 @@
 .attachButton:focus-visible,
 .sendButton:focus-visible,
 .summaryRow:focus-visible,
-.controlButtons button:focus-visible,
-.reviewerControls a:focus-visible,
 .detailsSheet button:focus-visible,
 .composer input:focus-visible {
   outline: 3px solid #f2b84b;
@@ -974,17 +835,12 @@
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 700px), (max-height: 892px) {
   .stage {
-    min-height: 100svh;
+    min-height: 100dvh;
     display: block;
     padding: 0;
     background: var(--august-cream);
-  }
-
-  .contextPanel,
-  .reviewerControls {
-    display: none;
   }
 
   .deviceColumn,
@@ -992,9 +848,12 @@
     width: 100%;
   }
 
+  .deviceColumn {
+    height: 100dvh;
+  }
+
   .phone {
-    height: 100svh;
-    min-height: 568px;
+    height: 100dvh;
     border: 0;
     border-radius: 0;
     box-shadow: none;
@@ -1003,11 +862,16 @@
 
 @media (max-width: 350px), (max-height: 700px) {
   .phone {
-    grid-template-rows: 27px 55px minmax(0, 1fr) auto 50px;
+    grid-template-rows:
+      calc(27px + env(safe-area-inset-top))
+      55px
+      minmax(0, 1fr)
+      auto
+      calc(50px + env(safe-area-inset-bottom));
   }
 
   .statusBar {
-    padding-top: 5px;
+    padding-top: calc(5px + env(safe-area-inset-top));
   }
 
   .conversationHeader {

@@ -13,23 +13,11 @@ async function send(page: Page, value: string) {
   await page.getByRole("button", { name: "Send message" }).click();
 }
 
-test("reviewer hub exposes the three authored starting points", async ({
-  page,
-}, testInfo) => {
+test("the V2 entry opens the mobile intake directly", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2");
-  await expect(page.getByRole("link", { name: /Start with August/ })).toHaveAttribute(
-    "href",
-    "/prototype-v2/intake",
-  );
-  await expect(page.getByRole("link", { name: /Prescription/ })).toHaveAttribute(
-    "href",
-    "/prototype-v2/prescription",
-  );
-  await expect(page.getByRole("link", { name: /Nearby lab/ })).toHaveAttribute(
-    "href",
-    "/prototype-v2/lab",
-  );
+  await expect(page).toHaveURL(/\/prototype-v2\/intake\?state=empty$/);
+  await expect(page.getByRole("region", { name: "August care" })).toBeVisible();
 });
 
 test("all 13 state URLs render deterministically", async ({ page }, testInfo) => {
@@ -41,7 +29,7 @@ test("all 13 state URLs render deterministically", async ({ page }, testInfo) =>
         new RegExp(`/prototype-v2/${flow}\\?state=${state}$`),
       );
       await expect(
-        page.getByRole("region", { name: "August care prototype" }),
+        page.getByRole("region", { name: "August care" }),
       ).toBeVisible();
     }
   }
@@ -100,7 +88,7 @@ test("lab continuation offers only August-arranged nearby care", async ({
   await expect(page).toHaveURL(/state=confirmed/);
 });
 
-test("patient shell fits supported mobile widths and hides reviewer controls", async ({
+test("patient shell fills supported mobile viewports without reviewer chrome", async ({
   page,
 }) => {
   await page.goto("/prototype-v2/intake?state=summary");
@@ -109,12 +97,29 @@ test("patient shell fits supported mobile widths and hides reviewer controls", a
     document: document.documentElement.scrollWidth,
   }));
   expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
-  await expect(
-    page.getByRole("complementary", { name: "Prototype controls" }),
-  ).toBeHidden();
+  await expect(page.getByRole("complementary")).toHaveCount(0);
+  await expect(page.getByText(/prototype controls|current state|all starting points/i)).toHaveCount(0);
   await expect(
     page.getByRole("textbox", { name: "Message August" }),
   ).toBeVisible();
+  const shell = await page.getByRole("region", { name: "August care" }).boundingBox();
+  expect(shell?.height).toBe(page.viewportSize()?.height);
+});
+
+test("patient UI contains no reviewer or prototype commentary", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  for (const [flow, states] of Object.entries(deterministicStates)) {
+    for (const state of states) {
+      await page.goto(`/prototype-v2/${flow}?state=${state}`);
+      await expect(
+        page.getByText(
+          /prototype|clinician-selection|external-lab|fictional patient|reviewer/i,
+        ),
+      ).toHaveCount(0);
+    }
+  }
 });
 
 test("V2 shell has no serious or critical accessibility violations", async ({

@@ -9,24 +9,19 @@ import {
   useRef,
   useState,
 } from "react";
-import Link from "next/link";
 import styles from "./AugustV2Prototype.module.css";
 import {
   createPrototypeV2Encounter,
   defaultIntakeAnswers,
   getPrototypeV2StateIndex,
   IntakeAnswers,
-  movePrototypeV2State,
   PrototypeV2Flow,
   PrototypeV2State,
-  prototypeV2StateLabels,
-  prototypeV2States,
 } from "./prototypeV2Machine";
 
 type Props = {
   initialFlow: PrototypeV2Flow;
   initialState: PrototypeV2State;
-  initialLabel: string;
 };
 
 type Message = {
@@ -56,12 +51,6 @@ const intakeQuestions = [
   },
 ] as const;
 
-const flowNames: Record<PrototypeV2Flow, string> = {
-  intake: "Shared intake",
-  prescription: "Prescription continuation",
-  lab: "Nearby-lab continuation",
-};
-
 function Avatar({
   person,
   size = "regular",
@@ -71,7 +60,7 @@ function Avatar({
 }) {
   return (
     <img
-      alt={person === "august" ? "August AI" : "Maya Rao, fictional clinician"}
+      alt={person === "august" ? "August AI" : "Maya Rao, clinician"}
       className={`${styles.avatar} ${styles[`avatar-${size}`]}`}
       src={
         person === "august"
@@ -392,57 +381,9 @@ function SuccessPanel({
   );
 }
 
-function ReviewerControls({
-  canGoBack,
-  canGoNext,
-  flow,
-  label,
-  onBack,
-  onNext,
-  onReset,
-  stateIndex,
-  stateTotal,
-}: {
-  canGoBack: boolean;
-  canGoNext: boolean;
-  flow: PrototypeV2Flow;
-  label: string;
-  onBack: () => void;
-  onNext: () => void;
-  onReset: () => void;
-  stateIndex: number;
-  stateTotal: number;
-}) {
-  return (
-    <aside className={styles.reviewerControls} aria-label="Prototype controls">
-      <div>
-        <small>PROTOTYPE CONTROLS</small>
-        <strong>{flowNames[flow]}</strong>
-        <span>
-          {String(stateIndex + 1).padStart(2, "0")} /{" "}
-          {String(stateTotal).padStart(2, "0")} · {label}
-        </span>
-      </div>
-      <div className={styles.controlButtons}>
-        <button disabled={!canGoBack} onClick={onBack} type="button">
-          ← Previous
-        </button>
-        <button onClick={onReset} type="button">
-          Reset
-        </button>
-        <button disabled={!canGoNext} onClick={onNext} type="button">
-          Next →
-        </button>
-      </div>
-      <Link href="/prototype-v2">All starting points</Link>
-    </aside>
-  );
-}
-
 export function AugustV2Prototype({
   initialFlow,
   initialState,
-  initialLabel,
 }: Props) {
   const [state, setState] = useState(initialState);
   const [answers, setAnswers] = useState({ ...defaultIntakeAnswers });
@@ -461,8 +402,6 @@ export function AugustV2Prototype({
   );
 
   const stateIndex = getPrototypeV2StateIndex(initialFlow, state);
-  const stateTotal = prototypeV2States[initialFlow].length;
-  const stateLabel = prototypeV2StateLabels[initialFlow][state] ?? initialLabel;
   const clinician =
     initialFlow !== "intake" ||
     state === "reviewing" ||
@@ -543,18 +482,6 @@ export function AugustV2Prototype({
     }
   }
 
-  function reset() {
-    setAnswers({ ...defaultIntakeAnswers });
-    setGatheringStep(0);
-    setPending(null);
-    setDetailsOpen(false);
-    changeState(prototypeV2States[initialFlow][0]);
-  }
-
-  function move(direction: -1 | 1) {
-    changeState(movePrototypeV2State(initialFlow, state, direction));
-  }
-
   const messages = useMemo<Message[]>(() => {
     if (initialFlow !== "intake") return [];
     const result: Message[] = [];
@@ -623,7 +550,7 @@ export function AugustV2Prototype({
         disabled: true,
         placeholder:
           state === "sent" || state === "confirmed"
-            ? "This prototype flow is complete"
+            ? "Updates will appear here"
             : "Message Maya…",
         recipient: "Maya" as const,
       };
@@ -667,42 +594,8 @@ export function AugustV2Prototype({
 
   return (
     <main className={styles.stage}>
-      <section className={styles.contextPanel}>
-        <Link className={styles.wordmark} href="/prototype-v2">
-          August
-        </Link>
-        <div>
-          <small>INTERACTIVE PROTOTYPE · V2</small>
-          <h1>{flowNames[initialFlow]}</h1>
-          <p>
-            {initialFlow === "intake"
-              ? "One conversation moves from natural intake to a direct human handoff."
-              : initialFlow === "prescription"
-                ? "Maya authors the medication decision; the patient confirms fulfillment."
-                : "Maya authors the testing decision; August arranges the nearby lab."}
-          </p>
-        </div>
-        <dl>
-          <div>
-            <dt>Current state</dt>
-            <dd>{stateLabel}</dd>
-          </div>
-          <div>
-            <dt>Decision owner</dt>
-            <dd>
-              {initialFlow === "intake" && stateIndex < 4
-                ? "Patient + August"
-                : "Maya · Human clinician"}
-            </dd>
-          </div>
-        </dl>
-        <p className={styles.prototypeNote}>
-          Fictional product-design prototype. No real patient or clinician data.
-        </p>
-      </section>
-
       <div className={styles.deviceColumn}>
-        <section className={styles.phone} aria-label="August care prototype">
+        <section className={styles.phone} aria-label="August care">
           <StatusBar />
           <ConversationHeader
             clinician={clinician}
@@ -748,8 +641,8 @@ export function AugustV2Prototype({
                   <small>CARE CONNECTED</small>
                   <h1>Maya is reviewing your visit.</h1>
                   <p>
-                    Your confirmed summary went directly to Maya. There was no
-                    clinician-selection step.
+                    Your confirmed summary went directly to Maya for clinical
+                    review.
                   </p>
                 </div>
                 <section className={styles.reviewingCard}>
@@ -826,7 +719,7 @@ export function AugustV2Prototype({
                   message={{
                     author: "maya",
                     content:
-                      "Based on your clinical assessment and confirmed allergy history, a prescription is appropriate. I’m proposing Penicillin V after confirming your allergy history.",
+                      "Based on your symptoms, safety answers, history, and allergies, a prescription is appropriate. I recommend Penicillin V.",
                     time: "10:24",
                   }}
                 />
@@ -1025,8 +918,8 @@ export function AugustV2Prototype({
                 <section className={styles.confirmationStrip}>
                   <span aria-hidden="true">✓</span>
                   <p>
-                    <strong>One focused option</strong>
-                    No external-lab or upload branch appears in this prototype.
+                    <strong>Everything is ready</strong>
+                    Your clinician order and appointment details are attached.
                   </p>
                 </section>
                 <PrimaryAction onClick={() => changeState("confirmed")}>
@@ -1062,17 +955,6 @@ export function AugustV2Prototype({
           <ProductNavigation clinician={clinician} />
         </section>
 
-        <ReviewerControls
-          canGoBack={stateIndex > 0}
-          canGoNext={stateIndex < stateTotal - 1}
-          flow={initialFlow}
-          label={stateLabel}
-          onBack={() => move(-1)}
-          onNext={() => move(1)}
-          onReset={reset}
-          stateIndex={stateIndex}
-          stateTotal={stateTotal}
-        />
       </div>
 
       {detailsOpen ? (
@@ -1110,8 +992,8 @@ export function AugustV2Prototype({
             />
             <DetailRow
               icon="◇"
-              label="Prototype data"
-              value="Fictional patient, clinician, orders, and appointments"
+              label="Care context"
+              value="Symptoms, history, medicines, and allergies"
             />
             <DetailRow
               icon="✓"
