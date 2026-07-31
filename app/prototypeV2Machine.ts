@@ -41,17 +41,34 @@ export type PrototypeV2Encounter = {
     name: "Maya Rao";
     role: "Human clinician";
     status: "unassigned" | "reviewing" | "replied";
+    responseEstimate: "Usually replies within 2–4 hours";
+    sharedAt: "Today · 9:52 AM";
+    repliedAt: "Today · 10:24 AM";
   };
   prescription: {
     medication: "Penicillin V";
-    directions: "Follow clinician directions";
+    strength: "500 mg tablet";
+    directions: "Take one tablet twice daily";
+    duration: "10 days";
+    quantity: "20 tablets";
+    prescriber: "Maya Rao";
     pharmacy: "Castro Community Pharmacy";
+    pharmacyAddress: "2200 Market St, San Francisco";
+    pharmacyDistance: "0.8 miles away";
+    pharmacyAvailability: "Open today until 7:00 PM";
+    electronicStatus: "Accepting electronic prescriptions";
+    sentAt: "Today · 10:42 AM";
     status: "recommended" | "reviewed" | "sent";
   };
   lab: {
     test: "Rapid strep test";
+    reason: "Guides the medication decision";
     location: "Mission Lab";
+    address: "2400 Mission St, San Francisco";
+    distance: "1.2 miles away";
     appointment: "Tomorrow · 9:30 AM";
+    preparation: "Bring photo ID and order code";
+    orderCode: "AUG-4821";
     status: "recommended" | "arranged" | "confirmed";
   };
 };
@@ -131,11 +148,23 @@ export function createPrototypeV2Encounter(
           : normalized === "reviewing"
             ? "reviewing"
             : "unassigned",
+      responseEstimate: "Usually replies within 2–4 hours",
+      sharedAt: "Today · 9:52 AM",
+      repliedAt: "Today · 10:24 AM",
     },
     prescription: {
       medication: "Penicillin V",
-      directions: "Follow clinician directions",
+      strength: "500 mg tablet",
+      directions: "Take one tablet twice daily",
+      duration: "10 days",
+      quantity: "20 tablets",
+      prescriber: "Maya Rao",
       pharmacy: "Castro Community Pharmacy",
+      pharmacyAddress: "2200 Market St, San Francisco",
+      pharmacyDistance: "0.8 miles away",
+      pharmacyAvailability: "Open today until 7:00 PM",
+      electronicStatus: "Accepting electronic prescriptions",
+      sentAt: "Today · 10:42 AM",
       status:
         flow === "prescription" && normalized === "sent"
           ? "sent"
@@ -145,8 +174,13 @@ export function createPrototypeV2Encounter(
     },
     lab: {
       test: "Rapid strep test",
+      reason: "Guides the medication decision",
       location: "Mission Lab",
+      address: "2400 Mission St, San Francisco",
+      distance: "1.2 miles away",
       appointment: "Tomorrow · 9:30 AM",
+      preparation: "Bring photo ID and order code",
+      orderCode: "AUG-4821",
       status:
         flow === "lab" && normalized === "confirmed"
           ? "confirmed"
@@ -155,4 +189,23 @@ export function createPrototypeV2Encounter(
             : "recommended",
     },
   };
+}
+
+export function getPreviousPrototypeV2State(
+  flow: PrototypeV2Flow,
+  state: PrototypeV2State,
+): { flow: PrototypeV2Flow; state: PrototypeV2State } {
+  const index = getPrototypeV2StateIndex(flow, state);
+  if (index > 0) {
+    return {
+      flow,
+      state: prototypeV2States[flow][index - 1] as PrototypeV2State,
+    };
+  }
+
+  if (flow === "prescription" || flow === "lab") {
+    return { flow: "intake", state: "reply" };
+  }
+
+  return { flow: "intake", state: "empty" };
 }

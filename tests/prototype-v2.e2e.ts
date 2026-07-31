@@ -66,8 +66,8 @@ test("prescription continuation ends at prescription sent", async ({
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/prescription");
   await page.getByRole("button", { name: "Review prescription" }).click();
-  await page.getByRole("button", { name: "Send to this pharmacy" }).click();
-  await page.getByRole("button", { name: "Confirm pharmacy" }).click();
+  await page.getByRole("button", { name: "Continue to pharmacy" }).click();
+  await page.getByRole("button", { name: "Confirm and send" }).click();
   await expect(page.getByRole("heading", { name: "Prescription sent" })).toBeVisible();
   await expect(page).toHaveURL(/state=sent/);
 });
@@ -77,11 +77,11 @@ test("lab continuation offers only August-arranged nearby care", async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/lab");
-  await page.getByRole("button", { name: "View test option" }).click();
+  await page.getByRole("button", { name: "View appointment" }).click();
   await expect(page.getByText("August arranged a nearby lab.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Confirm nearby lab" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Confirm appointment" })).toBeVisible();
   await expect(page.getByRole("button", { name: /upload|external/i })).toHaveCount(0);
-  await page.getByRole("button", { name: "Confirm nearby lab" }).click();
+  await page.getByRole("button", { name: "Confirm appointment" }).click();
   await expect(
     page.getByRole("heading", { name: "Appointment confirmed" }),
   ).toBeVisible();
@@ -99,9 +99,8 @@ test("patient shell fills supported mobile viewports without reviewer chrome", a
   expect(dimensions.document).toBeLessThanOrEqual(dimensions.viewport);
   await expect(page.getByRole("complementary")).toHaveCount(0);
   await expect(page.getByText(/prototype controls|current state|all starting points/i)).toHaveCount(0);
-  await expect(
-    page.getByRole("textbox", { name: "Message August" }),
-  ).toBeVisible();
+  await expect(page.getByText("Nothing is shared until you confirm")).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
   const shell = await page.getByRole("region", { name: "August care" }).boundingBox();
   expect(shell?.height).toBe(page.viewportSize()?.height);
 });
@@ -132,4 +131,63 @@ test("V2 shell has no serious or critical accessibility violations", async ({
     ["serious", "critical"].includes(violation.impact ?? ""),
   );
   expect(serious).toEqual([]);
+});
+
+test("summary editing stays inside the mobile experience", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/intake?state=summary");
+
+  const trigger = page.getByRole("button", { name: "Edit Timing and severity" });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Timing and severity" });
+  await expect(dialog).toBeVisible();
+  await dialog.getByLabel("Update what Maya should receive").fill(
+    "Three days ago, worsening today, highest temperature 101°F.",
+  );
+  await dialog.getByRole("button", { name: "Save change" }).click();
+  await expect(dialog).toHaveCount(0);
+  await expect(
+    page.getByText("Three days ago, worsening today, highest temperature 101°F."),
+  ).toBeVisible();
+  await expect(trigger).toBeFocused();
+});
+
+test("conversation details explain recipient and privacy with accessible dismissal", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/intake?state=reviewing");
+
+  const trigger = page.getByRole("button", { name: "Open conversation details" });
+  await trigger.click();
+  const dialog = page.getByRole("dialog", { name: "Conversation details" });
+  await expect(dialog.getByText("Maya sees only the summary you confirmed")).toBeVisible();
+  await expect(dialog.getByText("Usually replies within 2–4 hours")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(dialog).toHaveCount(0);
+  await expect(trigger).toBeFocused();
+});
+
+test("header back follows the care context without showing a branch chooser", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/prescription?state=recommended");
+  await page.getByRole("button", { name: "Go to previous care step" }).click();
+  await expect(page).toHaveURL(/\/prototype-v2\/intake\?state=reply$/);
+  await expect(page.getByText(/Hi Parth—I reviewed your fever/)).toBeVisible();
+  await expect(page.getByText(/choose a clinician|choose an outcome/i)).toHaveCount(0);
+});
+
+test("active clinician composer produces a real patient reply", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/intake?state=reply");
+  await send(page, "Can I take this with food?");
+  await expect(page.getByText("Can I take this with food?")).toBeVisible();
+  await expect(page.getByText("Now")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Add attachment" })).toHaveCount(0);
 });

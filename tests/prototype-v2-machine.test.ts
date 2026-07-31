@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import {
   createPrototypeV2Encounter,
+  getPreviousPrototypeV2State,
   normalizePrototypeV2State,
   prototypeV2States,
 } from "../app/prototypeV2Machine";
@@ -59,4 +60,25 @@ test("confirmed context and clinician ownership are honest", () => {
 
   const lab = createPrototypeV2Encounter("lab", "confirmed");
   assert.equal(lab.lab.status, "confirmed");
+  assert.equal(lab.lab.orderCode, "AUG-4821");
+  assert.equal(prescription.prescription.strength, "500 mg tablet");
+  assert.equal(
+    prescription.prescription.electronicStatus,
+    "Accepting electronic prescriptions",
+  );
+});
+
+test("patient back navigation stays within the flow and rejoins care context", () => {
+  assert.deepEqual(getPreviousPrototypeV2State("intake", "summary"), {
+    flow: "intake",
+    state: "gathering",
+  });
+  assert.deepEqual(getPreviousPrototypeV2State("prescription", "review"), {
+    flow: "prescription",
+    state: "recommended",
+  });
+  assert.deepEqual(getPreviousPrototypeV2State("lab", "recommended"), {
+    flow: "intake",
+    state: "reply",
+  });
 });

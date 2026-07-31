@@ -9,10 +9,43 @@ import {
   useRef,
   useState,
 } from "react";
+import {
+  ArrowLeft,
+  ArrowRight,
+  BatteryMedium,
+  Bell,
+  Building2,
+  CalendarDays,
+  Check,
+  CheckCheck,
+  ChevronRight,
+  CircleCheck,
+  ClipboardCheck,
+  Clock3,
+  FileCheck2,
+  FileText,
+  History,
+  Info,
+  LockKeyhole,
+  MapPin,
+  MessageCircle,
+  Pill,
+  Route,
+  Send,
+  ShieldCheck,
+  Signal,
+  Sparkles,
+  Stethoscope,
+  UserRoundCheck,
+  Wifi,
+  X,
+  type LucideIcon,
+} from "lucide-react";
 import styles from "./AugustV2Prototype.module.css";
 import {
   createPrototypeV2Encounter,
   defaultIntakeAnswers,
+  getPreviousPrototypeV2State,
   getPrototypeV2StateIndex,
   IntakeAnswers,
   PrototypeV2Flow,
@@ -28,6 +61,21 @@ type Message = {
   author: "august" | "patient" | "maya" | "system";
   content: string;
   time?: string;
+};
+
+type DetailRowData = {
+  icon: LucideIcon;
+  label: string;
+  value: string;
+  verified?: boolean;
+};
+
+const summaryLabels: Record<keyof IntakeAnswers, string> = {
+  concern: "Concern",
+  onset: "Timing and severity",
+  warningSigns: "Urgent warning signs",
+  history: "History and medicines",
+  allergies: "Medication allergies",
 };
 
 const intakeQuestions = [
@@ -60,7 +108,7 @@ function Avatar({
 }) {
   return (
     <img
-      alt={person === "august" ? "August AI" : "Maya Rao, clinician"}
+      alt={person === "august" ? "August AI care guide" : "Maya Rao, clinician"}
       className={`${styles.avatar} ${styles[`avatar-${size}`]}`}
       src={
         person === "august"
@@ -76,43 +124,51 @@ function StatusBar() {
     <div className={styles.statusBar} aria-hidden="true">
       <span>9:41</span>
       <div className={styles.statusIcons}>
-        <i />
-        <i />
-        <i />
-        <b />
+        <Signal size={14} strokeWidth={2.4} />
+        <Wifi size={15} strokeWidth={2.4} />
+        <BatteryMedium size={19} strokeWidth={2.1} />
       </div>
     </div>
   );
 }
 
 function ConversationHeader({
+  canGoBack,
   clinician,
-  subtitle,
+  onBack,
   onDetails,
+  subtitle,
 }: {
+  canGoBack: boolean;
   clinician: boolean;
+  onBack: () => void;
+  onDetails: (trigger: HTMLButtonElement) => void;
   subtitle: string;
-  onDetails: () => void;
 }) {
   return (
     <header className={styles.conversationHeader}>
-      {clinician ? (
-        <span className={styles.backGlyph} aria-hidden="true">
-          ‹
-        </span>
+      {canGoBack ? (
+        <button
+          aria-label="Go to previous care step"
+          className={styles.headerAction}
+          onClick={onBack}
+          type="button"
+        >
+          <ArrowLeft aria-hidden="true" size={20} />
+        </button>
       ) : null}
       <Avatar person={clinician ? "maya" : "august"} />
       <div className={styles.headerCopy}>
-        <strong>{clinician ? "Maya Rao (Clinician)" : "August"}</strong>
+        <strong>{clinician ? "Maya Rao" : "August"}</strong>
         <span>{subtitle}</span>
       </div>
       <button
         aria-label="Open conversation details"
         className={styles.headerAction}
-        onClick={onDetails}
+        onClick={(event) => onDetails(event.currentTarget)}
         type="button"
       >
-        <span aria-hidden="true">ⓘ</span>
+        <Info aria-hidden="true" size={19} />
       </button>
     </header>
   );
@@ -122,7 +178,7 @@ function MessageItem({ message }: { message: Message }) {
   if (message.author === "system") {
     return (
       <div className={styles.systemMessage}>
-        <span aria-hidden="true">✓</span>
+        <CircleCheck aria-hidden="true" size={16} />
         <p>{message.content}</p>
       </div>
     );
@@ -133,7 +189,9 @@ function MessageItem({ message }: { message: Message }) {
       <div className={`${styles.messageRow} ${styles.patientRow}`}>
         <div className={styles.patientBubble}>
           <p>{message.content}</p>
-          <span>{message.time ?? "9:42"} · ✓✓</span>
+          <span>
+            {message.time ?? "Now"} <CheckCheck aria-hidden="true" size={13} />
+          </span>
         </div>
       </div>
     );
@@ -143,19 +201,18 @@ function MessageItem({ message }: { message: Message }) {
   return (
     <div className={styles.messageRow}>
       <Avatar person={isMaya ? "maya" : "august"} size="small" />
-      <div
-        className={
-          isMaya ? styles.clinicianMessage : styles.augustMessage
-        }
-      >
+      <div className={isMaya ? styles.clinicianMessage : styles.augustMessage}>
         {isMaya ? (
           <div className={styles.messageMeta}>
-            <strong>Maya Rao</strong>
-            <span>{message.time ?? "10:24"}</span>
+            <span>
+              <strong>Maya Rao</strong>
+              <small>Human clinician</small>
+            </span>
+            <time>{message.time ?? "10:24"}</time>
           </div>
         ) : null}
         <p>{message.content}</p>
-        {!isMaya ? <span>{message.time ?? "9:41"}</span> : null}
+        {!isMaya ? <time>{message.time ?? "9:41"}</time> : null}
       </div>
     </div>
   );
@@ -198,14 +255,6 @@ function Composer({
   return (
     <div className={styles.composerRegion}>
       <form className={styles.composer} onSubmit={submit}>
-        <button
-          aria-label="Add attachment"
-          className={styles.attachButton}
-          disabled={disabled}
-          type="button"
-        >
-          +
-        </button>
         <input
           aria-label={`Message ${recipient}`}
           disabled={disabled}
@@ -219,26 +268,37 @@ function Composer({
           disabled={disabled || !value.trim()}
           type="submit"
         >
-          ↑
+          <Send aria-hidden="true" size={18} />
         </button>
       </form>
-      <span>To {recipient}</span>
+      <span>
+        <LockKeyhole aria-hidden="true" size={11} /> To {recipient}
+      </span>
+    </div>
+  );
+}
+
+function PassiveFooter({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
+  return (
+    <div className={styles.passiveFooter} role="status">
+      <Icon aria-hidden="true" size={16} />
+      <span>{text}</span>
     </div>
   );
 }
 
 function ProductNavigation({ clinician }: { clinician: boolean }) {
   return (
-    <nav aria-label="Care navigation" className={styles.bottomNav}>
+    <nav aria-label="Current care area" className={styles.bottomNav}>
       <span>
-        <i aria-hidden="true">◷</i>
+        <History aria-hidden="true" size={20} />
         <span className={styles.visuallyHidden}>History</span>
       </span>
-      <span className={clinician ? styles.activeNav : undefined}>
-        <i aria-hidden="true">▱</i>
+      <span aria-current={clinician ? "page" : undefined} className={clinician ? styles.activeNav : undefined}>
+        <MessageCircle aria-hidden="true" size={18} />
         Care
       </span>
-      <span className={!clinician ? styles.activeNav : undefined}>
+      <span aria-current={!clinician ? "page" : undefined} className={!clinician ? styles.activeNav : undefined}>
         <Avatar person="august" size="small" />
         August
       </span>
@@ -246,50 +306,31 @@ function ProductNavigation({ clinician }: { clinician: boolean }) {
   );
 }
 
-function PrimaryAction({
-  children,
-  onClick,
-}: {
-  children: ReactNode;
-  onClick: () => void;
-}) {
+function PrimaryAction({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button className={styles.primaryAction} onClick={onClick} type="button">
-      {children}
+      <span>{children}</span>
+      <ArrowRight aria-hidden="true" size={17} />
     </button>
   );
 }
 
-function DetailCard({
-  children,
-  eyebrow,
-  title,
-}: {
-  children: ReactNode;
-  eyebrow?: string;
-  title: string;
-}) {
+function DetailCard({ children, eyebrow, title }: { children: ReactNode; eyebrow?: string; title: string }) {
   return (
     <section className={styles.detailCard}>
       {eyebrow ? <small>{eyebrow}</small> : null}
       <h2>{title}</h2>
-      {children}
+      <div className={styles.detailRows}>{children}</div>
     </section>
   );
 }
 
-function DetailRow({
-  icon,
-  label,
-  value,
-}: {
-  icon: string;
-  label: string;
-  value: string;
-}) {
+function DetailRow({ icon: Icon, label, value, verified }: DetailRowData) {
   return (
     <div className={styles.detailRow}>
-      <span aria-hidden="true">{icon}</span>
+      <span className={verified ? styles.verifiedIcon : undefined} aria-hidden="true">
+        <Icon size={16} strokeWidth={2} />
+      </span>
       <div>
         <small>{label}</small>
         <strong>{value}</strong>
@@ -298,33 +339,8 @@ function DetailRow({
   );
 }
 
-function SummaryCard({
-  answers,
-  onEdit,
-}: {
-  answers: IntakeAnswers;
-  onEdit: (field: keyof IntakeAnswers) => void;
-}) {
-  const rows: Array<{
-    field: keyof IntakeAnswers;
-    label: string;
-    value: string;
-  }> = [
-    { field: "concern", label: "Concern", value: answers.concern },
-    { field: "onset", label: "Timing + severity", value: answers.onset },
-    {
-      field: "warningSigns",
-      label: "Urgent warning signs",
-      value: answers.warningSigns,
-    },
-    {
-      field: "history",
-      label: "History + medicines",
-      value: answers.history,
-    },
-    { field: "allergies", label: "Allergies", value: answers.allergies },
-  ];
-
+function SummaryCard({ answers, onEdit }: { answers: IntakeAnswers; onEdit: (field: keyof IntakeAnswers, trigger: HTMLButtonElement) => void }) {
+  const rows = Object.entries(summaryLabels) as Array<[keyof IntakeAnswers, string]>;
   return (
     <section className={styles.summaryCard}>
       <header>
@@ -332,97 +348,105 @@ function SummaryCard({
           <small>VISIT SUMMARY</small>
           <h2>Confirm what August gathered.</h2>
         </div>
-        <span>Private until confirmed</span>
+        <span><LockKeyhole aria-hidden="true" size={12} /> Private until confirmed</span>
       </header>
-      {rows.map((row) => (
+      {rows.map(([field, label]) => (
         <button
-          aria-label={`Edit ${row.label}`}
+          aria-label={`Edit ${label}`}
           className={styles.summaryRow}
-          key={row.field}
-          onClick={() => onEdit(row.field)}
+          key={field}
+          onClick={(event) => onEdit(field, event.currentTarget)}
           type="button"
         >
           <span>
-            <small>{row.label}</small>
-            <strong>{row.value}</strong>
+            <small>{label}</small>
+            <strong>{answers[field]}</strong>
           </span>
-          <i aria-hidden="true">Edit</i>
+          <span className={styles.editLabel}>Edit <ChevronRight aria-hidden="true" size={14} /></span>
         </button>
       ))}
     </section>
   );
 }
 
-function SuccessPanel({
-  details,
-  eyebrow,
-  rows,
-  title,
-}: {
-  details: string;
-  eyebrow: string;
-  rows: Array<{ icon: string; label: string; value: string }>;
-  title: string;
-}) {
+function StatusReceipt({ details, eyebrow, rows, title }: { details: string; eyebrow: string; rows: DetailRowData[]; title: string }) {
   return (
     <section className={styles.successPanel}>
-      <div className={styles.successCheck} aria-hidden="true">
-        ✓
-      </div>
+      <div className={styles.successCheck} aria-hidden="true"><Check size={27} strokeWidth={2.3} /></div>
       <small>{eyebrow}</small>
       <h1>{title}</h1>
       <p>{details}</p>
       <div className={styles.successDetails}>
-        {rows.map((row) => (
-          <DetailRow {...row} key={row.label} />
-        ))}
+        {rows.map((row) => <DetailRow {...row} key={row.label} />)}
       </div>
     </section>
   );
 }
 
-export function AugustV2Prototype({
-  initialFlow,
-  initialState,
-}: Props) {
+export function AugustV2Prototype({ initialFlow, initialState }: Props) {
   const [state, setState] = useState(initialState);
   const [answers, setAnswers] = useState({ ...defaultIntakeAnswers });
   const [gatheringStep, setGatheringStep] = useState(0);
   const [pending, setPending] = useState<"august" | "maya" | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [patientReplies, setPatientReplies] = useState<Message[]>([]);
   const transcriptRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLElement>(null);
+  const firstDialogActionRef = useRef<HTMLButtonElement>(null);
+  const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const timers = useRef<number[]>([]);
 
-  const encounter = useMemo(
-    () => ({
-      ...createPrototypeV2Encounter(initialFlow, state),
-      answers,
-    }),
-    [answers, initialFlow, state],
-  );
-
+  const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(initialFlow, state), answers }), [answers, initialFlow, state]);
   const stateIndex = getPrototypeV2StateIndex(initialFlow, state);
-  const clinician =
-    initialFlow !== "intake" ||
-    state === "reviewing" ||
-    state === "reply";
+  const clinician = initialFlow !== "intake" || state === "reviewing" || state === "reply";
+  const modalOpen = detailsOpen || editField !== null;
 
-  useEffect(
-    () => () => timers.current.forEach((timer) => window.clearTimeout(timer)),
-    [],
-  );
+  useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set("state", state);
     window.history.replaceState({}, "", url);
     requestAnimationFrame(() => {
+      const conversationalState =
+        initialFlow === "intake" &&
+        ["empty", "concern", "gathering", "reply"].includes(state);
       transcriptRef.current?.scrollTo({
-        top: transcriptRef.current.scrollHeight,
+        top:
+          conversationalState || patientReplies.length
+            ? transcriptRef.current.scrollHeight
+            : 0,
         behavior: "smooth",
       });
     });
-  }, [state, gatheringStep, pending]);
+  }, [gatheringStep, initialFlow, patientReplies, pending, state]);
+
+  useEffect(() => {
+    if (!modalOpen) return;
+    firstDialogActionRef.current?.focus();
+    function handleKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        setDetailsOpen(false);
+        setEditField(null);
+        return;
+      }
+      if (event.key !== "Tab" || !dialogRef.current) return;
+      const focusable = Array.from(dialogRef.current.querySelectorAll<HTMLElement>("button, textarea, input, [tabindex]:not([tabindex='-1'])")).filter((node) => !node.hasAttribute("disabled"));
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+      if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+    }
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      requestAnimationFrame(() => lastTriggerRef.current?.focus());
+    };
+  }, [modalOpen]);
 
   function changeState(next: PrototypeV2State) {
     timers.current.forEach((timer) => window.clearTimeout(timer));
@@ -431,40 +455,43 @@ export function AugustV2Prototype({
     setState(next);
   }
 
+  function goBack() {
+    const previous = getPreviousPrototypeV2State(initialFlow, state);
+    if (previous.flow !== initialFlow) {
+      window.location.assign(`/prototype-v2/${previous.flow}?state=${previous.state}`);
+      return;
+    }
+    changeState(previous.state);
+  }
+
   function replyThen(next: PrototypeV2State, person: "august" | "maya") {
     setPending(person);
-    const timer = window.setTimeout(() => {
-      setPending(null);
-      changeState(next);
-    }, person === "maya" ? 850 : 620);
+    const timer = window.setTimeout(() => { setPending(null); changeState(next); }, person === "maya" ? 850 : 620);
     timers.current.push(timer);
   }
 
   function handleComposer(value: string) {
-    if (initialFlow !== "intake") return;
-
+    if (initialFlow !== "intake" || state === "reply") {
+      setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+      return;
+    }
     if (state === "empty") {
       setAnswers((current) => ({ ...current, concern: value }));
       replyThen("concern", "august");
       return;
     }
-
     if (state === "concern") {
       setAnswers((current) => ({ ...current, onset: value }));
       setGatheringStep(0);
       replyThen("gathering", "august");
       return;
     }
-
     if (state === "gathering") {
       const question = intakeQuestions[gatheringStep];
       setAnswers((current) => ({ ...current, [question.field]: value }));
       if (gatheringStep < intakeQuestions.length - 1) {
         setPending("august");
-        const timer = window.setTimeout(() => {
-          setGatheringStep((current) => current + 1);
-          setPending(null);
-        }, 620);
+        const timer = window.setTimeout(() => { setGatheringStep((current) => current + 1); setPending(null); }, 620);
         timers.current.push(timer);
       } else {
         replyThen("summary", "august");
@@ -472,125 +499,64 @@ export function AugustV2Prototype({
     }
   }
 
-  function editSummary(field: keyof IntakeAnswers) {
-    const value = window.prompt(
-      `Update ${field}`,
-      encounter.answers[field],
-    )?.trim();
-    if (value) {
-      setAnswers((current) => ({ ...current, [field]: value }));
-    }
+  function openSummaryEdit(field: keyof IntakeAnswers, trigger: HTMLButtonElement) {
+    lastTriggerRef.current = trigger;
+    setEditValue(encounter.answers[field]);
+    setEditField(field);
+  }
+
+  function saveSummaryEdit() {
+    const clean = editValue.trim();
+    if (editField && clean) setAnswers((current) => ({ ...current, [editField]: clean }));
+    setEditField(null);
   }
 
   const messages = useMemo<Message[]>(() => {
     if (initialFlow !== "intake") return [];
     const result: Message[] = [];
-    if (state === "empty") {
-      return [
-        {
-          author: "august",
-          content:
-            "Hi Parth—tell me what’s going on. I’ll gather the useful details before a clinician reviews anything.",
-          time: "9:40",
-        },
-      ];
-    }
-
+    const opening = "Hi Parth—tell me what’s going on. I’ll ask about timing, urgent warning signs, medicines, and allergies before a clinician reviews anything.";
+    if (state === "empty") return [{ author: "august", content: opening, time: "9:40" }];
     result.push(
-      {
-        author: "august",
-        content:
-          "Hi Parth—tell me what’s going on. I’ll gather the useful details before a clinician reviews anything.",
-        time: "9:40",
-      },
+      { author: "august", content: opening, time: "9:40" },
       { author: "patient", content: answers.concern, time: "9:41" },
-      {
-        author: "august",
-        content:
-          "When did it start, is it getting better or worse, and what was your highest temperature?",
-        time: "9:41",
-      },
+      { author: "august", content: "When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
     );
-
     if (state === "concern") return result;
-
     result.push(
       { author: "patient", content: answers.onset, time: "9:43" },
-      {
-        author: "august",
-        content: intakeQuestions[0].prompt,
-        time: "9:43",
-      },
+      { author: "august", content: intakeQuestions[0].prompt, time: "9:43" },
     );
-
     if (state === "gathering") {
       for (let index = 0; index < gatheringStep; index += 1) {
         const question = intakeQuestions[index];
         result.push(
-          {
-            author: "patient",
-            content: answers[question.field],
-            time: `9:${44 + index * 2}`,
-          },
-          {
-            author: "august",
-            content: intakeQuestions[index + 1].prompt,
-            time: `9:${45 + index * 2}`,
-          },
+          { author: "patient", content: answers[question.field], time: `9:${44 + index * 2}` },
+          { author: "august", content: intakeQuestions[index + 1].prompt, time: `9:${45 + index * 2}` },
         );
       }
     }
-
     return result;
   }, [answers, gatheringStep, initialFlow, state]);
 
   const composerConfig = (() => {
-    if (initialFlow !== "intake") {
-      return {
-        disabled: true,
-        placeholder:
-          state === "sent" || state === "confirmed"
-            ? "Updates will appear here"
-            : "Message Maya…",
-        recipient: "Maya" as const,
-      };
-    }
-    if (state === "empty") {
-      return {
-        disabled: false,
-        placeholder: "Tell August what’s going on…",
-        recipient: "August" as const,
-      };
-    }
-    if (state === "concern") {
-      return {
-        disabled: false,
-        placeholder: "Add timing, severity, and fever…",
-        recipient: "August" as const,
-      };
-    }
-    if (state === "gathering") {
-      return {
-        disabled: Boolean(pending),
-        placeholder: intakeQuestions[gatheringStep].placeholder,
-        recipient: "August" as const,
-      };
-    }
-    return {
-      disabled: true,
-      placeholder:
-        state === "reply" ? "Message Maya…" : "Continue in the care flow",
-      recipient: state === "reply" ? ("Maya" as const) : ("August" as const),
-    };
+    if (state === "sent" || state === "confirmed") return { kind: "passive" as const, icon: Bell, text: "Updates will appear in Care" };
+    if (initialFlow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
+    if (initialFlow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "Maya is reviewing your confirmed summary" };
+    if (initialFlow === "intake" && state === "empty") return { kind: "composer" as const, disabled: false, placeholder: "Tell August what’s going on…", recipient: "August" as const };
+    if (initialFlow === "intake" && state === "concern") return { kind: "composer" as const, disabled: false, placeholder: "Add timing, severity, and fever…", recipient: "August" as const };
+    if (initialFlow === "intake" && state === "gathering") return { kind: "composer" as const, disabled: Boolean(pending), placeholder: intakeQuestions[gatheringStep].placeholder, recipient: "August" as const };
+    return { kind: "composer" as const, disabled: false, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
-  const subtitle = (() => {
-    if (initialFlow === "prescription") return "Human clinician · prescription plan";
-    if (initialFlow === "lab") return "Human clinician · testing plan";
-    if (state === "reviewing") return "Reviewing · usually replies in 2–4 hours";
-    if (state === "reply") return "Human clinician · replied 1m ago";
-    return "AI care guide";
-  })();
+  const subtitle = initialFlow === "prescription"
+    ? "Human clinician · prescription plan"
+    : initialFlow === "lab"
+      ? "Human clinician · testing plan"
+      : state === "reviewing"
+        ? "Reviewing · usually replies in 2–4 hours"
+        : state === "reply"
+          ? "Human clinician · replied 1 minute ago"
+          : "AI care guide · private conversation";
 
   return (
     <main className={styles.stage}>
@@ -598,22 +564,18 @@ export function AugustV2Prototype({
         <section className={styles.phone} aria-label="August care">
           <StatusBar />
           <ConversationHeader
+            canGoBack={initialFlow !== "intake" || stateIndex > 0}
             clinician={clinician}
-            onDetails={() => setDetailsOpen(true)}
+            onBack={goBack}
+            onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
             subtitle={subtitle}
           />
 
           <div className={styles.screen} ref={transcriptRef}>
-            {initialFlow === "intake" &&
-            ["empty", "concern", "gathering"].includes(state) ? (
+            {initialFlow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today</div>
-                {messages.map((message, index) => (
-                  <MessageItem
-                    key={`${message.author}-${index}-${message.content}`}
-                    message={message}
-                  />
-                ))}
+                {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                 {pending ? <TypingIndicator person={pending} /> : null}
               </div>
             ) : null}
@@ -623,221 +585,104 @@ export function AugustV2Prototype({
                 <div className={styles.screenIntro}>
                   <small>BEFORE ANYTHING IS SHARED</small>
                   <h1>Review your information.</h1>
-                  <p>
-                    August organized the conversation. You can correct anything
-                    before Maya receives it.
-                  </p>
+                  <p>August organized the conversation. Correct anything before Maya receives it.</p>
                 </div>
-                <SummaryCard answers={answers} onEdit={editSummary} />
-                <PrimaryAction onClick={() => changeState("reviewing")}>
-                  Confirm and connect
-                </PrimaryAction>
+                <SummaryCard answers={answers} onEdit={openSummaryEdit} />
+                <PrimaryAction onClick={() => changeState("reviewing")}>Confirm and connect</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "intake" && state === "reviewing" ? (
-              <div className={styles.contentStack}>
+              <div className={`${styles.contentStack} ${styles.quietStack}`}>
+                <div className={styles.handoffNotice}>
+                  <CircleCheck aria-hidden="true" size={18} />
+                  <span>August shared only the information you confirmed.</span>
+                </div>
                 <div className={styles.screenIntro}>
                   <small>CARE CONNECTED</small>
                   <h1>Maya is reviewing your visit.</h1>
-                  <p>
-                    Your confirmed summary went directly to Maya for clinical
-                    review.
-                  </p>
+                  <p>You can leave this conversation. We’ll let you know when she replies.</p>
                 </div>
                 <section className={styles.reviewingCard}>
                   <Avatar person="maya" size="large" />
-                  <div>
-                    <strong>Maya Rao</strong>
-                    <span>Human clinician</span>
-                    <p>Usually replies within 2–4 hours</p>
-                  </div>
+                  <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
                   <i className={styles.reviewingPulse} aria-hidden="true" />
                 </section>
                 <DetailCard title="While Maya reviews">
-                  <DetailRow
-                    icon="✓"
-                    label="Shared"
-                    value="Only the summary you confirmed"
-                  />
-                  <DetailRow
-                    icon="◷"
-                    label="Status"
-                    value="You can leave and return to Care"
-                  />
-                  <DetailRow
-                    icon="A"
-                    label="August"
-                    value="Still available privately while you wait"
-                  />
+                  <DetailRow icon={FileCheck2} label="Shared" value="Only your confirmed visit summary" verified />
+                  <DetailRow icon={Clock3} label="Status" value="You can leave and return to Care" />
+                  <DetailRow icon={Sparkles} label="August" value="Still available privately while you wait" />
                 </DetailCard>
-                <PrimaryAction onClick={() => changeState("reply")}>
-                  Open Care conversation
-                </PrimaryAction>
+                <PrimaryAction onClick={() => changeState("reply")}>Open Care conversation</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "intake" && state === "reply" ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today · Care</div>
-                <MessageItem
-                  message={{
-                    author: "system",
-                    content:
-                      "Your confirmed summary was shared with Maya at 9:52 AM",
-                  }}
-                />
-                <MessageItem
-                  message={{
-                    author: "maya",
-                    content:
-                      "Hi Parth—I reviewed your fever, worsening throat pain, safety answers, history, and allergies.",
-                    time: "10:24",
-                  }}
-                />
-                <MessageItem
-                  message={{
-                    author: "maya",
-                    content:
-                      "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.",
-                    time: "10:25",
-                  }}
-                />
-                <MessageItem
-                  message={{
-                    author: "patient",
-                    content: "Thank you. I’m ready.",
-                    time: "10:26",
-                  }}
-                />
+                <MessageItem message={{ author: "system", content: `Your confirmed summary was shared with Maya at ${encounter.clinician.sharedAt.replace("Today · ", "")}` }} />
+                <MessageItem message={{ author: "maya", content: "Hi Parth—I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
+                <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
+                <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
+                {patientReplies.map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
               </div>
             ) : null}
 
             {initialFlow === "prescription" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem
-                  message={{
-                    author: "maya",
-                    content:
-                      "Based on your symptoms, safety answers, history, and allergies, a prescription is appropriate. I recommend Penicillin V.",
-                    time: "10:24",
-                  }}
-                />
+                <MessageItem message={{ author: "maya", content: "Based on your symptoms, safety answers, history, and allergy review, I recommend Penicillin V.", time: "10:24" }} />
                 <div className={styles.screenIntro}>
-                  <small>CLINICIAN DECISION</small>
-                  <h1>Maya recommends a prescription.</h1>
-                  <p>The recommendation is clinician-authored and signed.</p>
+                  <small>CLINICIAN DECISION</small><h1>Maya recommends a prescription.</h1><p>The clinical decision and allergy review are signed by Maya.</p>
                 </div>
                 <DetailCard title="Prescription recommendation">
-                  <DetailRow
-                    icon="◇"
-                    label="Medication"
-                    value="Penicillin V · prescription details"
-                  />
-                  <DetailRow
-                    icon="⌁"
-                    label="Decision author"
-                    value="Maya Rao · Human clinician"
-                  />
-                  <DetailRow
-                    icon="✓"
-                    label="Allergy check"
-                    value="Confirmed by Maya"
-                  />
+                  <DetailRow icon={Pill} label="Medication" value={`${encounter.prescription.medication} · ${encounter.prescription.strength}`} />
+                  <DetailRow icon={Stethoscope} label="Decision author" value={`${encounter.prescription.prescriber} · Human clinician`} />
+                  <DetailRow icon={ShieldCheck} label="Allergy review" value="Reviewed and confirmed by Maya" verified />
                 </DetailCard>
-                <PrimaryAction onClick={() => changeState("review")}>
-                  Review prescription
-                </PrimaryAction>
+                <PrimaryAction onClick={() => changeState("review")}>Review prescription</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "prescription" && state === "review" ? (
               <div className={styles.contentStack}>
                 <div className={styles.screenIntro}>
-                  <small>PRESCRIPTION REVIEW</small>
-                  <h1>Confirm the details before submission.</h1>
-                  <p>
-                    Review the medication, instructions, pharmacy, and clinical
-                    author.
-                  </p>
+                  <small>PRESCRIPTION REVIEW</small><h1>Confirm the medication details.</h1><p>Review what Maya prescribed before choosing where it is sent.</p>
                 </div>
-                <DetailCard title="Penicillin V">
-                  <DetailRow
-                    icon="◇"
-                    label="Medication"
-                    value="Penicillin V · prescription details"
-                  />
-                  <DetailRow
-                    icon="▤"
-                    label="Instructions"
-                    value="Follow clinician directions"
-                  />
-                  <DetailRow
-                    icon="▦"
-                    label="Pharmacy"
-                    value="Castro Community Pharmacy"
-                  />
-                  <DetailRow
-                    icon="⌁"
-                    label="Prescriber"
-                    value="Maya Rao · Human clinician"
-                  />
+                <DetailCard eyebrow="SIGNED BY MAYA RAO" title={`${encounter.prescription.medication} · ${encounter.prescription.strength}`}>
+                  <DetailRow icon={Pill} label="Directions" value={encounter.prescription.directions} />
+                  <DetailRow icon={CalendarDays} label="Course" value={`${encounter.prescription.duration} · ${encounter.prescription.quantity}`} />
+                  <DetailRow icon={UserRoundCheck} label="Prescriber" value={`${encounter.prescription.prescriber} · Human clinician`} verified />
+                  <DetailRow icon={ShieldCheck} label="Safety check" value="Allergy history reviewed" verified />
                 </DetailCard>
-                <PrimaryAction onClick={() => changeState("pharmacy")}>
-                  Send to this pharmacy
-                </PrimaryAction>
+                <PrimaryAction onClick={() => changeState("pharmacy")}>Continue to pharmacy</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "prescription" && state === "pharmacy" ? (
               <div className={styles.contentStack}>
                 <div className={styles.screenIntro}>
-                  <small>PHARMACY</small>
-                  <h1>Confirm where to send it.</h1>
-                  <p>Availability is confirmed before submission.</p>
+                  <small>FULFILLMENT</small><h1>Confirm where to send it.</h1><p>The signed prescription leaves August only after you confirm.</p>
                 </div>
-                <DetailCard title="Castro Community Pharmacy">
-                  <DetailRow
-                    icon="▦"
-                    label="Selected"
-                    value="Castro Community Pharmacy"
-                  />
-                  <DetailRow icon="⌖" label="Distance" value="0.8 miles" />
-                  <DetailRow
-                    icon="◇"
-                    label="Status"
-                    value="Accepting electronic prescriptions"
-                  />
+                <DetailCard eyebrow="SELECTED PHARMACY" title={encounter.prescription.pharmacy}>
+                  <DetailRow icon={MapPin} label="Location" value={encounter.prescription.pharmacyAddress} />
+                  <DetailRow icon={Route} label="Distance" value={encounter.prescription.pharmacyDistance} />
+                  <DetailRow icon={Clock3} label="Availability" value={encounter.prescription.pharmacyAvailability} />
+                  <DetailRow icon={FileCheck2} label="Submission status" value={encounter.prescription.electronicStatus} verified />
                 </DetailCard>
-                <section className={styles.confirmationStrip}>
-                  <span aria-hidden="true">✓</span>
-                  <p>
-                    <strong>Ready to submit</strong>
-                    Maya’s signed prescription will be sent here.
-                  </p>
-                </section>
-                <PrimaryAction onClick={() => changeState("sent")}>
-                  Confirm pharmacy
-                </PrimaryAction>
+                <section className={styles.confirmationStrip}><CircleCheck aria-hidden="true" size={19} /><p><strong>Ready to submit</strong><span>Maya’s signed prescription will be sent to this pharmacy.</span></p></section>
+                <PrimaryAction onClick={() => changeState("sent")}>Confirm and send</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "prescription" && state === "sent" ? (
-              <SuccessPanel
-                details="Fulfillment is now with the selected pharmacy."
+              <StatusReceipt
+                details="The pharmacy now owns fulfillment. We’ll show its confirmation here."
                 eyebrow="SENT TO PHARMACY"
                 rows={[
-                  {
-                    icon: "▦",
-                    label: "Pharmacy",
-                    value: "Castro Community Pharmacy",
-                  },
-                  { icon: "◷", label: "Sent", value: "Today · 10:42 AM" },
-                  {
-                    icon: "→",
-                    label: "Next update",
-                    value: "Pharmacy confirmation",
-                  },
+                  { icon: Building2, label: "Destination", value: encounter.prescription.pharmacy },
+                  { icon: Clock3, label: "Sent", value: encounter.prescription.sentAt, verified: true },
+                  { icon: UserRoundCheck, label: "Current owner", value: "Castro Community Pharmacy" },
+                  { icon: Bell, label: "Next update", value: "Pharmacy confirmation in Care" },
                 ]}
                 title="Prescription sent"
               />
@@ -845,161 +690,102 @@ export function AugustV2Prototype({
 
             {initialFlow === "lab" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem
-                  message={{
-                    author: "maya",
-                    content:
-                      "Before deciding on medication, I recommend a rapid strep test today.",
-                    time: "10:24",
-                  }}
-                />
+                <MessageItem message={{ author: "maya", content: "Before deciding on medication, I recommend a rapid strep test today. The result will guide the next step.", time: "10:24" }} />
                 <div className={styles.screenIntro}>
-                  <small>CLINICIAN DECISION</small>
-                  <h1>Maya recommends a strep test.</h1>
-                  <p>The test will guide the medication decision.</p>
+                  <small>CLINICIAN DECISION</small><h1>Maya recommends a strep test.</h1><p>Testing comes before the medication decision.</p>
                 </div>
                 <DetailCard title="Testing recommendation">
-                  <DetailRow
-                    icon="▤"
-                    label="Test"
-                    value="Rapid strep test"
-                  />
-                  <DetailRow
-                    icon="◇"
-                    label="Reason"
-                    value="Guides the medication decision"
-                  />
-                  <DetailRow
-                    icon="⌁"
-                    label="Decision author"
-                    value="Maya Rao · Human clinician"
-                  />
+                  <DetailRow icon={FileText} label="Test" value={encounter.lab.test} />
+                  <DetailRow icon={Stethoscope} label="Clinical reason" value={encounter.lab.reason} />
+                  <DetailRow icon={UserRoundCheck} label="Decision author" value="Maya Rao · Human clinician" verified />
                 </DetailCard>
-                <PrimaryAction onClick={() => changeState("nearby-lab")}>
-                  View test option
-                </PrimaryAction>
+                <PrimaryAction onClick={() => changeState("nearby-lab")}>View appointment</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "lab" && state === "nearby-lab" ? (
               <div className={styles.contentStack}>
                 <div className={styles.screenIntro}>
-                  <small>TEST OPTION</small>
-                  <h1>August arranged a nearby lab.</h1>
-                  <p>
-                    The clinician order and instructions are already attached.
-                  </p>
+                  <small>APPOINTMENT READY</small><h1>August arranged a nearby lab.</h1><p>Maya’s order is attached. Confirm the time and location below.</p>
                 </div>
-                <DetailCard
-                  eyebrow="RECOMMENDED · AUGUST ARRANGED"
-                  title="Mission Lab"
-                >
-                  <DetailRow
-                    icon="▦"
-                    label="Nearby lab"
-                    value="Mission Lab · 1.2 miles"
-                  />
-                  <DetailRow
-                    icon="◷"
-                    label="Appointment"
-                    value="Tomorrow · 9:30 AM"
-                  />
-                  <DetailRow
-                    icon="▤"
-                    label="Bring"
-                    value="Photo ID and order code"
-                  />
-                  <DetailRow
-                    icon="✓"
-                    label="Order"
-                    value="Rapid strep test · attached"
-                  />
+                <DetailCard eyebrow="RECOMMENDED · AUGUST ARRANGED" title={encounter.lab.location}>
+                  <DetailRow icon={FileText} label="Test and order" value={`${encounter.lab.test} · ${encounter.lab.orderCode}`} verified />
+                  <DetailRow icon={MapPin} label="Location" value={`${encounter.lab.address} · ${encounter.lab.distance}`} />
+                  <DetailRow icon={CalendarDays} label="Appointment" value={encounter.lab.appointment} />
+                  <DetailRow icon={FileCheck2} label="Bring" value={encounter.lab.preparation} />
                 </DetailCard>
-                <section className={styles.confirmationStrip}>
-                  <span aria-hidden="true">✓</span>
-                  <p>
-                    <strong>Everything is ready</strong>
-                    Your clinician order and appointment details are attached.
-                  </p>
-                </section>
-                <PrimaryAction onClick={() => changeState("confirmed")}>
-                  Confirm nearby lab
-                </PrimaryAction>
+                <section className={styles.confirmationStrip}><CircleCheck aria-hidden="true" size={19} /><p><strong>Everything is ready</strong><span>The clinician order and appointment details stay attached to this visit.</span></p></section>
+                <PrimaryAction onClick={() => changeState("confirmed")}>Confirm appointment</PrimaryAction>
               </div>
             ) : null}
 
             {initialFlow === "lab" && state === "confirmed" ? (
-              <SuccessPanel
-                details="This appointment stays connected to Maya’s visit."
-                eyebrow="SCHEDULED"
+              <StatusReceipt
+                details="Your appointment and Maya’s order remain connected to this visit."
+                eyebrow="APPOINTMENT SCHEDULED"
                 rows={[
-                  {
-                    icon: "◷",
-                    label: "When",
-                    value: "Tomorrow · 9:30 AM",
-                  },
-                  { icon: "⌖", label: "Where", value: "Mission Lab" },
-                  { icon: "▤", label: "Order", value: "Rapid strep test" },
+                  { icon: CalendarDays, label: "When", value: encounter.lab.appointment, verified: true },
+                  { icon: MapPin, label: "Where", value: `${encounter.lab.location} · ${encounter.lab.address}` },
+                  { icon: FileCheck2, label: "Bring", value: encounter.lab.preparation },
+                  { icon: Bell, label: "Next update", value: "Lab updates return to Maya’s visit" },
                 ]}
                 title="Appointment confirmed"
               />
             ) : null}
+
+            {initialFlow !== "intake" && patientReplies.length ? (
+              <div className={styles.threadContinuation}>
+                <div className={styles.dateMarker}>Your reply</div>
+                {patientReplies.map((message, index) => <MessageItem key={`decision-reply-${index}`} message={message} />)}
+              </div>
+            ) : null}
           </div>
 
-          <Composer
-            disabled={composerConfig.disabled || Boolean(pending)}
-            onSubmit={handleComposer}
-            placeholder={composerConfig.placeholder}
-            recipient={composerConfig.recipient}
-          />
+          {composerConfig.kind === "composer" ? (
+            <Composer disabled={composerConfig.disabled || Boolean(pending)} onSubmit={handleComposer} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
+          ) : (
+            <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
+          )}
           <ProductNavigation clinician={clinician} />
         </section>
-
       </div>
 
       {detailsOpen ? (
-        <div
-          className={styles.sheetBackdrop}
-          onMouseDown={() => setDetailsOpen(false)}
-          role="presentation"
-        >
-          <section
-            aria-label="Conversation details"
-            aria-modal="true"
-            className={styles.detailsSheet}
-            onMouseDown={(event) => event.stopPropagation()}
-            role="dialog"
-          >
+        <div className={styles.sheetBackdrop} onMouseDown={() => setDetailsOpen(false)} role="presentation">
+          <section aria-label="Conversation details" aria-modal="true" className={styles.detailsSheet} onMouseDown={(event) => event.stopPropagation()} ref={dialogRef} role="dialog">
             <div className={styles.sheetHandle} />
             <header>
-              <strong>Conversation details</strong>
-              <button
-                aria-label="Close conversation details"
-                onClick={() => setDetailsOpen(false)}
-                type="button"
-              >
-                ×
-              </button>
+              <div><small>CARE CONTEXT</small><strong>Conversation details</strong></div>
+              <button aria-label="Close conversation details" onClick={() => setDetailsOpen(false)} ref={firstDialogActionRef} type="button"><X aria-hidden="true" size={20} /></button>
             </header>
-            <DetailRow
-              icon="⌁"
-              label="Decision owner"
-              value={
-                initialFlow === "intake" && stateIndex < 4
-                  ? "August gathers context"
-                  : "Maya Rao · Human clinician"
-              }
-            />
-            <DetailRow
-              icon="◇"
-              label="Care context"
-              value="Symptoms, history, medicines, and allergies"
-            />
-            <DetailRow
-              icon="✓"
-              label="Privacy model"
-              value="Only the confirmed summary is shared with Maya"
-            />
+            <div className={styles.sheetIntro}>
+              <Avatar person={clinician ? "maya" : "august"} size="large" />
+              <div><strong>{clinician ? "Maya Rao" : "August"}</strong><span>{subtitle}</span></div>
+            </div>
+            <div className={styles.sheetRows}>
+              <DetailRow icon={MessageCircle} label="Current recipient" value={clinician ? "Maya Rao · Human clinician" : "August · AI care guide"} />
+              <DetailRow icon={LockKeyhole} label="Privacy" value={clinician ? "Maya sees only the summary you confirmed" : "Private to August until you confirm sharing"} verified />
+              <DetailRow icon={ClipboardCheck} label="Care context" value="Symptoms, safety answers, medicines, and allergies" />
+              {clinician ? <DetailRow icon={Clock3} label="Clinician status" value={state === "reviewing" ? encounter.clinician.responseEstimate : `Replied ${encounter.clinician.repliedAt.replace("Today · ", "at ")}`} /> : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {editField ? (
+        <div className={styles.sheetBackdrop} onMouseDown={() => setEditField(null)} role="presentation">
+          <section aria-labelledby="edit-summary-title" aria-modal="true" className={`${styles.detailsSheet} ${styles.editSheet}`} onMouseDown={(event) => event.stopPropagation()} ref={dialogRef} role="dialog">
+            <div className={styles.sheetHandle} />
+            <header>
+              <div><small>EDIT VISIT SUMMARY</small><strong id="edit-summary-title">{summaryLabels[editField]}</strong></div>
+              <button aria-label="Close summary editor" onClick={() => setEditField(null)} ref={firstDialogActionRef} type="button"><X aria-hidden="true" size={20} /></button>
+            </header>
+            <label htmlFor="summary-edit-value">Update what Maya should receive</label>
+            <textarea id="summary-edit-value" onChange={(event) => setEditValue(event.target.value)} rows={5} value={editValue} />
+            <div className={styles.editActions}>
+              <button className={styles.secondaryAction} onClick={() => setEditField(null)} type="button">Cancel</button>
+              <button className={styles.primaryAction} disabled={!editValue.trim()} onClick={saveSummaryEdit} type="button"><span>Save change</span><Check aria-hidden="true" size={17} /></button>
+            </div>
           </section>
         </div>
       ) : null}
