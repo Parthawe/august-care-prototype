@@ -301,37 +301,14 @@ function Composer({
   );
 }
 
-function EmptyConversationPrompts({ onStart }: { onStart: (message: string) => void }) {
-  const [visible, setVisible] = useState({ review: true, records: true });
-  const prompts = [
-    {
-      description: "Share what you want reviewed, then send it securely.",
-      id: "review" as const,
-      message: "I want a clinician to review a health concern.",
-      title: "Want a clinician to review this?",
-    },
-    {
-      description: "Give August context from labs, medications, and reports.",
-      id: "records" as const,
-      message: "I want to share relevant health records for this visit.",
-      title: "Connect your health records",
-    },
-  ];
-
+function EncryptionNotice() {
   return (
-    <div aria-label="Ways to start" className={styles.starterRail}>
-      {prompts.filter((prompt) => visible[prompt.id]).map((prompt) => (
-        <article className={styles.starterCard} key={prompt.id}>
-          <button aria-label={`Dismiss ${prompt.title}`} className={styles.starterDismiss} onClick={() => setVisible((current) => ({ ...current, [prompt.id]: false }))} type="button">
-            <X aria-hidden="true" size={20} />
-          </button>
-          <button className={styles.starterAction} onClick={() => onStart(prompt.message)} type="button">
-            <i aria-hidden="true" />
-            <strong>{prompt.title}</strong>
-            <span>{prompt.description}</span>
-          </button>
-        </article>
-      ))}
+    <div className={styles.encryptionNotice} role="note">
+      <LockKeyhole aria-hidden="true" size={13} />
+      <p>
+        <strong>End-to-end encrypted</strong>
+        <span>Only you and August can read messages and attachments. Nothing is shared with a clinician until you choose.</span>
+      </p>
     </div>
   );
 }
@@ -980,7 +957,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
                 <div className={styles.transcript}>
                   <div className={styles.dateMarker}>Today</div>
-                  {state === "empty" ? <EmptyConversationPrompts onStart={handleComposer} /> : null}
+                  {state === "empty" ? <EncryptionNotice /> : null}
                   {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                   {pending ? <TypingIndicator person={pending} /> : null}
                 </div>
@@ -1005,7 +982,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today</div>
-                {state === "empty" ? <EmptyConversationPrompts onStart={handleComposer} /> : null}
+                {state === "empty" ? <EncryptionNotice /> : null}
                 {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                 {pending ? <TypingIndicator person={pending} /> : null}
               </div>
