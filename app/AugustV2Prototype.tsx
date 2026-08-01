@@ -103,15 +103,21 @@ function Avatar({
   person: "august" | "maya";
   size?: "small" | "regular" | "large";
 }) {
+  if (person === "august") {
+    return (
+      <span
+        aria-label="August AI care guide"
+        className={`${styles.avatar} ${styles.augustOrb} ${styles[`avatar-${size}`]}`}
+        role="img"
+      />
+    );
+  }
+
   return (
     <img
-      alt={person === "august" ? "August AI care guide" : "Maya Rao, clinician"}
+      alt="Maya Rao, clinician"
       className={`${styles.avatar} ${styles[`avatar-${size}`]}`}
-      src={
-        person === "august"
-          ? "/august-avatar.png"
-          : "/maya-clinician-avatar.png"
-      }
+      src="/maya-clinician-avatar.png"
     />
   );
 }
@@ -252,6 +258,7 @@ function Composer({
   return (
     <div className={styles.composerRegion}>
       <form className={styles.composer} onSubmit={submit}>
+        <Avatar person={recipient === "August" ? "august" : "maya"} size="small" />
         <input
           aria-label={`Message ${recipient}`}
           disabled={disabled}
@@ -292,7 +299,7 @@ function ProductNavigation({ careAvailable, clinician, onSelect }: {
   return (
     <nav aria-label="Current care area" className={styles.bottomNav}>
       <button aria-current={clinician ? "page" : undefined} className={clinician ? styles.activeNav : undefined} disabled={!careAvailable} onClick={() => onSelect("care")} type="button">
-        <MessageCircle aria-hidden="true" size={18} />
+        {careAvailable ? <Avatar person="maya" size="small" /> : <MessageCircle aria-hidden="true" size={18} />}
         <span><strong>Care</strong><small>{careAvailable ? "Maya" : "Not connected"}</small></span>
       </button>
       <button aria-current={!clinician ? "page" : undefined} className={!clinician ? styles.activeNav : undefined} onClick={() => onSelect("august")} type="button">
