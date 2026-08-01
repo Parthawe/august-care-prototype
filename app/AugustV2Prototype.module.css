@@ -147,6 +147,7 @@
   overflow-x: hidden;
   overflow-y: auto;
   scroll-behavior: smooth;
+  scroll-padding-block-end: 14px;
   scrollbar-width: none;
   overscroll-behavior: contain;
   background:
@@ -399,14 +400,10 @@
 }
 
 .summaryRow strong {
-  display: -webkit-box;
-  overflow: hidden;
   color: #29463d;
   font-size: 13px;
   font-weight: 620;
   line-height: 1.38;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
 }
 
 .editLabel {
@@ -530,7 +527,7 @@
   border-radius: 999px;
   color: var(--ink-soft);
   background: var(--mint-100);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .contactMatchReasons svg { color: var(--green-600); }

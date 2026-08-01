@@ -76,10 +76,16 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page.getByText("Confirm what August gathered.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm and connect" }).click();
   await expect(page.getByText(/I found a clinician who fits this visit/)).toBeVisible();
+  await expect(page.locator("header").getByText("August", { exact: true })).toBeVisible();
+  await expect(page.getByText("August is connecting you with Maya")).toBeVisible();
+  await expect(page.getByText("To Maya")).toHaveCount(0);
+  await expect(page.locator("header").getByText("Maya (Clinician)")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Continue conversation" })
     .click();
   await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
+  await expect(page.locator("header").getByText("Maya (Clinician)")).toBeVisible();
+  await expect(page.getByText("To Maya")).toBeVisible();
   await expect(page.getByText(/choose a clinician/i)).toHaveCount(0);
 });
 
@@ -126,6 +132,14 @@ test("patient shell fills supported mobile viewports without reviewer chrome", a
   await expect(page.getByRole("textbox")).toHaveCount(0);
   const shell = await page.getByRole("region", { name: "August care" }).boundingBox();
   expect(shell?.height).toBe(page.viewportSize()?.height);
+
+  await page.goto("/prototype-v2/00?state=intake-reviewing");
+  const continuation = page.getByRole("button", { name: "Continue conversation" });
+  await expect(continuation).toBeVisible();
+  await page.waitForTimeout(350);
+  const continuationBox = await continuation.boundingBox();
+  const composerBox = await page.locator("form").boundingBox();
+  expect((continuationBox?.y ?? 0) + (continuationBox?.height ?? 0)).toBeLessThanOrEqual(composerBox?.y ?? Infinity);
 });
 
 test("patient UI contains no reviewer or prototype commentary", async ({
@@ -208,8 +222,11 @@ test("Care opens an inbox before entering Maya’s clean conversation", async ({
 
   await page.getByRole("navigation").getByRole("button", { name: /Care Conversations/ }).click();
   await expect(page.getByText("Your care conversations")).toBeVisible();
+  await expect(page.getByText("Active care")).toBeVisible();
   await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /August Care guide/ })).toBeVisible();
+  await expect(page.getByText("Choose a conversation to continue")).toBeVisible();
+  await expect(page.getByRole("textbox")).toHaveCount(0);
 
   await page.getByRole("button", { name: /Maya Clinician/ }).click();
   await expect(page.getByText(/Hi Parth\. I reviewed what you shared/)).toBeVisible();
@@ -238,8 +255,9 @@ test("conversation details explain recipient and privacy with accessible dismiss
   const trigger = page.getByRole("button", { name: "Open conversation details" });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Conversation details" });
-  await expect(dialog.getByText("Maya sees only the visit summary you confirmed.")).toBeVisible();
-  await expect(dialog.getByText("Usually replies within 2 to 4 hours")).toBeVisible();
+  await expect(dialog.getByText("August · Care guide")).toBeVisible();
+  await expect(dialog.getByText(/New messages stay with August until you open her contact/)).toBeVisible();
+  await expect(dialog.getByText(/Maya matched/)).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();

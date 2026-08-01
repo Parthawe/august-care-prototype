@@ -335,7 +335,7 @@ function ProductNavigation({ careAvailable, clinician, onSelect }: {
 function CareInbox({ onOpenAugust, onOpenMaya }: { onOpenAugust: () => void; onOpenMaya: () => void }) {
   return (
     <div className={styles.careInbox}>
-      <p className={styles.inboxSectionLabel}>Active</p>
+      <p className={styles.inboxSectionLabel}>Active care</p>
       <button className={styles.inboxThread} onClick={onOpenMaya} type="button">
         <Avatar person="maya" size="large" />
         <span className={styles.inboxThreadCopy}>
@@ -370,7 +370,7 @@ function ClinicianContactCard({ onContinue, responseEstimate }: { onContinue: ()
         <span><CircleCheck aria-hidden="true" size={15} /> Licensed in California</span>
         <span><CircleCheck aria-hidden="true" size={15} /> Same-day throat care</span>
       </div>
-      <button onClick={onContinue} type="button">
+      <button data-scroll-anchor="true" onClick={onContinue} type="button">
         <span>Continue conversation</span>
         <ArrowRight aria-hidden="true" size={16} />
       </button>
@@ -616,7 +616,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(flow, state), answers }), [answers, flow, state]);
   const stateIndex = getPrototypeV2StateIndex(flow, state);
   const clinician =
-    (flow === "intake" && ["reviewing", "reply"].includes(state)) ||
+    (flow === "intake" && state === "reply") ||
     (flow === "lab" && state === "recommended") ||
     (flow === "prescription" && ["recommended", "review"].includes(state));
   const modalOpen = detailsOpen;
@@ -629,7 +629,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     const url = new URL(window.location.href);
     url.searchParams.set("state", completeJourney ? getCompleteJourneyId(flow, state) : state);
     window.history.replaceState({}, "", url);
-    requestAnimationFrame(() => {
+    let cancelled = false;
+    let frame = 0;
+    let scrollTimer = 0;
+    const scrollLatest = (behavior: ScrollBehavior) => {
       const conversationalState =
         completeJourney ||
         (flow === "intake" && ["empty", "concern", "gathering", "reply"].includes(state));
@@ -638,9 +641,26 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           conversationalState || patientReplies.length
             ? transcriptRef.current.scrollHeight
             : 0,
-        behavior: "smooth",
+        behavior,
       });
+      if (state === "reviewing") {
+        transcriptRef.current
+          ?.querySelector<HTMLElement>("[data-scroll-anchor='true']")
+          ?.scrollIntoView({ behavior, block: "end" });
+      }
+    };
+    frame = requestAnimationFrame(() => {
+      scrollLatest("smooth");
+      scrollTimer = window.setTimeout(() => scrollLatest("auto"), 180);
     });
+    document.fonts?.ready.then(() => {
+      if (!cancelled) scrollLatest("auto");
+    });
+    return () => {
+      cancelled = true;
+      window.cancelAnimationFrame(frame);
+      window.clearTimeout(scrollTimer);
+    };
   }, [completeJourney, flow, gatheringStep, patientReplies, pending, state]);
 
   useEffect(() => {
@@ -718,15 +738,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (flow === "lab") moveTo("lab", "recommended");
     else if (flow === "prescription") moveTo("prescription", "review");
     else moveTo("intake", "reply");
-  }
-
-  function messageAugustFromInbox(value: string) {
-    setPatientReplies((current) => [
-      ...current,
-      { author: "patient", content: value, time: "Now" },
-      { author: "august", content: "I’m here. We can continue from this visit without starting over.", time: "Now" },
-    ]);
-    switchConversation("august");
   }
 
   function handleImageAttachment(file: File) {
@@ -898,11 +909,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     return { kind: "composer" as const, disabled: false, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
-  const subtitle = clinician
-    ? state === "reviewing"
-      ? "Reviewing · usually replies in 2 to 4 hours"
-      : "Usually replies in 2 to 4 hours"
-    : "Care guide";
+  const subtitle = clinician ? "Usually replies in 2 to 4 hours" : "Care guide";
 
   const conversationDetails = flow === "lab" && !clinician
     ? {
@@ -920,10 +927,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         }
       : state === "reviewing"
         ? {
-            recipient: "Maya Rao · Human clinician",
-            privacy: "Maya sees only the visit summary you confirmed.",
+            recipient: "August · Care guide",
+            privacy: "Maya can see only the visit summary you confirmed. New messages stay with August until you open her contact.",
             context: "Confirmed symptoms, safety answers, medicines, and allergies",
-            status: encounter.clinician.responseEstimate,
+            status: `Maya matched · ${encounter.clinician.responseEstimate}`,
           }
       : clinician
         ? {
@@ -965,7 +972,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : completeJourney ? (
               flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
                 <div className={styles.transcript}>
-                  <div className={styles.dateMarker}>Today</div>
+                  {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
                   {state === "empty" ? <EncryptionNotice /> : null}
                   {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                   {pending ? <TypingIndicator person={pending} /> : null}
@@ -991,7 +998,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <>
             {flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
               <div className={styles.transcript}>
-                <div className={styles.dateMarker}>Today</div>
+                {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
                 {state === "empty" ? <EncryptionNotice /> : null}
                 {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                 {pending ? <TypingIndicator person={pending} /> : null}
@@ -1120,7 +1127,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
           <div className={styles.inputZone}>
             {showCareInbox ? (
-              <Composer onAttach={handleImageAttachment} onSubmit={messageAugustFromInbox} placeholder="Ask August anything…" recipient="August" />
+              <PassiveFooter icon={MessageCircle} text="Choose a conversation to continue" />
             ) : composerConfig.kind === "composer" ? (
               <Composer disabled={composerConfig.disabled || Boolean(pending)} onAttach={handleImageAttachment} onSubmit={handleComposer} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
             ) : (
