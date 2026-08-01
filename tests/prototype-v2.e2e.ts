@@ -31,8 +31,32 @@ test("all 13 state URLs render deterministically", async ({ page }, testInfo) =>
       await expect(
         page.getByRole("region", { name: "August care" }),
       ).toBeVisible();
+      await expect(page.getByText("Not emergency care · Call 911 for emergencies.")).toBeVisible();
     }
   }
+});
+
+test("empty state offers starters and accepts an image attachment", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00");
+
+  const reviewStarter = page.getByRole("button", { name: "Want a clinician to review this? Share what you want reviewed, then send it securely." });
+  const recordsStarter = page.getByRole("button", { name: "Connect your health records Give August context from labs, medications, and reports." });
+  await expect(reviewStarter).toBeVisible();
+  await expect(recordsStarter).toBeVisible();
+  await expect(page.getByText("Hi Parth. Tell me what’s going on.")).toHaveCount(0);
+
+  await page.locator('input[type="file"]').setInputFiles({
+    name: "throat-photo.png",
+    mimeType: "image/png",
+    buffer: Buffer.from("prototype-image"),
+  });
+  await expect(page.getByRole("img", { name: "throat-photo.png" })).toBeVisible();
+  await expect(page.getByText("Image added")).toBeVisible();
+
+  await reviewStarter.click();
+  await expect(page).toHaveURL(/state=intake-concern/);
+  await expect(recordsStarter).toHaveCount(0);
 });
 
 test("intake gathers context, confirms it, and connects directly to Maya", async ({

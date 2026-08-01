@@ -27,6 +27,7 @@ import {
   LockKeyhole,
   MapPin,
   MessageCircle,
+  Plus,
   Send,
   Signal,
   UserRoundCheck,
@@ -57,6 +58,8 @@ type Props = {
 type Message = {
   author: "august" | "patient" | "maya" | "system";
   content: string;
+  imageName?: string;
+  imageUrl?: string;
   time?: string;
 };
 
@@ -191,6 +194,7 @@ function MessageItem({ message }: { message: Message }) {
     return (
       <div className={`${styles.messageRow} ${styles.patientRow}`}>
         <div className={styles.patientBubble}>
+          {message.imageUrl ? <img alt={message.imageName ?? "Patient attachment"} className={styles.messageImage} src={message.imageUrl} /> : null}
           <p>{message.content}</p>
           <span>
             {message.time ?? "Now"} <CheckCheck aria-hidden="true" size={13} />
@@ -236,11 +240,13 @@ function TypingIndicator({ person }: { person: "august" | "maya" }) {
 
 function Composer({
   disabled,
+  onAttach,
   onSubmit,
   placeholder,
   recipient,
 }: {
   disabled?: boolean;
+  onAttach: (file: File) => void;
   onSubmit: (value: string) => void;
   placeholder: string;
   recipient: "August" | "Maya";
@@ -258,7 +264,20 @@ function Composer({
   return (
     <div className={styles.composerRegion}>
       <form className={styles.composer} onSubmit={submit}>
-        <Avatar person={recipient === "August" ? "august" : "maya"} size="small" />
+        <label className={styles.attachmentButton}>
+          <span className={styles.visuallyHidden}>Add an image</span>
+          <Plus aria-hidden="true" size={22} />
+          <input
+            accept="image/*"
+            disabled={disabled}
+            onChange={(event) => {
+              const file = event.target.files?.[0];
+              if (file) onAttach(file);
+              event.target.value = "";
+            }}
+            type="file"
+          />
+        </label>
         <input
           aria-label={`Message ${recipient}`}
           disabled={disabled}
@@ -278,6 +297,41 @@ function Composer({
       <span>
         <LockKeyhole aria-hidden="true" size={11} /> To {recipient}
       </span>
+    </div>
+  );
+}
+
+function EmptyConversationPrompts({ onStart }: { onStart: (message: string) => void }) {
+  const [visible, setVisible] = useState({ review: true, records: true });
+  const prompts = [
+    {
+      description: "Share what you want reviewed, then send it securely.",
+      id: "review" as const,
+      message: "I want a clinician to review a health concern.",
+      title: "Want a clinician to review this?",
+    },
+    {
+      description: "Give August context from labs, medications, and reports.",
+      id: "records" as const,
+      message: "I want to share relevant health records for this visit.",
+      title: "Connect your health records",
+    },
+  ];
+
+  return (
+    <div aria-label="Ways to start" className={styles.starterRail}>
+      {prompts.filter((prompt) => visible[prompt.id]).map((prompt) => (
+        <article className={styles.starterCard} key={prompt.id}>
+          <button aria-label={`Dismiss ${prompt.title}`} className={styles.starterDismiss} onClick={() => setVisible((current) => ({ ...current, [prompt.id]: false }))} type="button">
+            <X aria-hidden="true" size={20} />
+          </button>
+          <button className={styles.starterAction} onClick={() => onStart(prompt.message)} type="button">
+            <i aria-hidden="true" />
+            <strong>{prompt.title}</strong>
+            <span>{prompt.description}</span>
+          </button>
+        </article>
+      ))}
     </div>
   );
 }
@@ -565,6 +619,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
+  const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox">("thread");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -688,6 +743,18 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     switchConversation("august");
   }
 
+  function handleImageAttachment(file: File) {
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      setUploadedImages((current) => [
+        ...current,
+        { id: `${file.name}-${file.lastModified}-${current.length}`, name: file.name, url: reader.result },
+      ]);
+    };
+    reader.readAsDataURL(file);
+  }
+
   function replyThen(next: PrototypeV2State, person: "august" | "maya") {
     setPending(person);
     const timer = window.setTimeout(() => { setPending(null); changeState(next); }, person === "maya" ? 850 : 620);
@@ -800,7 +867,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (flow !== "intake") return [];
     const result: Message[] = [];
     const opening = "Hi Parth. Tell me what’s going on.";
-    if (state === "empty") return [{ author: "august", content: opening, time: "9:40" }];
+    if (state === "empty") return [];
     result.push(
       { author: "august", content: opening, time: "9:40" },
       { author: "patient", content: answers.concern, time: "9:41" },
@@ -913,6 +980,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
                 <div className={styles.transcript}>
                   <div className={styles.dateMarker}>Today</div>
+                  {state === "empty" ? <EmptyConversationPrompts onStart={handleComposer} /> : null}
                   {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                   {pending ? <TypingIndicator person={pending} /> : null}
                 </div>
@@ -937,6 +1005,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today</div>
+                {state === "empty" ? <EmptyConversationPrompts onStart={handleComposer} /> : null}
                 {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                 {pending ? <TypingIndicator person={pending} /> : null}
               </div>
@@ -1058,15 +1127,25 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : null}
               </>
             )}
+            {uploadedImages.length ? (
+              <div className={styles.attachmentThread}>
+                {uploadedImages.map((item) => (
+                  <MessageItem key={item.id} message={{ author: "patient", content: "Image added", imageName: item.name, imageUrl: item.url, time: "Now" }} />
+                ))}
+              </div>
+            ) : null}
           </div>
 
-          {showCareInbox ? (
-            <Composer onSubmit={messageAugustFromInbox} placeholder="Ask August anything…" recipient="August" />
-          ) : composerConfig.kind === "composer" ? (
-            <Composer disabled={composerConfig.disabled || Boolean(pending)} onSubmit={handleComposer} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
-          ) : (
-            <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
-          )}
+          <div className={styles.inputZone}>
+            {showCareInbox ? (
+              <Composer onAttach={handleImageAttachment} onSubmit={messageAugustFromInbox} placeholder="Ask August anything…" recipient="August" />
+            ) : composerConfig.kind === "composer" ? (
+              <Composer disabled={composerConfig.disabled || Boolean(pending)} onAttach={handleImageAttachment} onSubmit={handleComposer} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
+            ) : (
+              <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
+            )}
+            <div className={styles.emergencyNotice}>Not emergency care · Call 911 for emergencies.</div>
+          </div>
           <ProductNavigation
             careAvailable={careAvailable}
             clinician={showCareInbox || clinician}
