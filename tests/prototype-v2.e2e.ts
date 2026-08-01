@@ -163,19 +163,32 @@ test("complete journey runs from intake through testing and prescription", async
   await send(page, "No trouble breathing, swallowing, fainting, or chest pain.");
   await send(page, "No major conditions. Ibuprofen occasionally.");
   await send(page, "No medication allergies.");
-  await page.getByRole("button", { name: "Confirm and connect" }).click();
+  await page.getByRole("button", { name: "Everything looks right" }).click();
   await expect(page.getByText(/licensed where you are/)).toBeVisible();
   await page.getByRole("button", { name: "Continue to Maya" }).click();
-  await page.getByRole("button", { name: "Continue with Maya’s plan" }).click();
-  await page.getByRole("button", { name: "Continue with August" }).click();
-  await page.getByRole("button", { name: "Yes, confirm appointment" }).click();
-  await page.getByRole("button", { name: "See Maya’s result and plan" }).click();
+  await page.getByRole("button", { name: "What do you recommend?" }).click();
+  await page.getByRole("button", { name: "Ask August to arrange it" }).click();
+  await page.getByRole("button", { name: "Yes, that time works" }).click();
+  await page.getByRole("button", { name: "Open Maya’s result" }).click();
   await expect(page.getByText(/rapid strep test is positive/)).toBeVisible();
-  await page.getByRole("button", { name: "Read treatment plan" }).click();
+  await page.getByRole("button", { name: "Show me the medication plan" }).click();
   await page.getByRole("button", { name: "Ask August to send it" }).click();
-  await page.getByRole("button", { name: "Confirm and send" }).click();
-  await expect(page.getByRole("heading", { name: "Prescription sent" })).toBeVisible();
+  await page.getByRole("button", { name: "Yes, send it there" }).click();
+  await expect(page.getByText(/Done\. I sent Maya’s prescription/)).toBeVisible();
   await expect(page).toHaveURL(/state=prescription-sent/);
+});
+
+test("August handles natural booking replies without leaving the chat", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=lab-nearby-lab");
+
+  await send(page, "No, I need a different time.");
+  await expect(page.getByText(/which day, time, or area works better/)).toBeVisible();
+  await expect(page).toHaveURL(/state=lab-nearby-lab/);
+
+  await send(page, "Yes, this time works.");
+  await expect(page.getByText(/You’re confirmed for tomorrow/)).toBeVisible();
+  await expect(page).toHaveURL(/state=lab-confirmed/);
 });
 
 test("conversation details explain recipient and privacy with accessible dismissal", async ({

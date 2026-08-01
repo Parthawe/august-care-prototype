@@ -206,8 +206,8 @@
 }
 
 .clinicianMessage {
-  padding: 9px 12px 10px;
-  border-left: 2px solid var(--green-700);
+  max-width: 286px;
+  padding: 0 4px 1px 0;
   background: transparent;
 }
 
@@ -578,25 +578,26 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 8px 12px 7px;
+  padding: 7px 16px 6px;
   border-top: 1px solid var(--line);
   background: rgba(251, 250, 245, 0.98);
 }
 
 .composer {
-  height: 46px;
+  height: 44px;
   display: flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 4px 3px 14px;
-  border: 1px solid #c5d4cd;
-  border-radius: 24px;
-  background: #fff;
+  padding: 0 0 2px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  border-radius: 0;
+  background: transparent;
 }
 
 .composer input {
   min-width: 0;
-  height: 40px;
+  height: 42px;
   flex: 1;
   border: 0;
   outline: 0;
@@ -609,8 +610,8 @@
 .composer input::placeholder { color: #89978f; }
 
 .sendButton {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
   color: #fff;
   background: var(--green-700);
 }
@@ -621,7 +622,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding-left: 14px;
+  padding-left: 0;
   color: var(--ink-soft);
   font-size: 9px;
 }
@@ -646,24 +647,71 @@
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   border-top: 1px solid var(--line);
-  background: #f6f7f1;
+  background: var(--cream);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
-.bottomNav > span {
+.bottomNav > button {
+  position: relative;
   min-height: 58px;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
+  gap: 9px;
+  padding: 5px 12px;
+  border: 0;
+  border-top: 2px solid transparent;
   color: #536c62;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.bottomNav > button > span {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.bottomNav > button strong {
   font-size: 9px;
-  font-weight: 650;
+  font-weight: 740;
+}
+
+.bottomNav > button small {
+  color: var(--ink-muted);
+  font-size: 8px;
+  font-weight: 520;
 }
 
 .bottomNav .avatar { width: 22px; height: 22px; filter: grayscale(0.55); }
-.bottomNav .activeNav { color: var(--green-800); }
+.bottomNav .activeNav { border-top-color: var(--green-700); color: var(--green-800); }
 .bottomNav .activeNav .avatar { filter: none; }
+.bottomNav > button:disabled { cursor: default; opacity: 0.48; }
+
+.suggestedReplyRow {
+  display: flex;
+  justify-content: flex-end;
+  padding-left: 46px;
+}
+
+.suggestedReplyRow button {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 14px;
+  border: 1px solid var(--green-700);
+  border-radius: 18px 6px 18px 18px;
+  color: var(--green-900);
+  background: transparent;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+  cursor: pointer;
+}
 
 .visuallyHidden {
   position: absolute;
@@ -836,7 +884,9 @@
 
 .inlineSummaryEditor textarea:focus-visible,
 .inlineCancel:focus-visible,
-.inlineSave:focus-visible { outline: 3px solid var(--green-600); outline-offset: 2px; }
+.inlineSave:focus-visible,
+.suggestedReplyRow button:focus-visible,
+.bottomNav > button:focus-visible { outline: 3px solid var(--green-600); outline-offset: -3px; }
 
 @keyframes typing {
   0%, 70%, 100% { transform: translateY(0); opacity: 0.45; }
@@ -874,7 +924,7 @@
   .detailRow { padding-block: 8px; }
   .summaryRow { min-height: 56px; padding-block: 8px; }
   .composerRegion { padding-top: 5px; }
-  .bottomNav > span { min-height: 50px; }
+  .bottomNav > button { min-height: 50px; }
   .successPanel { justify-content: flex-start; margin: 12px; padding: 24px 16px; }
 }
 
