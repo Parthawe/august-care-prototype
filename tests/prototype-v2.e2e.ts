@@ -52,7 +52,7 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page).toHaveURL(/state=summary/);
   await expect(page.getByText("Confirm what August gathered.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm and connect" }).click();
-  await expect(page.getByText("I found the right clinician for this visit.")).toBeVisible();
+  await expect(page.getByText(/I found Maya for this visit/)).toBeVisible();
   await page
     .getByRole("button", { name: "Continue to Maya" })
     .click();
@@ -187,7 +187,7 @@ test("conversation details explain recipient and privacy with accessible dismiss
   const trigger = page.getByRole("button", { name: "Open conversation details" });
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Conversation details" });
-  await expect(dialog.getByText("Maya sees only the summary you confirmed")).toBeVisible();
+  await expect(dialog.getByText("Maya sees only the visit summary you confirmed.")).toBeVisible();
   await expect(dialog.getByText("Usually replies within 2 to 4 hours")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);

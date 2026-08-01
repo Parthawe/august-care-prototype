@@ -574,6 +574,41 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               ? "Human clinician · replied 1 minute ago"
               : "AI care guide · private conversation";
 
+  const conversationDetails = flow === "lab" && !clinician
+    ? {
+        recipient: "August · Testing support",
+        privacy: "Scheduling stays with August. Appointment updates return to Maya.",
+        context: "Maya’s rapid strep order, location, timing, and preparation",
+        status: "Maya’s order is attached to this visit",
+      }
+    : flow === "prescription" && !clinician
+      ? {
+          recipient: "August · Pharmacy support",
+          privacy: "Fulfillment stays with August. Maya’s signed prescription remains attached.",
+          context: "Medication instructions, signed prescription, and pharmacy destination",
+          status: "The pharmacy owns the next update after sending",
+        }
+      : clinician
+        ? {
+            recipient: "Maya Rao · Human clinician",
+            privacy: "Maya sees only the information you confirmed and messages sent to Care.",
+            context: "Symptoms, safety answers, medicines, allergies, and clinical decisions",
+            status: `Replied ${encounter.clinician.repliedAt.replace("Today · ", "at ")}`,
+          }
+        : state === "reviewing"
+          ? {
+              recipient: "August · Care handoff",
+              privacy: "Maya sees only the visit summary you confirmed.",
+              context: "Confirmed symptoms, safety answers, medicines, and allergies",
+              status: encounter.clinician.responseEstimate,
+            }
+          : {
+              recipient: "August · AI care guide",
+              privacy: "This conversation stays private to August until you confirm sharing.",
+              context: "Symptoms, safety answers, medicines, and allergies",
+              status: "No information has been shared with a clinician",
+            };
+
   return (
     <main className={styles.stage}>
       <div className={styles.deviceColumn}>
@@ -599,11 +634,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {flow === "intake" && state === "summary" ? (
               <div className={styles.contentStack}>
                 <MessageItem message={{ author: "august", content: "I’ve organized what you told me. Read it once, edit anything that is off, then choose whether to share it with a clinician.", time: "9:50" }} />
-                <div className={styles.screenIntro}>
-                  <small>BEFORE ANYTHING IS SHARED</small>
-                  <h1>Review your information.</h1>
-                  <p>August organized the conversation. Correct anything before Maya receives it.</p>
-                </div>
                 <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={() => setEditField(null)} onChange={setEditValue} onEdit={openSummaryEdit} onSave={saveSummaryEdit} />
                 <PrimaryAction onClick={() => changeState("reviewing")}>Confirm and connect</PrimaryAction>
               </div>
@@ -613,19 +643,14 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div className={`${styles.contentStack} ${styles.quietStack}`}>
                 <div className={styles.handoffNotice}>
                   <CircleCheck aria-hidden="true" size={18} />
-                  <span>Your information is ready for handoff.</span>
+                  <span>Only your confirmed summary was shared with Maya.</span>
                 </div>
-                <div className={styles.screenIntro}>
-                  <small>HANDOFF TO CARE</small>
-                  <h1>I found the right clinician for this visit.</h1>
-                  <p>Maya is reviewing the information you chose to share.</p>
-                </div>
+                <MessageItem message={{ author: "august", content: "I found Maya for this visit. She is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response time. She will make the clinical decision.", time: "9:52" }} />
                 <section className={styles.reviewingCard}>
                   <Avatar person="maya" size="large" />
                   <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
                   <i className={styles.reviewingPulse} aria-hidden="true" />
                 </section>
-                <MessageItem message={{ author: "august", content: "Maya is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response time. She will make the clinical decision. I shared only your confirmed summary.", time: "9:52" }} />
                 <PrimaryAction onClick={() => changeState("reply")}>Continue to Maya</PrimaryAction>
               </div>
             ) : null}
@@ -744,10 +769,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div><strong>{clinician ? "Maya Rao" : "August"}</strong><span>{subtitle}</span></div>
             </div>
             <div className={styles.sheetRows}>
-              <DetailRow icon={MessageCircle} label="Current recipient" value={clinician ? "Maya Rao · Human clinician" : "August · AI care guide"} />
-              <DetailRow icon={LockKeyhole} label="Privacy" value={clinician || state === "reviewing" ? "Maya sees only the summary you confirmed" : "Private to August until you confirm sharing"} verified />
-              <DetailRow icon={ClipboardCheck} label="Care context" value="Symptoms, safety answers, medicines, and allergies" />
-              {clinician || state === "reviewing" ? <DetailRow icon={Clock3} label="Clinician status" value={state === "reviewing" ? encounter.clinician.responseEstimate : `Replied ${encounter.clinician.repliedAt.replace("Today · ", "at ")}`} /> : null}
+              <DetailRow icon={MessageCircle} label="Current recipient" value={conversationDetails.recipient} />
+              <DetailRow icon={LockKeyhole} label="Privacy and sharing" value={conversationDetails.privacy} verified />
+              <DetailRow icon={ClipboardCheck} label="Care context" value={conversationDetails.context} />
+              <DetailRow icon={Clock3} label="Current status" value={conversationDetails.status} />
             </div>
           </section>
         </div>
