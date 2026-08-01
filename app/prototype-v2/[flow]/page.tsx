@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { AugustV2Prototype } from "../../AugustV2Prototype";
 import {
+  getCompleteJourneyLocation,
   isPrototypeV2Flow,
   normalizePrototypeV2State,
   prototypeV2Flows,
@@ -13,11 +14,18 @@ type Props = {
 };
 
 export function generateStaticParams() {
-  return prototypeV2Flows.map((flow) => ({ flow }));
+  return [...prototypeV2Flows, "complete"].map((flow) => ({ flow }));
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { flow } = await params;
+  if (flow === "complete") {
+    return {
+      title: "August Care — Complete visit",
+      description:
+        "One continuous mobile visit from private intake through clinician care and fulfillment.",
+    };
+  }
   if (!isPrototypeV2Flow(flow)) {
     return { title: "August Care" };
   }
@@ -38,6 +46,16 @@ export default async function PrototypeV2FlowPage({
   searchParams,
 }: Props) {
   const [{ flow }, query] = await Promise.all([params, searchParams]);
+  if (flow === "complete") {
+    const location = getCompleteJourneyLocation(query.state);
+    return (
+      <AugustV2Prototype
+        completeJourney
+        initialFlow={location.flow}
+        initialState={location.state}
+      />
+    );
+  }
   if (!isPrototypeV2Flow(flow)) {
     notFound();
   }

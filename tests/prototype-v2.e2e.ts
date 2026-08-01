@@ -13,10 +13,10 @@ async function send(page: Page, value: string) {
   await page.getByRole("button", { name: "Send message" }).click();
 }
 
-test("the V2 entry opens the mobile intake directly", async ({ page }, testInfo) => {
+test("the V2 entry opens the complete mobile journey", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2");
-  await expect(page).toHaveURL(/\/prototype-v2\/intake\?state=empty$/);
+  await expect(page).toHaveURL(/\/prototype-v2\/complete\?state=intake-empty$/);
   await expect(page.getByRole("region", { name: "August care" })).toBeVisible();
 });
 
@@ -133,7 +133,7 @@ test("V2 shell has no serious or critical accessibility violations", async ({
   expect(serious).toEqual([]);
 });
 
-test("summary editing stays inside the mobile experience", async ({
+test("summary editing stays inline inside the conversation", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
@@ -141,17 +141,41 @@ test("summary editing stays inside the mobile experience", async ({
 
   const trigger = page.getByRole("button", { name: "Edit Timing and severity" });
   await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Timing and severity" });
-  await expect(dialog).toBeVisible();
-  await dialog.getByLabel("Update what Maya should receive").fill(
+  const editor = page.locator("textarea#summary-onset");
+  await expect(editor).toBeVisible();
+  await editor.fill(
     "Three days ago, worsening today, highest temperature 101°F.",
   );
-  await dialog.getByRole("button", { name: "Save change" }).click();
-  await expect(dialog).toHaveCount(0);
+  await page.getByRole("button", { name: "Save" }).click();
+  await expect(editor).toHaveCount(0);
   await expect(
     page.getByText("Three days ago, worsening today, highest temperature 101°F."),
   ).toBeVisible();
-  await expect(trigger).toBeFocused();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("complete journey runs from intake through testing and prescription", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/complete");
+
+  await send(page, "My throat hurts and I had a fever.");
+  await send(page, "Five days, worse today, 102 degrees.");
+  await send(page, "No trouble breathing, swallowing, fainting, or chest pain.");
+  await send(page, "No major conditions. Ibuprofen occasionally.");
+  await send(page, "No medication allergies.");
+  await page.getByRole("button", { name: "Confirm and connect" }).click();
+  await expect(page.getByText(/licensed where you are/)).toBeVisible();
+  await page.getByRole("button", { name: "Open Care conversation" }).click();
+  await page.getByRole("button", { name: "Continue with Maya’s plan" }).click();
+  await page.getByRole("button", { name: "View appointment" }).click();
+  await page.getByRole("button", { name: "Confirm appointment" }).click();
+  await page.getByRole("button", { name: "See Maya’s result and plan" }).click();
+  await expect(page.getByText(/rapid strep test is positive/)).toBeVisible();
+  await page.getByRole("button", { name: "Review prescription" }).click();
+  await page.getByRole("button", { name: "Continue to pharmacy" }).click();
+  await page.getByRole("button", { name: "Confirm and send" }).click();
+  await expect(page.getByRole("heading", { name: "Prescription sent" })).toBeVisible();
+  await expect(page).toHaveURL(/state=prescription-sent/);
 });
 
 test("conversation details explain recipient and privacy with accessible dismissal", async ({

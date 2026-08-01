@@ -8,10 +8,10 @@
   --ink-muted: #5d746a;
   --cream: #fbfaf5;
   --paper: #fffefa;
-  --mint-50: #f2f8f4;
-  --mint-100: #e8f3ed;
-  --mint-200: #d8ebe1;
-  --mint-300: #c5e0d2;
+  --mint-50: #faf9f3;
+  --mint-100: #f5f3ea;
+  --mint-200: #ebe8dc;
+  --mint-300: #d8d5c8;
   --line: rgba(16, 59, 49, 0.13);
   min-height: 100dvh;
   display: grid;
@@ -201,15 +201,14 @@
 .augustMessage > time {
   display: block;
   margin-top: 5px;
-  color: #89988f;
+  color: var(--ink-muted);
   font-size: 9px;
 }
 
 .clinicianMessage {
-  padding: 12px 14px 13px;
-  border: 1px solid var(--mint-300);
-  border-radius: 7px 18px 18px 18px;
-  background: var(--mint-100);
+  padding: 9px 12px 10px;
+  border-left: 2px solid var(--green-700);
+  background: transparent;
 }
 
 .messageMeta {
@@ -252,9 +251,10 @@
   display: flex;
   align-items: flex-start;
   gap: 9px;
-  border: 1px solid var(--mint-300);
-  color: #436359;
-  background: var(--mint-50);
+  border: 0;
+  border-left: 2px solid var(--green-700);
+  color: var(--ink-soft);
+  background: transparent;
 }
 
 .systemMessage {
@@ -322,18 +322,14 @@
 .summaryCard,
 .detailCard,
 .reviewingCard,
-.successPanel {
-  border: 1px solid var(--line);
-  border-radius: 20px;
-  background: var(--paper);
-}
+.successPanel { background: transparent; }
 
 .summaryCard { overflow: hidden; }
 
 .summaryCard header {
   padding: 15px;
   border-bottom: 1px solid var(--line);
-  background: var(--mint-100);
+  background: transparent;
 }
 
 .summaryCard header h2 {
@@ -404,7 +400,11 @@
   font-weight: 720;
 }
 
-.detailCard { padding: 15px; }
+.detailCard {
+  padding: 14px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
 
 .detailCard h2 {
   margin: 5px 0 12px;
@@ -433,9 +433,10 @@
   height: 30px;
   display: grid;
   place-items: center;
-  border-radius: 10px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
   color: var(--green-700);
-  background: var(--mint-100);
+  background: var(--cream);
 }
 
 .detailRow > .verifiedIcon {
@@ -470,6 +471,8 @@
   align-items: center;
   gap: 13px;
   padding: 16px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
 }
 
 .reviewingCard > div { display: flex; flex-direction: column; }
@@ -493,10 +496,11 @@
   align-items: flex-start;
   gap: 10px;
   padding: 12px 13px;
-  border: 1px solid var(--mint-300);
-  border-radius: 15px;
+  border: 0;
+  border-left: 2px solid var(--green-700);
+  border-radius: 0;
   color: #2c584a;
-  background: var(--mint-100);
+  background: transparent;
 }
 
 .confirmationStrip > svg { flex: none; margin-top: 1px; color: var(--green-600); }
@@ -542,8 +546,8 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  margin: 18px 16px;
-  padding: 25px 20px;
+  margin: 0;
+  padding: 25px 4px;
   text-align: center;
 }
 
@@ -736,6 +740,57 @@
 .sheetIntro span { color: var(--ink-soft); font-size: 10px; line-height: 1.35; }
 .sheetRows { margin-top: 14px; border-top: 1px solid var(--line); }
 
+.inlineSummaryEditor {
+  padding: 13px 14px 14px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper);
+}
+
+.inlineSummaryEditor label {
+  display: block;
+  margin-bottom: 7px;
+  color: var(--ink-soft);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.inlineSummaryEditor textarea {
+  width: 100%;
+  min-height: 106px;
+  resize: vertical;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  outline: 0;
+  color: var(--ink);
+  background: var(--cream);
+  font: inherit;
+  font-size: 16px;
+  line-height: 1.45;
+}
+
+.inlineSummaryEditor > div {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.inlineCancel,
+.inlineSave {
+  min-height: 44px;
+  padding: 0 15px;
+  border-radius: 12px;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 720;
+  cursor: pointer;
+}
+
+.inlineCancel { border: 1px solid var(--line); color: var(--green-800); background: transparent; }
+.inlineSave { display: flex; align-items: center; gap: 6px; border: 1px solid var(--green-900); color: #fff; background: var(--green-900); }
+.inlineSave:disabled { opacity: 0.45; cursor: not-allowed; }
+
 .editSheet label {
   display: block;
   margin: 4px 0 8px;
@@ -776,9 +831,13 @@
 .detailsSheet button:focus-visible,
 .composer input:focus-visible,
 .editSheet textarea:focus-visible {
-  outline: 3px solid #e6a93a;
+  outline: 3px solid var(--green-600);
   outline-offset: 2px;
 }
+
+.inlineSummaryEditor textarea:focus-visible,
+.inlineCancel:focus-visible,
+.inlineSave:focus-visible { outline: 3px solid var(--green-600); outline-offset: 2px; }
 
 @keyframes typing {
   0%, 70%, 100% { transform: translateY(0); opacity: 0.45; }

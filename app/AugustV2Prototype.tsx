@@ -34,7 +34,6 @@ import {
   Send,
   ShieldCheck,
   Signal,
-  Sparkles,
   Stethoscope,
   UserRoundCheck,
   Wifi,
@@ -44,7 +43,10 @@ import {
 import styles from "./AugustV2Prototype.module.css";
 import {
   createPrototypeV2Encounter,
+  completeJourneyStates,
   defaultIntakeAnswers,
+  getCompleteJourneyId,
+  getCompleteJourneyLocation,
   getPreviousPrototypeV2State,
   getPrototypeV2StateIndex,
   IntakeAnswers,
@@ -53,6 +55,7 @@ import {
 } from "./prototypeV2Machine";
 
 type Props = {
+  completeJourney?: boolean;
   initialFlow: PrototypeV2Flow;
   initialState: PrototypeV2State;
 };
@@ -339,7 +342,15 @@ function DetailRow({ icon: Icon, label, value, verified }: DetailRowData) {
   );
 }
 
-function SummaryCard({ answers, onEdit }: { answers: IntakeAnswers; onEdit: (field: keyof IntakeAnswers, trigger: HTMLButtonElement) => void }) {
+function SummaryCard({ answers, editField, editValue, onCancel, onChange, onEdit, onSave }: {
+  answers: IntakeAnswers;
+  editField: keyof IntakeAnswers | null;
+  editValue: string;
+  onCancel: () => void;
+  onChange: (value: string) => void;
+  onEdit: (field: keyof IntakeAnswers) => void;
+  onSave: () => void;
+}) {
   const rows = Object.entries(summaryLabels) as Array<[keyof IntakeAnswers, string]>;
   return (
     <section className={styles.summaryCard}>
@@ -350,18 +361,18 @@ function SummaryCard({ answers, onEdit }: { answers: IntakeAnswers; onEdit: (fie
         </div>
         <span><LockKeyhole aria-hidden="true" size={12} /> Private until confirmed</span>
       </header>
-      {rows.map(([field, label]) => (
-        <button
-          aria-label={`Edit ${label}`}
-          className={styles.summaryRow}
-          key={field}
-          onClick={(event) => onEdit(field, event.currentTarget)}
-          type="button"
-        >
-          <span>
-            <small>{label}</small>
-            <strong>{answers[field]}</strong>
-          </span>
+      {rows.map(([field, label]) => editField === field ? (
+        <div className={styles.inlineSummaryEditor} key={field}>
+          <label htmlFor={`summary-${field}`}>{label}</label>
+          <textarea autoFocus id={`summary-${field}`} onChange={(event) => onChange(event.target.value)} rows={4} value={editValue} />
+          <div>
+            <button className={styles.inlineCancel} onClick={onCancel} type="button">Cancel</button>
+            <button className={styles.inlineSave} disabled={!editValue.trim()} onClick={onSave} type="button">Save <Check aria-hidden="true" size={15} /></button>
+          </div>
+        </div>
+      ) : (
+        <button aria-label={`Edit ${label}`} className={styles.summaryRow} key={field} onClick={() => onEdit(field)} type="button">
+          <span><small>{label}</small><strong>{answers[field]}</strong></span>
           <span className={styles.editLabel}>Edit <ChevronRight aria-hidden="true" size={14} /></span>
         </button>
       ))}
@@ -383,7 +394,8 @@ function StatusReceipt({ details, eyebrow, rows, title }: { details: string; eye
   );
 }
 
-export function AugustV2Prototype({ initialFlow, initialState }: Props) {
+export function AugustV2Prototype({ completeJourney = false, initialFlow, initialState }: Props) {
+  const [flow, setFlow] = useState(initialFlow);
   const [state, setState] = useState(initialState);
   const [answers, setAnswers] = useState({ ...defaultIntakeAnswers });
   const [gatheringStep, setGatheringStep] = useState(0);
@@ -398,20 +410,20 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const timers = useRef<number[]>([]);
 
-  const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(initialFlow, state), answers }), [answers, initialFlow, state]);
-  const stateIndex = getPrototypeV2StateIndex(initialFlow, state);
-  const clinician = initialFlow !== "intake" || state === "reviewing" || state === "reply";
-  const modalOpen = detailsOpen || editField !== null;
+  const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(flow, state), answers }), [answers, flow, state]);
+  const stateIndex = getPrototypeV2StateIndex(flow, state);
+  const clinician = flow !== "intake" || state === "reviewing" || state === "reply";
+  const modalOpen = detailsOpen;
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
   useEffect(() => {
     const url = new URL(window.location.href);
-    url.searchParams.set("state", state);
+    url.searchParams.set("state", completeJourney ? getCompleteJourneyId(flow, state) : state);
     window.history.replaceState({}, "", url);
     requestAnimationFrame(() => {
       const conversationalState =
-        initialFlow === "intake" &&
+        flow === "intake" &&
         ["empty", "concern", "gathering", "reply"].includes(state);
       transcriptRef.current?.scrollTo({
         top:
@@ -421,7 +433,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
         behavior: "smooth",
       });
     });
-  }, [gatheringStep, initialFlow, patientReplies, pending, state]);
+  }, [completeJourney, flow, gatheringStep, patientReplies, pending, state]);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -455,9 +467,26 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
     setState(next);
   }
 
+  function moveTo(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State) {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    timers.current = [];
+    setPending(null);
+    setFlow(nextFlow);
+    setState(nextState);
+  }
+
   function goBack() {
-    const previous = getPreviousPrototypeV2State(initialFlow, state);
-    if (previous.flow !== initialFlow) {
+    if (completeJourney) {
+      const current = getCompleteJourneyLocation(getCompleteJourneyId(flow, state));
+      if (current.index > 0) {
+        const previousId = completeJourneyStates[current.index - 1];
+        const location = getCompleteJourneyLocation(previousId);
+        moveTo(location.flow, location.state);
+      }
+      return;
+    }
+    const previous = getPreviousPrototypeV2State(flow, state);
+    if (previous.flow !== flow) {
       window.location.assign(`/prototype-v2/${previous.flow}?state=${previous.state}`);
       return;
     }
@@ -471,7 +500,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
   }
 
   function handleComposer(value: string) {
-    if (initialFlow !== "intake" || state === "reply") {
+    if (flow !== "intake" || state === "reply") {
       setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
       return;
     }
@@ -499,8 +528,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
     }
   }
 
-  function openSummaryEdit(field: keyof IntakeAnswers, trigger: HTMLButtonElement) {
-    lastTriggerRef.current = trigger;
+  function openSummaryEdit(field: keyof IntakeAnswers) {
     setEditValue(encounter.answers[field]);
     setEditField(field);
   }
@@ -512,7 +540,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
   }
 
   const messages = useMemo<Message[]>(() => {
-    if (initialFlow !== "intake") return [];
+    if (flow !== "intake") return [];
     const result: Message[] = [];
     const opening = "Hi Parth—tell me what’s going on. I’ll ask about timing, urgent warning signs, medicines, and allergies before a clinician reviews anything.";
     if (state === "empty") return [{ author: "august", content: opening, time: "9:40" }];
@@ -536,21 +564,21 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
       }
     }
     return result;
-  }, [answers, gatheringStep, initialFlow, state]);
+  }, [answers, flow, gatheringStep, state]);
 
   const composerConfig = (() => {
     if (state === "sent" || state === "confirmed") return { kind: "passive" as const, icon: Bell, text: "Updates will appear in Care" };
-    if (initialFlow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
-    if (initialFlow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "Maya is reviewing your confirmed summary" };
-    if (initialFlow === "intake" && state === "empty") return { kind: "composer" as const, disabled: false, placeholder: "Tell August what’s going on…", recipient: "August" as const };
-    if (initialFlow === "intake" && state === "concern") return { kind: "composer" as const, disabled: false, placeholder: "Add timing, severity, and fever…", recipient: "August" as const };
-    if (initialFlow === "intake" && state === "gathering") return { kind: "composer" as const, disabled: Boolean(pending), placeholder: intakeQuestions[gatheringStep].placeholder, recipient: "August" as const };
+    if (flow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
+    if (flow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "Maya is reviewing your confirmed summary" };
+    if (flow === "intake" && state === "empty") return { kind: "composer" as const, disabled: false, placeholder: "Tell August what’s going on…", recipient: "August" as const };
+    if (flow === "intake" && state === "concern") return { kind: "composer" as const, disabled: false, placeholder: "Add timing, severity, and fever…", recipient: "August" as const };
+    if (flow === "intake" && state === "gathering") return { kind: "composer" as const, disabled: Boolean(pending), placeholder: intakeQuestions[gatheringStep].placeholder, recipient: "August" as const };
     return { kind: "composer" as const, disabled: false, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
-  const subtitle = initialFlow === "prescription"
+  const subtitle = flow === "prescription"
     ? "Human clinician · prescription plan"
-    : initialFlow === "lab"
+    : flow === "lab"
       ? "Human clinician · testing plan"
       : state === "reviewing"
         ? "Reviewing · usually replies in 2–4 hours"
@@ -564,7 +592,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
         <section className={styles.phone} aria-label="August care">
           <StatusBar />
           <ConversationHeader
-            canGoBack={initialFlow !== "intake" || stateIndex > 0}
+            canGoBack={completeJourney ? getCompleteJourneyLocation(getCompleteJourneyId(flow, state)).index > 0 : flow !== "intake" || stateIndex > 0}
             clinician={clinician}
             onBack={goBack}
             onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
@@ -572,7 +600,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
           />
 
           <div className={styles.screen} ref={transcriptRef}>
-            {initialFlow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
+            {flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today</div>
                 {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
@@ -580,19 +608,20 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               </div>
             ) : null}
 
-            {initialFlow === "intake" && state === "summary" ? (
+            {flow === "intake" && state === "summary" ? (
               <div className={styles.contentStack}>
+                <MessageItem message={{ author: "august", content: "I’ve organized what you told me. Read it once, edit anything that is off, then choose whether to share it with a clinician.", time: "9:50" }} />
                 <div className={styles.screenIntro}>
                   <small>BEFORE ANYTHING IS SHARED</small>
                   <h1>Review your information.</h1>
                   <p>August organized the conversation. Correct anything before Maya receives it.</p>
                 </div>
-                <SummaryCard answers={answers} onEdit={openSummaryEdit} />
+                <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={() => setEditField(null)} onChange={setEditValue} onEdit={openSummaryEdit} onSave={saveSummaryEdit} />
                 <PrimaryAction onClick={() => changeState("reviewing")}>Confirm and connect</PrimaryAction>
               </div>
             ) : null}
 
-            {initialFlow === "intake" && state === "reviewing" ? (
+            {flow === "intake" && state === "reviewing" ? (
               <div className={`${styles.contentStack} ${styles.quietStack}`}>
                 <div className={styles.handoffNotice}>
                   <CircleCheck aria-hidden="true" size={18} />
@@ -608,16 +637,12 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
                   <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
                   <i className={styles.reviewingPulse} aria-hidden="true" />
                 </section>
-                <DetailCard title="While Maya reviews">
-                  <DetailRow icon={FileCheck2} label="Shared" value="Only your confirmed visit summary" verified />
-                  <DetailRow icon={Clock3} label="Status" value="You can leave and return to Care" />
-                  <DetailRow icon={Sparkles} label="August" value="Still available privately while you wait" />
-                </DetailCard>
+                <MessageItem message={{ author: "august", content: "I matched you with Maya because she is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response window. I shared only your confirmed summary.", time: "9:52" }} />
                 <PrimaryAction onClick={() => changeState("reply")}>Open Care conversation</PrimaryAction>
               </div>
             ) : null}
 
-            {initialFlow === "intake" && state === "reply" ? (
+            {flow === "intake" && state === "reply" ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today · Care</div>
                 <MessageItem message={{ author: "system", content: `Your confirmed summary was shared with Maya at ${encounter.clinician.sharedAt.replace("Today · ", "")}` }} />
@@ -625,12 +650,13 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
                 {patientReplies.map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
+                {completeJourney ? <PrimaryAction onClick={() => moveTo("lab", "recommended")}>Continue with Maya’s plan</PrimaryAction> : null}
               </div>
             ) : null}
 
-            {initialFlow === "prescription" && state === "recommended" ? (
+            {flow === "prescription" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: "Based on your symptoms, safety answers, history, and allergy review, I recommend Penicillin V.", time: "10:24" }} />
+                <MessageItem message={{ author: "maya", content: completeJourney ? "Your rapid strep test is positive. With that result and your confirmed allergy history, I recommend Penicillin V." : "Based on your symptoms, safety answers, history, and allergy review, I recommend Penicillin V.", time: "10:24" }} />
                 <div className={styles.screenIntro}>
                   <small>CLINICIAN DECISION</small><h1>Maya recommends a prescription.</h1><p>The clinical decision and allergy review are signed by Maya.</p>
                 </div>
@@ -643,8 +669,9 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               </div>
             ) : null}
 
-            {initialFlow === "prescription" && state === "review" ? (
+            {flow === "prescription" && state === "review" ? (
               <div className={styles.contentStack}>
+                <MessageItem message={{ author: "maya", content: "Here are the exact medication instructions I signed. Review them before August sends the prescription anywhere.", time: "10:27" }} />
                 <div className={styles.screenIntro}>
                   <small>PRESCRIPTION REVIEW</small><h1>Confirm the medication details.</h1><p>Review what Maya prescribed before choosing where it is sent.</p>
                 </div>
@@ -658,8 +685,9 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               </div>
             ) : null}
 
-            {initialFlow === "prescription" && state === "pharmacy" ? (
+            {flow === "prescription" && state === "pharmacy" ? (
               <div className={styles.contentStack}>
+                <MessageItem message={{ author: "august", content: "Castro Community Pharmacy is nearby, open today, and can receive Maya’s electronic prescription. Confirm this destination to send it.", time: "10:39" }} />
                 <div className={styles.screenIntro}>
                   <small>FULFILLMENT</small><h1>Confirm where to send it.</h1><p>The signed prescription leaves August only after you confirm.</p>
                 </div>
@@ -674,7 +702,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               </div>
             ) : null}
 
-            {initialFlow === "prescription" && state === "sent" ? (
+            {flow === "prescription" && state === "sent" ? (
               <StatusReceipt
                 details="The pharmacy now owns fulfillment. We’ll show its confirmation here."
                 eyebrow="SENT TO PHARMACY"
@@ -688,7 +716,7 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               />
             ) : null}
 
-            {initialFlow === "lab" && state === "recommended" ? (
+            {flow === "lab" && state === "recommended" ? (
               <div className={styles.contentStack}>
                 <MessageItem message={{ author: "maya", content: "Before deciding on medication, I recommend a rapid strep test today. The result will guide the next step.", time: "10:24" }} />
                 <div className={styles.screenIntro}>
@@ -703,8 +731,9 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               </div>
             ) : null}
 
-            {initialFlow === "lab" && state === "nearby-lab" ? (
+            {flow === "lab" && state === "nearby-lab" ? (
               <div className={styles.contentStack}>
+                <MessageItem message={{ author: "august", content: "I found the nearest lab that can accept Maya’s order and has an appropriate appointment. Nothing is booked until you confirm.", time: "10:28" }} />
                 <div className={styles.screenIntro}>
                   <small>APPOINTMENT READY</small><h1>August arranged a nearby lab.</h1><p>Maya’s order is attached. Confirm the time and location below.</p>
                 </div>
@@ -719,7 +748,8 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
               </div>
             ) : null}
 
-            {initialFlow === "lab" && state === "confirmed" ? (
+            {flow === "lab" && state === "confirmed" ? (
+              <div className={styles.contentStack}>
               <StatusReceipt
                 details="Your appointment and Maya’s order remain connected to this visit."
                 eyebrow="APPOINTMENT SCHEDULED"
@@ -731,9 +761,11 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
                 ]}
                 title="Appointment confirmed"
               />
+              {completeJourney ? <PrimaryAction onClick={() => moveTo("prescription", "recommended")}>See Maya’s result and plan</PrimaryAction> : null}
+              </div>
             ) : null}
 
-            {initialFlow !== "intake" && patientReplies.length ? (
+            {flow !== "intake" && patientReplies.length ? (
               <div className={styles.threadContinuation}>
                 <div className={styles.dateMarker}>Your reply</div>
                 {patientReplies.map((message, index) => <MessageItem key={`decision-reply-${index}`} message={message} />)}
@@ -772,23 +804,6 @@ export function AugustV2Prototype({ initialFlow, initialState }: Props) {
         </div>
       ) : null}
 
-      {editField ? (
-        <div className={styles.sheetBackdrop} onMouseDown={() => setEditField(null)} role="presentation">
-          <section aria-labelledby="edit-summary-title" aria-modal="true" className={`${styles.detailsSheet} ${styles.editSheet}`} onMouseDown={(event) => event.stopPropagation()} ref={dialogRef} role="dialog">
-            <div className={styles.sheetHandle} />
-            <header>
-              <div><small>EDIT VISIT SUMMARY</small><strong id="edit-summary-title">{summaryLabels[editField]}</strong></div>
-              <button aria-label="Close summary editor" onClick={() => setEditField(null)} ref={firstDialogActionRef} type="button"><X aria-hidden="true" size={20} /></button>
-            </header>
-            <label htmlFor="summary-edit-value">Update what Maya should receive</label>
-            <textarea id="summary-edit-value" onChange={(event) => setEditValue(event.target.value)} rows={5} value={editValue} />
-            <div className={styles.editActions}>
-              <button className={styles.secondaryAction} onClick={() => setEditField(null)} type="button">Cancel</button>
-              <button className={styles.primaryAction} disabled={!editValue.trim()} onClick={saveSummaryEdit} type="button"><span>Save change</span><Check aria-hidden="true" size={17} /></button>
-            </div>
-          </section>
-        </div>
-      ) : null}
     </main>
   );
 }

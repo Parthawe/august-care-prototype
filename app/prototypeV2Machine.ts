@@ -24,6 +24,51 @@ export type PrototypeV2State =
   | PrescriptionV2State
   | LabV2State;
 
+export const completeJourneyStates = [
+  "intake-empty",
+  "intake-concern",
+  "intake-gathering",
+  "intake-summary",
+  "intake-reviewing",
+  "intake-reply",
+  "lab-recommended",
+  "lab-nearby-lab",
+  "lab-confirmed",
+  "prescription-recommended",
+  "prescription-review",
+  "prescription-pharmacy",
+  "prescription-sent",
+] as const;
+
+export type CompleteJourneyState = (typeof completeJourneyStates)[number];
+
+export type CompleteJourneyLocation = {
+  flow: PrototypeV2Flow;
+  state: PrototypeV2State;
+};
+
+export function getCompleteJourneyLocation(
+  value?: string,
+): CompleteJourneyLocation & { id: CompleteJourneyState; index: number } {
+  const id = (completeJourneyStates.includes(value as CompleteJourneyState)
+    ? value
+    : completeJourneyStates[0]) as CompleteJourneyState;
+  const [flow, ...stateParts] = id.split("-");
+  return {
+    id,
+    index: completeJourneyStates.indexOf(id),
+    flow: flow as PrototypeV2Flow,
+    state: stateParts.join("-") as PrototypeV2State,
+  };
+}
+
+export function getCompleteJourneyId(
+  flow: PrototypeV2Flow,
+  state: PrototypeV2State,
+): CompleteJourneyState {
+  return `${flow}-${state}` as CompleteJourneyState;
+}
+
 export type IntakeAnswers = {
   concern: string;
   onset: string;

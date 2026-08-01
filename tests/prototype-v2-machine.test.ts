@@ -1,11 +1,30 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  completeJourneyStates,
   createPrototypeV2Encounter,
+  getCompleteJourneyLocation,
   getPreviousPrototypeV2State,
   normalizePrototypeV2State,
   prototypeV2States,
 } from "../app/prototypeV2Machine";
+
+test("complete journey orders every existing state into one coherent visit", () => {
+  assert.equal(completeJourneyStates.length, 13);
+  assert.deepEqual(getCompleteJourneyLocation(), {
+    id: "intake-empty",
+    index: 0,
+    flow: "intake",
+    state: "empty",
+  });
+  assert.deepEqual(getCompleteJourneyLocation("lab-nearby-lab"), {
+    id: "lab-nearby-lab",
+    index: 7,
+    flow: "lab",
+    state: "nearby-lab",
+  });
+  assert.equal(completeJourneyStates.at(-1), "prescription-sent");
+});
 
 test("V2 exposes exactly 13 deterministic screens across three flows", () => {
   assert.deepEqual(prototypeV2States.intake, [
