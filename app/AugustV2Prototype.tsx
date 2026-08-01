@@ -105,10 +105,10 @@ function Avatar({
 }) {
   if (person === "august") {
     return (
-      <span
-        aria-label="August AI care guide"
-        className={`${styles.avatar} ${styles.augustOrb} ${styles[`avatar-${size}`]}`}
-        role="img"
+      <img
+        alt="August AI care guide"
+        className={`${styles.avatar} ${styles[`avatar-${size}`]}`}
+        src="/august-avatar.png"
       />
     );
   }
@@ -162,7 +162,7 @@ function ConversationHeader({
       ) : null}
       <Avatar person={clinician ? "maya" : "august"} />
       <div className={styles.headerCopy}>
-        <strong>{clinician ? "Maya Rao" : "August"}</strong>
+        <strong>{clinician ? "Maya (Clinician)" : "August"}</strong>
         <span>{subtitle}</span>
       </div>
       <button
@@ -578,7 +578,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(flow, state), answers }), [answers, flow, state]);
   const stateIndex = getPrototypeV2StateIndex(flow, state);
   const clinician =
-    (flow === "intake" && state === "reply") ||
+    (flow === "intake" && ["reviewing", "reply"].includes(state)) ||
     (flow === "lab" && state === "recommended") ||
     (flow === "prescription" && ["recommended", "review"].includes(state));
   const modalOpen = detailsOpen;
@@ -671,7 +671,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     }
     if (flow === "lab") moveTo("lab", "nearby-lab");
     else if (flow === "prescription") moveTo("prescription", "pharmacy");
-    else moveTo("intake", "reviewing");
+    else moveTo("intake", state === "reviewing" ? "summary" : "reviewing");
   }
 
   function replyThen(next: PrototypeV2State, person: "august" | "maya") {
@@ -808,19 +808,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     return { kind: "composer" as const, disabled: false, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
-  const subtitle = flow === "prescription" && clinician
-    ? "Human clinician · treatment plan"
-    : flow === "prescription"
-      ? "AI care guide · pharmacy support"
-      : flow === "lab" && clinician
-        ? "Human clinician · testing plan"
-        : flow === "lab"
-          ? "AI care guide · testing support"
-          : state === "reviewing"
-            ? "AI care guide · connecting you with Maya"
-            : state === "reply"
-              ? "Human clinician · replied 1 minute ago"
-              : "AI care guide · private conversation";
+  const subtitle = clinician
+    ? state === "reviewing"
+      ? "Reviewing · usually replies in 2 to 4 hours"
+      : "Usually replies in 2 to 4 hours"
+    : "Care guide";
 
   const conversationDetails = flow === "lab" && !clinician
     ? {
@@ -836,6 +828,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           context: "Medication instructions, signed prescription, and pharmacy destination",
           status: "The pharmacy owns the next update after sending",
         }
+      : state === "reviewing"
+        ? {
+            recipient: "Maya Rao · Human clinician",
+            privacy: "Maya sees only the visit summary you confirmed.",
+            context: "Confirmed symptoms, safety answers, medicines, and allergies",
+            status: encounter.clinician.responseEstimate,
+          }
       : clinician
         ? {
             recipient: "Maya Rao · Human clinician",
@@ -843,15 +842,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             context: "Symptoms, safety answers, medicines, allergies, and clinical decisions",
             status: `Replied ${encounter.clinician.repliedAt.replace("Today · ", "at ")}`,
           }
-        : state === "reviewing"
-          ? {
-              recipient: "August · Care handoff",
-              privacy: "Maya sees only the visit summary you confirmed.",
-              context: "Confirmed symptoms, safety answers, medicines, and allergies",
-              status: encounter.clinician.responseEstimate,
-            }
-          : {
-              recipient: "August · AI care guide",
+        : {
+              recipient: "August · Care guide",
               privacy: "This conversation stays private to August until you confirm sharing.",
               context: "Symptoms, safety answers, medicines, and allergies",
               status: "No information has been shared with a clinician",

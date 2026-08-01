@@ -53,7 +53,7 @@
   justify-content: space-between;
   padding: calc(7px + env(safe-area-inset-top)) 22px 0;
   color: #102b24;
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 750;
   letter-spacing: -0.01em;
 }
@@ -67,7 +67,7 @@
 .conversationHeader {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
   min-width: 0;
   padding: 8px 14px;
   border-bottom: 1px solid var(--line);
@@ -85,16 +85,8 @@
   box-shadow: 0 1px 5px rgba(16, 59, 49, 0.1);
 }
 
-.augustOrb {
-  background:
-    radial-gradient(circle at 35% 29%, rgba(225, 255, 151, 0.98) 0 5%, rgba(143, 224, 117, 0.96) 13%, rgba(24, 158, 119, 0.98) 45%, #0a715b 67%, #073f35 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.34),
-    0 2px 7px rgba(8, 83, 65, 0.2);
-}
-
 .avatar-small { width: 28px; height: 28px; }
-.avatar-regular { width: 40px; height: 40px; }
+.avatar-regular { width: 42px; height: 42px; }
 .avatar-large { width: 56px; height: 56px; }
 
 .headerCopy {
@@ -114,13 +106,13 @@
 
 .headerCopy strong {
   color: var(--ink);
-  font-size: 13px;
+  font-size: 16px;
   font-weight: 720;
 }
 
 .headerCopy span {
   color: var(--ink-soft);
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.3;
 }
 
@@ -162,13 +154,13 @@
 .transcript,
 .contentStack {
   min-height: 100%;
-  padding: 18px 16px 24px;
+  padding: 20px 22px 28px;
 }
 
 .transcript {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 17px;
 }
 
 .contentStack {
@@ -182,7 +174,7 @@
 .dateMarker {
   align-self: center;
   color: var(--ink-muted);
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.09em;
   text-transform: uppercase;
@@ -191,7 +183,7 @@
 .messageRow {
   display: flex;
   align-items: flex-start;
-  gap: 9px;
+  gap: 10px;
 }
 
 .patientRow { justify-content: flex-end; }
@@ -199,13 +191,13 @@
 .augustMessage,
 .clinicianMessage,
 .patientBubble {
-  max-width: 292px;
-  font-size: 13px;
+  max-width: min(322px, calc(100% - 38px));
+  font-size: 15.5px;
   line-height: 1.48;
 }
 
 .augustMessage {
-  max-width: 286px;
+  max-width: min(316px, calc(100% - 38px));
   padding: 0 4px 1px 0;
 }
 
@@ -218,13 +210,16 @@
   display: block;
   margin-top: 5px;
   color: var(--ink-muted);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .clinicianMessage {
-  max-width: 286px;
-  padding: 0 4px 1px 0;
-  background: transparent;
+  max-width: min(316px, calc(100% - 38px));
+  padding: 13px 15px 14px;
+  border: 1px solid rgba(16, 59, 49, 0.08);
+  border-radius: 5px 22px 22px 22px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 10px 24px rgba(16, 59, 49, 0.06);
 }
 
 .messageMeta {
@@ -241,13 +236,14 @@
   gap: 1px;
 }
 
-.messageMeta strong { font-size: 10px; font-weight: 760; }
+.messageMeta strong { font-size: 12px; font-weight: 760; }
 .messageMeta small,
-.messageMeta time { color: var(--ink-muted); font-size: 8px; }
+.messageMeta time { color: var(--ink-muted); font-size: 10px; }
+.messageMeta small { color: var(--ink-muted); font-size: 10px; }
 
 .patientBubble {
-  padding: 10px 13px 8px;
-  border-radius: 18px 6px 18px 18px;
+  padding: 12px 15px 9px;
+  border-radius: 22px 6px 22px 22px;
   color: #fff;
   background: #075f4d;
   box-shadow: 0 2px 7px rgba(7, 95, 77, 0.12);
@@ -260,7 +256,7 @@
   gap: 4px;
   margin-top: 5px;
   color: rgba(255, 255, 255, 0.7);
-  font-size: 9px;
+  font-size: 10px;
 }
 
 .systemMessage,
@@ -274,10 +270,10 @@
 }
 
 .systemMessage {
-  margin: 1px 18px;
-  padding: 8px 0;
+  margin: 1px 12px;
+  padding: 9px 0;
   border-radius: 14px;
-  font-size: 10px;
+  font-size: 12px;
   line-height: 1.45;
 }
 
@@ -699,13 +695,13 @@
 }
 
 .bottomNav > button strong {
-  font-size: 9px;
+  font-size: 11px;
   font-weight: 740;
 }
 
 .bottomNav > button small {
   color: var(--ink-muted);
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 520;
 }
 
@@ -733,7 +729,7 @@
   color: var(--green-900);
   background: transparent;
   font: inherit;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: 720;
   cursor: pointer;
 }
@@ -942,7 +938,8 @@
   }
   .statusBar { padding-top: calc(5px + env(safe-area-inset-top)); }
   .conversationHeader { padding-block: 6px; }
-  .transcript, .contentStack { padding: 12px 12px 18px; }
+  .transcript, .contentStack { padding: 14px 13px 20px; }
+  .augustMessage, .clinicianMessage, .patientBubble { font-size: 14px; }
   .contentStack { gap: 10px; }
   .screenIntro h1, .successPanel h1 { font-size: 27px; }
   .detailCard { padding: 13px; }
