@@ -623,6 +623,15 @@
 
 .composer input::placeholder { color: #89978f; }
 
+.composer:focus-within {
+  border-color: rgba(31, 113, 92, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(46, 135, 111, 0.13),
+    0 9px 28px rgba(16, 59, 49, 0.08);
+}
+
+.composer input:focus-visible { outline: 0; }
+
 .sendButton {
   width: 44px;
   height: 44px;
@@ -897,7 +906,6 @@
 .sendButton:focus-visible,
 .summaryRow:focus-visible,
 .detailsSheet button:focus-visible,
-.composer input:focus-visible,
 .editSheet textarea:focus-visible {
   outline: 3px solid var(--green-600);
   outline-offset: 2px;
