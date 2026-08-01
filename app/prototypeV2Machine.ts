@@ -86,7 +86,7 @@ export type PrototypeV2Encounter = {
     name: "Maya Rao";
     role: "Human clinician";
     status: "unassigned" | "reviewing" | "replied";
-    responseEstimate: "Usually replies within 2–4 hours";
+    responseEstimate: "Usually replies within 2 to 4 hours";
     sharedAt: "Today · 9:52 AM";
     repliedAt: "Today · 10:24 AM";
   };
@@ -193,7 +193,7 @@ export function createPrototypeV2Encounter(
           : normalized === "reviewing"
             ? "reviewing"
             : "unassigned",
-      responseEstimate: "Usually replies within 2–4 hours",
+      responseEstimate: "Usually replies within 2 to 4 hours",
       sharedAt: "Today · 9:52 AM",
       repliedAt: "Today · 10:24 AM",
     },

@@ -23,18 +23,12 @@ import {
   ClipboardCheck,
   Clock3,
   FileCheck2,
-  FileText,
-  History,
   Info,
   LockKeyhole,
   MapPin,
   MessageCircle,
-  Pill,
-  Route,
   Send,
-  ShieldCheck,
   Signal,
-  Stethoscope,
   UserRoundCheck,
   Wifi,
   X,
@@ -293,10 +287,6 @@ function PassiveFooter({ icon: Icon, text }: { icon: LucideIcon; text: string })
 function ProductNavigation({ clinician }: { clinician: boolean }) {
   return (
     <nav aria-label="Current care area" className={styles.bottomNav}>
-      <span>
-        <History aria-hidden="true" size={20} />
-        <span className={styles.visuallyHidden}>History</span>
-      </span>
       <span aria-current={clinician ? "page" : undefined} className={clinician ? styles.activeNav : undefined}>
         <MessageCircle aria-hidden="true" size={18} />
         Care
@@ -315,16 +305,6 @@ function PrimaryAction({ children, onClick }: { children: ReactNode; onClick: ()
       <span>{children}</span>
       <ArrowRight aria-hidden="true" size={17} />
     </button>
-  );
-}
-
-function DetailCard({ children, eyebrow, title }: { children: ReactNode; eyebrow?: string; title: string }) {
-  return (
-    <section className={styles.detailCard}>
-      {eyebrow ? <small>{eyebrow}</small> : null}
-      <h2>{title}</h2>
-      <div className={styles.detailRows}>{children}</div>
-    </section>
   );
 }
 
@@ -412,7 +392,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(flow, state), answers }), [answers, flow, state]);
   const stateIndex = getPrototypeV2StateIndex(flow, state);
-  const clinician = flow !== "intake" || state === "reviewing" || state === "reply";
+  const clinician =
+    (flow === "intake" && state === "reply") ||
+    (flow === "lab" && state === "recommended") ||
+    (flow === "prescription" && ["recommended", "review"].includes(state));
   const modalOpen = detailsOpen;
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
@@ -542,12 +525,12 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const messages = useMemo<Message[]>(() => {
     if (flow !== "intake") return [];
     const result: Message[] = [];
-    const opening = "Hi Parth—tell me what’s going on. I’ll ask about timing, urgent warning signs, medicines, and allergies before a clinician reviews anything.";
+    const opening = "Hi Parth. Tell me what’s going on.";
     if (state === "empty") return [{ author: "august", content: opening, time: "9:40" }];
     result.push(
       { author: "august", content: opening, time: "9:40" },
       { author: "patient", content: answers.concern, time: "9:41" },
-      { author: "august", content: "When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
+      { author: "august", content: "Got it. When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
     );
     if (state === "concern") return result;
     result.push(
@@ -569,22 +552,27 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const composerConfig = (() => {
     if (state === "sent" || state === "confirmed") return { kind: "passive" as const, icon: Bell, text: "Updates will appear in Care" };
     if (flow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
-    if (flow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "Maya is reviewing your confirmed summary" };
+    if (flow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "August is connecting you with Maya" };
     if (flow === "intake" && state === "empty") return { kind: "composer" as const, disabled: false, placeholder: "Tell August what’s going on…", recipient: "August" as const };
     if (flow === "intake" && state === "concern") return { kind: "composer" as const, disabled: false, placeholder: "Add timing, severity, and fever…", recipient: "August" as const };
     if (flow === "intake" && state === "gathering") return { kind: "composer" as const, disabled: Boolean(pending), placeholder: intakeQuestions[gatheringStep].placeholder, recipient: "August" as const };
+    if (!clinician) return { kind: "composer" as const, disabled: false, placeholder: "Message August…", recipient: "August" as const };
     return { kind: "composer" as const, disabled: false, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
-  const subtitle = flow === "prescription"
-    ? "Human clinician · prescription plan"
-    : flow === "lab"
-      ? "Human clinician · testing plan"
-      : state === "reviewing"
-        ? "Reviewing · usually replies in 2–4 hours"
-        : state === "reply"
-          ? "Human clinician · replied 1 minute ago"
-          : "AI care guide · private conversation";
+  const subtitle = flow === "prescription" && clinician
+    ? "Human clinician · treatment plan"
+    : flow === "prescription"
+      ? "AI care guide · pharmacy support"
+      : flow === "lab" && clinician
+        ? "Human clinician · testing plan"
+        : flow === "lab"
+          ? "AI care guide · testing support"
+          : state === "reviewing"
+            ? "AI care guide · connecting you with Maya"
+            : state === "reply"
+              ? "Human clinician · replied 1 minute ago"
+              : "AI care guide · private conversation";
 
   return (
     <main className={styles.stage}>
@@ -625,28 +613,29 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div className={`${styles.contentStack} ${styles.quietStack}`}>
                 <div className={styles.handoffNotice}>
                   <CircleCheck aria-hidden="true" size={18} />
-                  <span>August shared only the information you confirmed.</span>
+                  <span>Your information is ready for handoff.</span>
                 </div>
                 <div className={styles.screenIntro}>
-                  <small>CARE CONNECTED</small>
-                  <h1>Maya is reviewing your visit.</h1>
-                  <p>You can leave this conversation. We’ll let you know when she replies.</p>
+                  <small>HANDOFF TO CARE</small>
+                  <h1>I found the right clinician for this visit.</h1>
+                  <p>Maya is reviewing the information you chose to share.</p>
                 </div>
                 <section className={styles.reviewingCard}>
                   <Avatar person="maya" size="large" />
                   <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
                   <i className={styles.reviewingPulse} aria-hidden="true" />
                 </section>
-                <MessageItem message={{ author: "august", content: "I matched you with Maya because she is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response window. I shared only your confirmed summary.", time: "9:52" }} />
-                <PrimaryAction onClick={() => changeState("reply")}>Open Care conversation</PrimaryAction>
+                <MessageItem message={{ author: "august", content: "Maya is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response time. She will make the clinical decision. I shared only your confirmed summary.", time: "9:52" }} />
+                <PrimaryAction onClick={() => changeState("reply")}>Continue to Maya</PrimaryAction>
               </div>
             ) : null}
 
             {flow === "intake" && state === "reply" ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today · Care</div>
+                <MessageItem message={{ author: "system", content: "Maya joined the conversation. New messages now go directly to her." }} />
                 <MessageItem message={{ author: "system", content: `Your confirmed summary was shared with Maya at ${encounter.clinician.sharedAt.replace("Today · ", "")}` }} />
-                <MessageItem message={{ author: "maya", content: "Hi Parth—I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
+                <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
                 {patientReplies.map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
@@ -656,48 +645,25 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "prescription" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: completeJourney ? "Your rapid strep test is positive. With that result and your confirmed allergy history, I recommend Penicillin V." : "Based on your symptoms, safety answers, history, and allergy review, I recommend Penicillin V.", time: "10:24" }} />
-                <div className={styles.screenIntro}>
-                  <small>CLINICIAN DECISION</small><h1>Maya recommends a prescription.</h1><p>The clinical decision and allergy review are signed by Maya.</p>
-                </div>
-                <DetailCard title="Prescription recommendation">
-                  <DetailRow icon={Pill} label="Medication" value={`${encounter.prescription.medication} · ${encounter.prescription.strength}`} />
-                  <DetailRow icon={Stethoscope} label="Decision author" value={`${encounter.prescription.prescriber} · Human clinician`} />
-                  <DetailRow icon={ShieldCheck} label="Allergy review" value="Reviewed and confirmed by Maya" verified />
-                </DetailCard>
-                <PrimaryAction onClick={() => changeState("review")}>Review prescription</PrimaryAction>
+                {completeJourney ? <MessageItem message={{ author: "system", content: "Your test result was returned to Maya’s visit. Messages now go directly to Maya." }} /> : null}
+                <MessageItem message={{ author: "maya", content: completeJourney
+                  ? "Your rapid strep test is positive. That result explains your symptoms and means an antibiotic is appropriate. I also checked the medicines and allergies you shared. I recommend Penicillin V."
+                  : "I reviewed your symptoms, safety answers, medicines, and allergy history. I recommend Penicillin V.", time: "10:24" }} />
+                <PrimaryAction onClick={() => changeState("review")}>Read treatment plan</PrimaryAction>
               </div>
             ) : null}
 
             {flow === "prescription" && state === "review" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: "Here are the exact medication instructions I signed. Review them before August sends the prescription anywhere.", time: "10:27" }} />
-                <div className={styles.screenIntro}>
-                  <small>PRESCRIPTION REVIEW</small><h1>Confirm the medication details.</h1><p>Review what Maya prescribed before choosing where it is sent.</p>
-                </div>
-                <DetailCard eyebrow="SIGNED BY MAYA RAO" title={`${encounter.prescription.medication} · ${encounter.prescription.strength}`}>
-                  <DetailRow icon={Pill} label="Directions" value={encounter.prescription.directions} />
-                  <DetailRow icon={CalendarDays} label="Course" value={`${encounter.prescription.duration} · ${encounter.prescription.quantity}`} />
-                  <DetailRow icon={UserRoundCheck} label="Prescriber" value={`${encounter.prescription.prescriber} · Human clinician`} verified />
-                  <DetailRow icon={ShieldCheck} label="Safety check" value="Allergy history reviewed" verified />
-                </DetailCard>
-                <PrimaryAction onClick={() => changeState("pharmacy")}>Continue to pharmacy</PrimaryAction>
+                <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}.\n\nI prescribed this after reviewing your test result and allergy history. August can help you send it to a pharmacy.`, time: "10:27" }} />
+                <PrimaryAction onClick={() => changeState("pharmacy")}>Ask August to send it</PrimaryAction>
               </div>
             ) : null}
 
             {flow === "prescription" && state === "pharmacy" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "august", content: "Castro Community Pharmacy is nearby, open today, and can receive Maya’s electronic prescription. Confirm this destination to send it.", time: "10:39" }} />
-                <div className={styles.screenIntro}>
-                  <small>FULFILLMENT</small><h1>Confirm where to send it.</h1><p>The signed prescription leaves August only after you confirm.</p>
-                </div>
-                <DetailCard eyebrow="SELECTED PHARMACY" title={encounter.prescription.pharmacy}>
-                  <DetailRow icon={MapPin} label="Location" value={encounter.prescription.pharmacyAddress} />
-                  <DetailRow icon={Route} label="Distance" value={encounter.prescription.pharmacyDistance} />
-                  <DetailRow icon={Clock3} label="Availability" value={encounter.prescription.pharmacyAvailability} />
-                  <DetailRow icon={FileCheck2} label="Submission status" value={encounter.prescription.electronicStatus} verified />
-                </DetailCard>
-                <section className={styles.confirmationStrip}><CircleCheck aria-hidden="true" size={19} /><p><strong>Ready to submit</strong><span>Maya’s signed prescription will be sent to this pharmacy.</span></p></section>
+                <MessageItem message={{ author: "system", content: "Maya handed the signed prescription to August for pharmacy support." }} />
+                <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}.\n\nIt is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "10:39" }} />
                 <PrimaryAction onClick={() => changeState("sent")}>Confirm and send</PrimaryAction>
               </div>
             ) : null}
@@ -718,33 +684,16 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "lab" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: "Before deciding on medication, I recommend a rapid strep test today. The result will guide the next step.", time: "10:24" }} />
-                <div className={styles.screenIntro}>
-                  <small>CLINICIAN DECISION</small><h1>Maya recommends a strep test.</h1><p>Testing comes before the medication decision.</p>
-                </div>
-                <DetailCard title="Testing recommendation">
-                  <DetailRow icon={FileText} label="Test" value={encounter.lab.test} />
-                  <DetailRow icon={Stethoscope} label="Clinical reason" value={encounter.lab.reason} />
-                  <DetailRow icon={UserRoundCheck} label="Decision author" value="Maya Rao · Human clinician" verified />
-                </DetailCard>
-                <PrimaryAction onClick={() => changeState("nearby-lab")}>View appointment</PrimaryAction>
+                <MessageItem message={{ author: "maya", content: "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I’ve placed the order. August can help with the appointment.", time: "10:24" }} />
+                <PrimaryAction onClick={() => changeState("nearby-lab")}>Continue with August</PrimaryAction>
               </div>
             ) : null}
 
             {flow === "lab" && state === "nearby-lab" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "august", content: "I found the nearest lab that can accept Maya’s order and has an appropriate appointment. Nothing is booked until you confirm.", time: "10:28" }} />
-                <div className={styles.screenIntro}>
-                  <small>APPOINTMENT READY</small><h1>August arranged a nearby lab.</h1><p>Maya’s order is attached. Confirm the time and location below.</p>
-                </div>
-                <DetailCard eyebrow="RECOMMENDED · AUGUST ARRANGED" title={encounter.lab.location}>
-                  <DetailRow icon={FileText} label="Test and order" value={`${encounter.lab.test} · ${encounter.lab.orderCode}`} verified />
-                  <DetailRow icon={MapPin} label="Location" value={`${encounter.lab.address} · ${encounter.lab.distance}`} />
-                  <DetailRow icon={CalendarDays} label="Appointment" value={encounter.lab.appointment} />
-                  <DetailRow icon={FileCheck2} label="Bring" value={encounter.lab.preparation} />
-                </DetailCard>
-                <section className={styles.confirmationStrip}><CircleCheck aria-hidden="true" size={19} /><p><strong>Everything is ready</strong><span>The clinician order and appointment details stay attached to this visit.</span></p></section>
-                <PrimaryAction onClick={() => changeState("confirmed")}>Confirm appointment</PrimaryAction>
+                <MessageItem message={{ author: "system", content: "Maya sent the test order to your private August conversation." }} />
+                <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
+                <PrimaryAction onClick={() => changeState("confirmed")}>Yes, confirm appointment</PrimaryAction>
               </div>
             ) : null}
 
@@ -796,9 +745,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             </div>
             <div className={styles.sheetRows}>
               <DetailRow icon={MessageCircle} label="Current recipient" value={clinician ? "Maya Rao · Human clinician" : "August · AI care guide"} />
-              <DetailRow icon={LockKeyhole} label="Privacy" value={clinician ? "Maya sees only the summary you confirmed" : "Private to August until you confirm sharing"} verified />
+              <DetailRow icon={LockKeyhole} label="Privacy" value={clinician || state === "reviewing" ? "Maya sees only the summary you confirmed" : "Private to August until you confirm sharing"} verified />
               <DetailRow icon={ClipboardCheck} label="Care context" value="Symptoms, safety answers, medicines, and allergies" />
-              {clinician ? <DetailRow icon={Clock3} label="Clinician status" value={state === "reviewing" ? encounter.clinician.responseEstimate : `Replied ${encounter.clinician.repliedAt.replace("Today · ", "at ")}`} /> : null}
+              {clinician || state === "reviewing" ? <DetailRow icon={Clock3} label="Clinician status" value={state === "reviewing" ? encounter.clinician.responseEstimate : `Replied ${encounter.clinician.repliedAt.replace("Today · ", "at ")}`} /> : null}
             </div>
           </section>
         </div>

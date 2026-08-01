@@ -16,7 +16,7 @@ async function send(page: Page, value: string) {
 test("the V2 entry opens the complete mobile journey", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2");
-  await expect(page).toHaveURL(/\/prototype-v2\/complete\?state=intake-empty$/);
+  await expect(page).toHaveURL(/\/prototype-v2\/00\?state=intake-empty$/);
   await expect(page.getByRole("region", { name: "August care" })).toBeVisible();
 });
 
@@ -52,11 +52,11 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page).toHaveURL(/state=summary/);
   await expect(page.getByText("Confirm what August gathered.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm and connect" }).click();
-  await expect(page.getByText("Maya is reviewing your visit.")).toBeVisible();
+  await expect(page.getByText("I found the right clinician for this visit.")).toBeVisible();
   await page
-    .getByRole("button", { name: "Open Care conversation" })
+    .getByRole("button", { name: "Continue to Maya" })
     .click();
-  await expect(page.getByText(/Hi Parth—I reviewed your fever/)).toBeVisible();
+  await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
   await expect(page.getByText(/choose a clinician/i)).toHaveCount(0);
 });
 
@@ -65,8 +65,8 @@ test("prescription continuation ends at prescription sent", async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/prescription");
-  await page.getByRole("button", { name: "Review prescription" }).click();
-  await page.getByRole("button", { name: "Continue to pharmacy" }).click();
+  await page.getByRole("button", { name: "Read treatment plan" }).click();
+  await page.getByRole("button", { name: "Ask August to send it" }).click();
   await page.getByRole("button", { name: "Confirm and send" }).click();
   await expect(page.getByRole("heading", { name: "Prescription sent" })).toBeVisible();
   await expect(page).toHaveURL(/state=sent/);
@@ -77,11 +77,11 @@ test("lab continuation offers only August-arranged nearby care", async ({
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/lab");
-  await page.getByRole("button", { name: "View appointment" }).click();
-  await expect(page.getByText("August arranged a nearby lab.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "Confirm appointment" })).toBeVisible();
+  await page.getByRole("button", { name: "Continue with August" }).click();
+  await expect(page.getByText(/Mission Lab can take Maya’s order/)).toBeVisible();
+  await expect(page.getByRole("button", { name: "Yes, confirm appointment" })).toBeVisible();
   await expect(page.getByRole("button", { name: /upload|external/i })).toHaveCount(0);
-  await page.getByRole("button", { name: "Confirm appointment" }).click();
+  await page.getByRole("button", { name: "Yes, confirm appointment" }).click();
   await expect(
     page.getByRole("heading", { name: "Appointment confirmed" }),
   ).toBeVisible();
@@ -156,7 +156,7 @@ test("summary editing stays inline inside the conversation", async ({
 
 test("complete journey runs from intake through testing and prescription", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
-  await page.goto("/prototype-v2/complete");
+  await page.goto("/prototype-v2/00");
 
   await send(page, "My throat hurts and I had a fever.");
   await send(page, "Five days, worse today, 102 degrees.");
@@ -165,14 +165,14 @@ test("complete journey runs from intake through testing and prescription", async
   await send(page, "No medication allergies.");
   await page.getByRole("button", { name: "Confirm and connect" }).click();
   await expect(page.getByText(/licensed where you are/)).toBeVisible();
-  await page.getByRole("button", { name: "Open Care conversation" }).click();
+  await page.getByRole("button", { name: "Continue to Maya" }).click();
   await page.getByRole("button", { name: "Continue with Maya’s plan" }).click();
-  await page.getByRole("button", { name: "View appointment" }).click();
-  await page.getByRole("button", { name: "Confirm appointment" }).click();
+  await page.getByRole("button", { name: "Continue with August" }).click();
+  await page.getByRole("button", { name: "Yes, confirm appointment" }).click();
   await page.getByRole("button", { name: "See Maya’s result and plan" }).click();
   await expect(page.getByText(/rapid strep test is positive/)).toBeVisible();
-  await page.getByRole("button", { name: "Review prescription" }).click();
-  await page.getByRole("button", { name: "Continue to pharmacy" }).click();
+  await page.getByRole("button", { name: "Read treatment plan" }).click();
+  await page.getByRole("button", { name: "Ask August to send it" }).click();
   await page.getByRole("button", { name: "Confirm and send" }).click();
   await expect(page.getByRole("heading", { name: "Prescription sent" })).toBeVisible();
   await expect(page).toHaveURL(/state=prescription-sent/);
@@ -188,7 +188,7 @@ test("conversation details explain recipient and privacy with accessible dismiss
   await trigger.click();
   const dialog = page.getByRole("dialog", { name: "Conversation details" });
   await expect(dialog.getByText("Maya sees only the summary you confirmed")).toBeVisible();
-  await expect(dialog.getByText("Usually replies within 2–4 hours")).toBeVisible();
+  await expect(dialog.getByText("Usually replies within 2 to 4 hours")).toBeVisible();
   await page.keyboard.press("Escape");
   await expect(dialog).toHaveCount(0);
   await expect(trigger).toBeFocused();
@@ -201,7 +201,7 @@ test("header back follows the care context without showing a branch chooser", as
   await page.goto("/prototype-v2/prescription?state=recommended");
   await page.getByRole("button", { name: "Go to previous care step" }).click();
   await expect(page).toHaveURL(/\/prototype-v2\/intake\?state=reply$/);
-  await expect(page.getByText(/Hi Parth—I reviewed your fever/)).toBeVisible();
+  await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
   await expect(page.getByText(/choose a clinician|choose an outcome/i)).toHaveCount(0);
 });
 
@@ -212,6 +212,6 @@ test("active clinician composer produces a real patient reply", async ({
   await page.goto("/prototype-v2/intake?state=reply");
   await send(page, "Can I take this with food?");
   await expect(page.getByText("Can I take this with food?")).toBeVisible();
-  await expect(page.getByText("Now")).toBeVisible();
+  await expect(page.getByText("Now", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Add attachment" })).toHaveCount(0);
 });
