@@ -209,17 +209,8 @@ function MessageItem({ message }: { message: Message }) {
     <div className={styles.messageRow}>
       <Avatar person={isMaya ? "maya" : "august"} size="small" />
       <div className={isMaya ? styles.clinicianMessage : styles.augustMessage}>
-        {isMaya ? (
-          <div className={styles.messageMeta}>
-            <span>
-              <strong>Maya Rao</strong>
-              <small>Human clinician</small>
-            </span>
-            <time>{message.time ?? "10:24"}</time>
-          </div>
-        ) : null}
         <p>{message.content}</p>
-        {!isMaya ? <time>{message.time ?? "9:41"}</time> : null}
+        <time>{message.time ?? (isMaya ? "10:24" : "9:41")}</time>
       </div>
     </div>
   );
@@ -330,8 +321,8 @@ function ProductNavigation({ careAvailable, clinician, onSelect }: {
   return (
     <nav aria-label="Current care area" className={styles.bottomNav}>
       <button aria-current={clinician ? "page" : undefined} className={clinician ? styles.activeNav : undefined} disabled={!careAvailable} onClick={() => onSelect("care")} type="button">
-        {careAvailable ? <Avatar person="maya" size="small" /> : <MessageCircle aria-hidden="true" size={18} />}
-        <span><strong>Care</strong><small>{careAvailable ? "Maya" : "Not connected"}</small></span>
+        <MessageCircle aria-hidden="true" size={18} />
+        <span><strong>Care</strong><small>{careAvailable ? "Conversations" : "Not connected"}</small></span>
       </button>
       <button aria-current={!clinician ? "page" : undefined} className={!clinician ? styles.activeNav : undefined} onClick={() => onSelect("august")} type="button">
         <Avatar person="august" size="small" />
@@ -364,6 +355,26 @@ function CareInbox({ onOpenAugust, onOpenMaya }: { onOpenAugust: () => void; onO
         <span className={styles.inboxThreadMeta}><time>Now</time><CheckCheck aria-hidden="true" size={16} /></span>
       </button>
     </div>
+  );
+}
+
+function ClinicianContactCard({ onContinue, responseEstimate }: { onContinue: () => void; responseEstimate: string }) {
+  return (
+    <section className={styles.clinicianContactCard}>
+      <div className={styles.contactIdentity}>
+        <Avatar person="maya" size="large" />
+        <div><strong>Maya Rao</strong><span>Licensed clinician</span><small>{responseEstimate}</small></div>
+        <i aria-hidden="true" />
+      </div>
+      <div className={styles.contactMatchReasons}>
+        <span><CircleCheck aria-hidden="true" size={15} /> Licensed in California</span>
+        <span><CircleCheck aria-hidden="true" size={15} /> Same-day throat care</span>
+      </div>
+      <button onClick={onContinue} type="button">
+        <span>Continue conversation</span>
+        <ArrowRight aria-hidden="true" size={16} />
+      </button>
+    </section>
   );
 }
 
@@ -451,6 +462,7 @@ function CompleteJourneyConversation({
   onCancelEdit,
   onChangeEdit,
   onEdit,
+  onMove,
   onSaveEdit,
   patientReplies,
   pending,
@@ -464,6 +476,7 @@ function CompleteJourneyConversation({
   onCancelEdit: () => void;
   onChangeEdit: (value: string) => void;
   onEdit: (field: keyof IntakeAnswers) => void;
+  onMove: (flow: PrototypeV2Flow, state: PrototypeV2State) => void;
   onSaveEdit: () => void;
   patientReplies: Message[];
   pending: "august" | "maya" | null;
@@ -511,12 +524,8 @@ function CompleteJourneyConversation({
         {state === "reviewing" ? (
           <>
             <MessageItem message={{ author: "patient", content: "Everything looks right. You can share it.", time: "9:51" }} />
-            <MessageItem message={{ author: "august", content: "I found Maya for this visit. She is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response time. She will make the clinical decision.", time: "9:52" }} />
-            <section className={styles.reviewingCard}>
-              <Avatar person="maya" size="large" />
-              <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
-              <i className={styles.reviewingPulse} aria-hidden="true" />
-            </section>
+            <MessageItem message={{ author: "august", content: "I found a clinician who fits this visit. I’m sharing her contact here so you can continue directly.", time: "9:52" }} />
+            <ClinicianContactCard onContinue={() => onMove("intake", "reply")} responseEstimate={encounter.clinician.responseEstimate} />
             {patientReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
           </>
         ) : null}
@@ -937,7 +946,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           <StatusBar />
           {showCareInbox ? (
             <header className={styles.careInboxHeader}>
-              <div><strong>Care</strong><span>Your clinician conversations</span></div>
+              <div><strong>Care</strong><span>Your care conversations</span></div>
               <Clock3 aria-hidden="true" size={20} />
             </header>
           ) : (
@@ -971,6 +980,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   onCancelEdit={() => setEditField(null)}
                   onChangeEdit={setEditValue}
                   onEdit={openSummaryEdit}
+                  onMove={moveTo}
                   onSaveEdit={saveSummaryEdit}
                   patientReplies={patientReplies}
                   pending={pending}
@@ -1002,13 +1012,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   <CircleCheck aria-hidden="true" size={18} />
                   <span>Only your confirmed summary was shared with Maya.</span>
                 </div>
-                <MessageItem message={{ author: "august", content: "I found Maya for this visit. She is licensed where you are, treats same-day throat concerns, and has the earliest appropriate response time. She will make the clinical decision.", time: "9:52" }} />
-                <section className={styles.reviewingCard}>
-                  <Avatar person="maya" size="large" />
-                  <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
-                  <i className={styles.reviewingPulse} aria-hidden="true" />
-                </section>
-                <PrimaryAction onClick={() => changeState("reply")}>Continue to Maya</PrimaryAction>
+                <MessageItem message={{ author: "august", content: "I found a clinician who fits this visit. I’m sharing her contact here so you can continue directly.", time: "9:52" }} />
+                <ClinicianContactCard onContinue={() => changeState("reply")} responseEstimate={encounter.clinician.responseEstimate} />
               </div>
             ) : null}
 

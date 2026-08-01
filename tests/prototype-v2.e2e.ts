@@ -75,9 +75,9 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page).toHaveURL(/state=summary/);
   await expect(page.getByText("Confirm what August gathered.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm and connect" }).click();
-  await expect(page.getByText(/I found Maya for this visit/)).toBeVisible();
+  await expect(page.getByText(/I found a clinician who fits this visit/)).toBeVisible();
   await page
-    .getByRole("button", { name: "Continue to Maya" })
+    .getByRole("button", { name: "Continue conversation" })
     .click();
   await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
   await expect(page.getByText(/choose a clinician/i)).toHaveCount(0);
@@ -187,8 +187,8 @@ test("complete journey runs from intake through testing and prescription", async
   await send(page, "No major conditions. Ibuprofen occasionally.");
   await send(page, "No medication allergies.");
   await send(page, "Everything looks right. You can share it.");
-  await expect(page.getByText(/licensed where you are/)).toBeVisible();
-  await send(page, "Continue to Maya.");
+  await expect(page.getByText("Licensed in California")).toBeVisible();
+  await page.getByRole("button", { name: "Continue conversation" }).click();
   await send(page, "I can drink normally and I have not noticed a rash.");
   await expect(page.getByText(/recommend a rapid strep test/)).toBeVisible();
   await send(page, "Please ask August to arrange it.");
@@ -206,8 +206,8 @@ test("Care opens an inbox before entering Maya’s clean conversation", async ({
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-reply");
 
-  await page.getByRole("navigation").getByRole("button", { name: /Care Maya/ }).click();
-  await expect(page.getByText("Your clinician conversations")).toBeVisible();
+  await page.getByRole("navigation").getByRole("button", { name: /Care Conversations/ }).click();
+  await expect(page.getByText("Your care conversations")).toBeVisible();
   await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /August Care guide/ })).toBeVisible();
 
