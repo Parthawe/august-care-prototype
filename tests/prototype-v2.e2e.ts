@@ -163,19 +163,34 @@ test("complete journey runs from intake through testing and prescription", async
   await send(page, "No trouble breathing, swallowing, fainting, or chest pain.");
   await send(page, "No major conditions. Ibuprofen occasionally.");
   await send(page, "No medication allergies.");
-  await page.getByRole("button", { name: "Everything looks right" }).click();
+  await send(page, "Everything looks right. You can share it.");
   await expect(page.getByText(/licensed where you are/)).toBeVisible();
-  await page.getByRole("button", { name: "Continue to Maya" }).click();
-  await page.getByRole("button", { name: "What do you recommend?" }).click();
-  await page.getByRole("button", { name: "Ask August to arrange it" }).click();
-  await page.getByRole("button", { name: "Yes, that time works" }).click();
-  await page.getByRole("button", { name: "Open Maya’s result" }).click();
+  await send(page, "Continue to Maya.");
+  await send(page, "I can drink normally and I have not noticed a rash.");
+  await expect(page.getByText(/recommend a rapid strep test/)).toBeVisible();
+  await send(page, "Please ask August to arrange it.");
+  await send(page, "Yes, that time works.");
+  await send(page, "Show me Maya’s result.");
   await expect(page.getByText(/rapid strep test is positive/)).toBeVisible();
-  await page.getByRole("button", { name: "Show me the medication plan" }).click();
-  await page.getByRole("button", { name: "Ask August to send it" }).click();
-  await page.getByRole("button", { name: "Yes, send it there" }).click();
+  await send(page, "Show me the medication plan.");
+  await send(page, "Ask August to send it to the pharmacy.");
+  await send(page, "Yes, send it there.");
   await expect(page.getByText(/Done\. I sent Maya’s prescription/)).toBeVisible();
   await expect(page).toHaveURL(/state=prescription-sent/);
+});
+
+test("Care opens an inbox before entering Maya’s clean conversation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-reply");
+
+  await page.getByRole("navigation").getByRole("button", { name: /Care Maya/ }).click();
+  await expect(page.getByText("Your clinician conversations")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
+  await expect(page.getByRole("button", { name: /August Care guide/ })).toBeVisible();
+
+  await page.getByRole("button", { name: /Maya Clinician/ }).click();
+  await expect(page.getByText(/Hi Parth\. I reviewed what you shared/)).toBeVisible();
+  await expect(page.getByText(/New messages here go directly to her/)).toHaveCount(0);
 });
 
 test("August handles natural booking replies without leaving the chat", async ({ page }, testInfo) => {

@@ -720,27 +720,80 @@
 .bottomNav .activeNav .avatar { filter: none; }
 .bottomNav > button:disabled { cursor: default; opacity: 0.48; }
 
-.suggestedReplyRow {
-  display: flex;
-  justify-content: flex-end;
-  padding-left: 46px;
-}
-
-.suggestedReplyRow button {
-  min-height: 44px;
+.careInboxHeader {
+  min-width: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 9px 14px;
-  border: 1px solid var(--green-700);
-  border-radius: 18px 6px 18px 18px;
-  color: var(--green-900);
+  justify-content: space-between;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--line);
+  background: rgba(250, 253, 251, 0.9);
+  backdrop-filter: blur(18px);
+}
+
+.careInboxHeader > div { display: flex; flex-direction: column; gap: 2px; }
+.careInboxHeader strong { font-size: 20px; font-weight: 620; letter-spacing: -0.02em; }
+.careInboxHeader span { color: var(--ink-soft); font-size: 12px; }
+.careInboxHeader > svg {
+  width: 44px;
+  height: 44px;
+  padding: 12px;
+  border-radius: 50%;
+  color: var(--green-700);
+  background: var(--mint-100);
+}
+
+.careInbox { min-height: 100%; padding: 20px 22px 30px; }
+
+.inboxSectionLabel {
+  margin: 0 0 8px 12px;
+  color: var(--ink-muted);
+  font-size: 12px;
+  font-weight: 720;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.inboxThread {
+  width: 100%;
+  min-height: 92px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
   background: transparent;
   font: inherit;
-  font-size: 13px;
-  font-weight: 720;
+  text-align: left;
   cursor: pointer;
+}
+
+.inboxThread + .inboxSectionLabel { margin-top: 26px; }
+.inboxThreadCopy { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.inboxThreadCopy > span:first-child { display: flex; align-items: baseline; gap: 7px; }
+.inboxThreadCopy strong { font-size: 16px; font-weight: 650; }
+.inboxThreadCopy small { color: var(--ink-muted); font-size: 12px; }
+.inboxThreadCopy > span:last-child {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.inboxThreadMeta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; color: var(--green-700); }
+.inboxThreadMeta time { color: var(--ink-muted); font-size: 11px; }
+.inboxThreadMeta b {
+  width: 24px;
+  height: 24px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--green-600);
+  font-size: 11px;
 }
 
 .visuallyHidden {
@@ -914,7 +967,7 @@
 .inlineSummaryEditor textarea:focus-visible,
 .inlineCancel:focus-visible,
 .inlineSave:focus-visible,
-.suggestedReplyRow button:focus-visible,
+.inboxThread:focus-visible,
 .bottomNav > button:focus-visible { outline: 3px solid var(--green-600); outline-offset: -3px; }
 
 @keyframes typing {
@@ -947,6 +1000,7 @@
   .statusBar { padding-top: calc(5px + env(safe-area-inset-top)); }
   .conversationHeader { padding-block: 6px; }
   .transcript, .contentStack { padding: 14px 13px 20px; }
+  .careInbox { padding: 14px 13px 20px; }
   .augustMessage, .clinicianMessage, .patientBubble { font-size: 14px; }
   .contentStack { gap: 10px; }
   .screenIntro h1, .successPanel h1 { font-size: 27px; }

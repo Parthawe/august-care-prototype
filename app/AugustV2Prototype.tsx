@@ -310,6 +310,32 @@ function ProductNavigation({ careAvailable, clinician, onSelect }: {
   );
 }
 
+function CareInbox({ onOpenAugust, onOpenMaya }: { onOpenAugust: () => void; onOpenMaya: () => void }) {
+  return (
+    <div className={styles.careInbox}>
+      <p className={styles.inboxSectionLabel}>Active</p>
+      <button className={styles.inboxThread} onClick={onOpenMaya} type="button">
+        <Avatar person="maya" size="large" />
+        <span className={styles.inboxThreadCopy}>
+          <span><strong>Maya</strong><small>Clinician</small></span>
+          <span>Are you able to drink normally, and have you noticed a rash?</span>
+        </span>
+        <span className={styles.inboxThreadMeta}><time>10:24</time><b>1</b></span>
+      </button>
+
+      <p className={styles.inboxSectionLabel}>August</p>
+      <button className={styles.inboxThread} onClick={onOpenAugust} type="button">
+        <Avatar person="august" size="large" />
+        <span className={styles.inboxThreadCopy}>
+          <span><strong>August</strong><small>Care guide</small></span>
+          <span>Ask anything or continue your care.</span>
+        </span>
+        <span className={styles.inboxThreadMeta}><time>Now</time><CheckCheck aria-hidden="true" size={16} /></span>
+      </button>
+    </div>
+  );
+}
+
 function PrimaryAction({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button className={styles.primaryAction} onClick={onClick} type="button">
@@ -385,17 +411,6 @@ function StatusReceipt({ details, eyebrow, rows, title }: { details: string; eye
   );
 }
 
-function SuggestedReply({ children, onClick }: { children: ReactNode; onClick: () => void }) {
-  return (
-    <div className={styles.suggestedReplyRow}>
-      <button onClick={onClick} type="button">
-        <span>{children}</span>
-        <ArrowRight aria-hidden="true" size={15} />
-      </button>
-    </div>
-  );
-}
-
 function CompleteJourneyConversation({
   answers,
   encounter,
@@ -405,7 +420,6 @@ function CompleteJourneyConversation({
   onCancelEdit,
   onChangeEdit,
   onEdit,
-  onMove,
   onSaveEdit,
   patientReplies,
   pending,
@@ -419,7 +433,6 @@ function CompleteJourneyConversation({
   onCancelEdit: () => void;
   onChangeEdit: (value: string) => void;
   onEdit: (field: keyof IntakeAnswers) => void;
-  onMove: (flow: PrototypeV2Flow, state: PrototypeV2State) => void;
   onSaveEdit: () => void;
   patientReplies: Message[];
   pending: "august" | "maya" | null;
@@ -447,10 +460,7 @@ function CompleteJourneyConversation({
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
-        <MessageItem message={{ author: "system", content: "August shared your confirmed summary with Maya. New messages here go directly to her." }} />
-        <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
-        <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’m ready to explain the next step.", time: "10:25" }} />
-        <SuggestedReply onClick={() => onMove("lab", "recommended")}>What do you recommend?</SuggestedReply>
+        <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`maya-first-reply-${index}`} message={message} />)}
       </div>
     );
@@ -465,7 +475,6 @@ function CompleteJourneyConversation({
         {state === "summary" ? (
           <>
             <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={onCancelEdit} onChange={onChangeEdit} onEdit={onEdit} onSave={onSaveEdit} />
-            <SuggestedReply onClick={() => onMove("intake", "reviewing")}>Everything looks right</SuggestedReply>
           </>
         ) : null}
         {state === "reviewing" ? (
@@ -477,7 +486,7 @@ function CompleteJourneyConversation({
               <div><strong>Maya Rao</strong><span>Human clinician</span><p>{encounter.clinician.responseEstimate}</p></div>
               <i className={styles.reviewingPulse} aria-hidden="true" />
             </section>
-            <SuggestedReply onClick={() => onMove("intake", "reply")}>Continue to Maya</SuggestedReply>
+            {patientReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
           </>
         ) : null}
         {pending ? <TypingIndicator person={pending} /> : null}
@@ -485,21 +494,13 @@ function CompleteJourneyConversation({
     );
   }
 
-  const mayaOpening: Message[] = [
-    { author: "system", content: "August shared your confirmed summary with Maya. New messages here go directly to her." },
-    { author: "maya", content: "Hi Parth. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" },
-    { author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the next step here.", time: "10:25" },
-  ];
-
   if (flow === "lab" && state === "recommended") {
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
-        {mayaOpening.map((message, index) => <MessageItem key={`maya-lab-${index}`} message={message} />)}
-        <MessageItem message={{ author: "patient", content: "What do you recommend?", time: "10:26" }} />
-        <MessageItem message={{ author: "maya", content: "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.", time: "10:27" }} />
-        <SuggestedReply onClick={() => onMove("lab", "nearby-lab")}>Ask August to arrange it</SuggestedReply>
+        <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />)}
+        <MessageItem message={{ author: "maya", content: "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.", time: "10:27" }} />
       </div>
     );
   }
@@ -510,12 +511,10 @@ function CompleteJourneyConversation({
         <div className={styles.dateMarker}>Today · August</div>
         <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
         <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
-        {state === "nearby-lab" ? <SuggestedReply onClick={() => onMove("lab", "confirmed")}>Yes, that time works</SuggestedReply> : null}
         {state === "confirmed" ? (
           <>
             <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "10:29" }} />
             <MessageItem message={{ author: "august", content: `You’re confirmed for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is already attached, and I’ll return the result to her visit.`, time: "10:30" }} />
-            <SuggestedReply onClick={() => onMove("prescription", "recommended")}>Open Maya’s result</SuggestedReply>
           </>
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
@@ -529,12 +528,10 @@ function CompleteJourneyConversation({
         <div className={styles.dateMarker}>Later · Care</div>
         <MessageItem message={{ author: "system", content: "Your rapid strep result returned to Maya’s visit." }} />
         <MessageItem message={{ author: "maya", content: "Your rapid strep test is positive. That result explains your symptoms and means an antibiotic is appropriate. I also checked the medicines and allergies you shared. I recommend Penicillin V.", time: "2:14" }} />
-        {state === "recommended" ? <SuggestedReply onClick={() => onMove("prescription", "review")}>Show me the medication plan</SuggestedReply> : null}
         {state === "review" ? (
           <>
             <MessageItem message={{ author: "patient", content: "Show me the medication plan.", time: "2:15" }} />
             <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}.\n\nI prescribed this after reviewing your test result and allergy history. August can help send it to a pharmacy.`, time: "2:16" }} />
-            <SuggestedReply onClick={() => onMove("prescription", "pharmacy")}>Ask August to send it</SuggestedReply>
           </>
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} />)}
@@ -547,7 +544,6 @@ function CompleteJourneyConversation({
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent her signed prescription to August for pharmacy support." }} />
       <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} />
-      {state === "pharmacy" ? <SuggestedReply onClick={() => onMove("prescription", "sent")}>Yes, send it there</SuggestedReply> : null}
       {state === "sent" ? (
         <>
           <MessageItem message={{ author: "patient", content: "Yes, send it there.", time: "2:19" }} />
@@ -569,6 +565,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
+  const [conversationView, setConversationView] = useState<"thread" | "care-inbox">("thread");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const firstDialogActionRef = useRef<HTMLButtonElement>(null);
@@ -582,6 +579,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     (flow === "lab" && state === "recommended") ||
     (flow === "prescription" && ["recommended", "review"].includes(state));
   const modalOpen = detailsOpen;
+  const careAvailable = !completeJourney || getCompleteJourneyLocation(getCompleteJourneyId(flow, state)).index >= 4;
+  const showCareInbox = completeJourney && conversationView === "care-inbox";
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
@@ -662,16 +661,31 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   }
 
   function switchConversation(target: "care" | "august") {
-    if (!completeJourney || (target === "care") === clinician) return;
+    if (!completeJourney) return;
     if (target === "care") {
-      if (flow === "lab") moveTo("lab", "recommended");
-      else if (flow === "prescription") moveTo("prescription", "review");
-      else if (["reviewing", "reply"].includes(state)) moveTo("intake", "reply");
+      if (careAvailable) setConversationView("care-inbox");
       return;
     }
+    setConversationView("thread");
     if (flow === "lab") moveTo("lab", "nearby-lab");
     else if (flow === "prescription") moveTo("prescription", "pharmacy");
     else moveTo("intake", state === "reviewing" ? "summary" : "reviewing");
+  }
+
+  function openMayaThread() {
+    setConversationView("thread");
+    if (flow === "lab") moveTo("lab", "recommended");
+    else if (flow === "prescription") moveTo("prescription", "review");
+    else moveTo("intake", "reply");
+  }
+
+  function messageAugustFromInbox(value: string) {
+    setPatientReplies((current) => [
+      ...current,
+      { author: "patient", content: value, time: "Now" },
+      { author: "august", content: "I’m here. We can continue from this visit without starting over.", time: "Now" },
+    ]);
+    switchConversation("august");
   }
 
   function replyThen(next: PrototypeV2State, person: "august" | "maya") {
@@ -689,6 +703,17 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
       if (flow === "intake" && state === "reviewing" && /\b(yes|continue|maya|open)\b/.test(normalized)) {
         moveTo("intake", "reply");
+        return;
+      }
+      if (flow === "intake" && state === "reply") {
+        setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+        setPending("maya");
+        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 850);
+        timers.current.push(timer);
+        return;
+      }
+      if (flow === "lab" && state === "recommended") {
+        moveTo("lab", "nearby-lab");
         return;
       }
       if (flow === "lab" && state === "nearby-lab") {
@@ -718,6 +743,18 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           ]);
           return;
         }
+      }
+      if (flow === "lab" && state === "confirmed") {
+        moveTo("prescription", "recommended");
+        return;
+      }
+      if (flow === "prescription" && state === "recommended") {
+        moveTo("prescription", "review");
+        return;
+      }
+      if (flow === "prescription" && state === "review") {
+        moveTo("prescription", "pharmacy");
+        return;
       }
     }
     if (flow !== "intake" || state === "reply") {
@@ -854,16 +891,25 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       <div className={styles.deviceColumn}>
         <section className={styles.phone} aria-label="August care">
           <StatusBar />
-          <ConversationHeader
-            canGoBack={completeJourney ? getCompleteJourneyLocation(getCompleteJourneyId(flow, state)).index > 0 : flow !== "intake" || stateIndex > 0}
-            clinician={clinician}
-            onBack={goBack}
-            onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
-            subtitle={subtitle}
-          />
+          {showCareInbox ? (
+            <header className={styles.careInboxHeader}>
+              <div><strong>Care</strong><span>Your clinician conversations</span></div>
+              <Clock3 aria-hidden="true" size={20} />
+            </header>
+          ) : (
+            <ConversationHeader
+              canGoBack={completeJourney ? getCompleteJourneyLocation(getCompleteJourneyId(flow, state)).index > 0 : flow !== "intake" || stateIndex > 0}
+              clinician={clinician}
+              onBack={goBack}
+              onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
+              subtitle={subtitle}
+            />
+          )}
 
           <div className={styles.screen} ref={transcriptRef}>
-            {completeJourney ? (
+            {showCareInbox ? (
+              <CareInbox onOpenAugust={() => switchConversation("august")} onOpenMaya={openMayaThread} />
+            ) : completeJourney ? (
               flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
                 <div className={styles.transcript}>
                   <div className={styles.dateMarker}>Today</div>
@@ -880,7 +926,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   onCancelEdit={() => setEditField(null)}
                   onChangeEdit={setEditValue}
                   onEdit={openSummaryEdit}
-                  onMove={moveTo}
                   onSaveEdit={saveSummaryEdit}
                   patientReplies={patientReplies}
                   pending={pending}
@@ -1015,14 +1060,16 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             )}
           </div>
 
-          {composerConfig.kind === "composer" ? (
+          {showCareInbox ? (
+            <Composer onSubmit={messageAugustFromInbox} placeholder="Ask August anything…" recipient="August" />
+          ) : composerConfig.kind === "composer" ? (
             <Composer disabled={composerConfig.disabled || Boolean(pending)} onSubmit={handleComposer} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
           ) : (
             <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
           )}
           <ProductNavigation
-            careAvailable={!completeJourney || getCompleteJourneyLocation(getCompleteJourneyId(flow, state)).index >= 5}
-            clinician={clinician}
+            careAvailable={careAvailable}
+            clinician={showCareInbox || clinician}
             onSelect={switchConversation}
           />
         </section>
