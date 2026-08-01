@@ -170,6 +170,25 @@ test("V2 shell has no serious or critical accessibility violations", async ({
   expect(serious).toEqual([]);
 });
 
+test("reduced motion keeps the journey stable without visible animation", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  await page.goto("/prototype-v2/00?state=intake-reviewing");
+
+  const motion = await page.getByRole("button", { name: "Continue conversation" }).evaluate((element) => {
+    const styles = getComputedStyle(element.closest("section") ?? element);
+    return {
+      animationDuration: Number.parseFloat(styles.animationDuration),
+      transitionDuration: Number.parseFloat(styles.transitionDuration),
+    };
+  });
+
+  expect(motion.animationDuration).toBeLessThanOrEqual(0.01);
+  expect(motion.transitionDuration).toBeLessThanOrEqual(0.01);
+});
+
 test("summary editing stays inline inside the conversation", async ({
   page,
 }, testInfo) => {
