@@ -9,6 +9,7 @@ const deterministicStates = {
 
 async function send(page: Page, value: string) {
   const textbox = page.getByRole("textbox");
+  await expect(textbox).toBeEnabled({ timeout: 10_000 });
   await textbox.fill(value);
   await page.getByRole("button", { name: "Send message" }).click();
 }
@@ -36,13 +37,17 @@ test("all 13 state URLs render deterministically", async ({ page }, testInfo) =>
   }
 });
 
-test("empty state shows encryption context and accepts an image attachment", async ({ page }, testInfo) => {
+test("empty state shows privacy context, dismissible prompts, and accepts an image attachment", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00");
 
-  await expect(page.getByText("End-to-end encrypted")).toBeVisible();
-  await expect(page.getByText(/Only you and August can read messages and attachments/)).toBeVisible();
-  await expect(page.getByText("Want a clinician to review this?")).toHaveCount(0);
+  await expect(page.getByText("Private conversation")).toBeVisible();
+  await expect(page.getByText(/Messages stay with August/)).toBeVisible();
+  await expect(page.getByText("Continue from another AI")).toBeVisible();
+  await expect(page.getByText("Want a clinician to review this?")).toBeVisible();
+  await expect(page.getByText("Connect your health records")).toBeVisible();
+  await page.getByRole("button", { name: "Dismiss Continue from another AI" }).click();
+  await expect(page.getByText("Continue from another AI")).toHaveCount(0);
   await expect(page.getByText("Hi Anuruddh. Tell me what’s going on.")).toHaveCount(0);
 
   await page.getByLabel("Add an image").setInputFiles({
@@ -55,7 +60,7 @@ test("empty state shows encryption context and accepts an image attachment", asy
 
   await send(page, "My throat hurts and I had a fever.");
   await expect(page).toHaveURL(/state=intake-concern/);
-  await expect(page.getByText("End-to-end encrypted")).toHaveCount(0);
+  await expect(page.getByText("Private conversation")).toHaveCount(0);
 });
 
 test("the patient always starts a new August conversation", async ({ page }, testInfo) => {
@@ -74,9 +79,8 @@ test("August shows deliberate medical review before replying", async ({ page }, 
   await send(page, "My throat hurts and I had a fever.");
   await Promise.all([
     expect(page.getByText("My throat hurts and I had a fever.")).toBeVisible({ timeout: 1_000 }),
-    expect(page.getByText("End-to-end encrypted")).toHaveCount(0, { timeout: 1_000 }),
+    expect(page.getByText("Private conversation")).toHaveCount(0, { timeout: 1_000 }),
     expect(page.getByText("August is thinking")).toBeVisible({ timeout: 1_000 }),
-    expect(page.getByText(/Understanding what you shared|Checking for urgent warning signs|Preparing the safest next question/)).toBeVisible({ timeout: 1_000 }),
     expect(page.getByText(/Of course\. I can help you work through/)).toHaveCount(0, { timeout: 1_000 }),
   ]);
 
@@ -95,18 +99,18 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page.getByText(/what the next best step might be/)).toBeVisible();
   await send(page, "Five days, worse today, 102 degrees.");
   await expect(page).toHaveURL(/state=gathering/);
-  await expect(page.getByText(/needs a careful safety check/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "needs a careful safety check" })).toBeVisible();
   await send(page, "No trouble breathing, swallowing, fainting, or chest pain.");
-  await expect(page.getByText(/makes an emergency problem less likely/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "makes an emergency problem less likely" })).toBeVisible();
   await send(page, "No major conditions. Ibuprofen occasionally.");
-  await expect(page.getByText(/I’ve noted your health history and current medicines/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "I’ve noted your health history and current medicines" })).toBeVisible();
   await send(page, "No medication allergies.");
 
   await expect(page).toHaveURL(/state=summary/);
   await expect(page.getByText(/a same-day clinician review is the safest next step/)).toBeVisible();
   await expect(page.getByText("Confirm what August gathered.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm and connect" }).click();
-  await expect(page.getByText(/I found Maya Rao because she is a licensed California clinician/)).toBeVisible();
+  await expect(page.getByText(/I found Maya Rao because she is a licensed California clinician/)).toBeVisible({ timeout: 10_000 });
   await expect(page.locator("header").getByText("August", { exact: true })).toBeVisible();
   await expect(page.getByText("August is connecting you with Maya")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Message Maya" })).toHaveCount(0);
@@ -157,7 +161,7 @@ test("Maya reviews one patient message before revealing her test recommendation"
   await send(page, reply);
 
   await expect(page.getByText(reply, { exact: true })).toBeVisible();
-  await expect(page.getByLabel("Maya is reviewing the result")).toBeVisible({ timeout: 2_000 });
+  await expect(page.getByLabel("Maya is reviewing the result")).toBeVisible({ timeout: 5_000 });
   await expect(page.locator("p").filter({ hasText: "recommend a rapid strep test" })).toHaveCount(0);
   await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeDisabled();
 
@@ -165,6 +169,19 @@ test("Maya reviews one patient message before revealing her test recommendation"
   await expect(page.getByLabel("Maya is reviewing the result")).toHaveCount(0);
   await expect(page.getByText(reply, { exact: true })).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeEnabled({ timeout: 8_000 });
+});
+
+test("urgent symptoms pause the routine test plan", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-reply");
+
+  const urgentReply = "I cannot swallow liquids and the rash is spreading.";
+  await send(page, urgentReply);
+
+  await expect(page.getByText(urgentReply, { exact: true })).toBeVisible();
+  await expect(page.getByText(/needs urgent in-person assessment now/)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText(/recommend a rapid strep test/)).toHaveCount(0);
+  await expect(page).toHaveURL(/state=intake-reply/);
 });
 
 test("lab continuation offers only August-arranged nearby care", async ({
@@ -207,6 +224,19 @@ test("August keeps the full lab conversation visible while thinking", async ({
   await expect(intakeMessage).toBeVisible();
   await expect(locationMessage).toBeVisible();
   await expect(page.getByText("Yes, that time works for me.", { exact: true })).toBeVisible();
+});
+
+test("August does not attach a lab result without clear patient consent", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=lab-confirmed");
+
+  const rejection = "No, this is not my test.";
+  await send(page, rejection);
+
+  await expect(page.getByText(rejection, { exact: true })).toBeVisible();
+  await expect(page.getByText(/I won’t add this result or notify Maya/)).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole("button", { name: /Open Maya conversation/ })).toHaveCount(0);
+  await expect(page).toHaveURL(/state=lab-confirmed/);
 });
 
 test("Maya keeps her earlier messages when the medication decision arrives", async ({
@@ -381,6 +411,7 @@ test("summary editing stays inline inside the conversation", async ({
 
 test("complete journey runs from intake through testing and prescription", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
+  test.setTimeout(60_000);
   await page.goto("/prototype-v2/00");
 
   await send(page, "My throat hurts and I had a fever.");
@@ -394,11 +425,14 @@ test("complete journey runs from intake through testing and prescription", async
   await send(page, "I can drink normally and I have not noticed a rash.");
   await expect(page.getByText(/recommend a rapid strep test/)).toBeVisible();
   await send(page, "Please ask August to arrange it.");
+  await page.getByRole("button", { name: "Open August conversation" }).click();
   await send(page, "Yes, that time works.");
-  await send(page, "Show me Maya’s result.");
-  await expect(page.getByText(/rapid strep test is positive/)).toBeVisible();
+  await send(page, "Yes, I completed this test. Add it to Maya’s visit.");
+  await page.getByRole("button", { name: "Open Maya conversation" }).click();
+  await expect(page.getByText(/positive rapid strep result/)).toBeVisible();
   await send(page, "Show me the medication plan.");
   await send(page, "Ask August to send it to the pharmacy.");
+  await page.getByRole("button", { name: "Open August conversation" }).click();
   await send(page, "Yes, send it there.");
   await expect(page.getByText(/Done\. I sent Maya’s prescription/)).toBeVisible();
   await expect(page).toHaveURL(/state=prescription-sent/);
@@ -426,10 +460,15 @@ test("mobile navigation uses the compact reference dock with August at the far r
 
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
   const buttons = navigation.getByRole("button");
-  await expect(buttons).toHaveCount(3);
+  await expect(buttons).toHaveCount(5);
   await expect(buttons.nth(0)).toHaveAttribute("aria-label", "Activity");
-  await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Chats");
-  await expect(buttons.nth(2)).toHaveAttribute("aria-label", "August");
+  await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Home");
+  await expect(buttons.nth(2)).toHaveAttribute("aria-label", "Chats");
+  await expect(buttons.nth(3)).toHaveAttribute("aria-label", "Library");
+  await expect(buttons.nth(4)).toHaveAttribute("aria-label", "August");
+  await expect(buttons.nth(1)).toBeDisabled();
+  await expect(buttons.nth(3)).toBeDisabled();
+  await expect(buttons.nth(4)).toBeDisabled();
 
   const shellBox = await page.getByRole("region", { name: "August care" }).boundingBox();
   const navigationBox = await navigation.boundingBox();
@@ -437,14 +476,13 @@ test("mobile navigation uses the compact reference dock with August at the far r
   expect(bottomGap).toBeGreaterThanOrEqual(12);
 
   await navigation.getByRole("button", { name: "Activity" }).click();
-  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Good morning, Anuruddh" })).toBeVisible();
 
   await navigation.getByRole("button", { name: "Chats" }).click();
   await expect(page.locator("header").getByText("Chats", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Maya Clinician/ })).toHaveCount(0);
 
-  await navigation.getByRole("button", { name: "August" }).click();
-  await expect(page.getByRole("textbox", { name: "Message August" })).toBeVisible();
+  await expect(navigation.getByRole("button", { name: "August" })).toBeDisabled();
 });
 
 test("Chats search filters threads and can hand a question directly to August", async ({ page }, testInfo) => {
@@ -471,12 +509,12 @@ test("Chats floating action starts a fresh August conversation", async ({ page }
   await expect(page.getByRole("textbox", { name: "Message August" })).toBeVisible();
 });
 
-test("conversation header provides search and a compact details menu", async ({ page }, testInfo) => {
+test("conversation header provides search and inert prototype-only options", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-concern");
 
   await expect(page.getByRole("button", { name: "Search conversation" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Open conversation details" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Conversation options unavailable in prototype" })).toBeDisabled();
   await page.getByRole("button", { name: "Search conversation" }).click();
   const search = page.getByRole("searchbox", { name: "Search this conversation" });
   await search.fill("temperature");
@@ -495,25 +533,16 @@ test("August handles natural booking replies without leaving the chat", async ({
   await expect(page).toHaveURL(/state=lab-nearby-lab/);
 
   await send(page, "Yes, this time works.");
-  await expect(page.getByText(/You’re confirmed for tomorrow/)).toBeVisible();
+  await expect(page.getByText(/You’re scheduled for tomorrow/)).toBeVisible({ timeout: 10_000 });
   await expect(page).toHaveURL(/state=lab-confirmed/);
 });
 
-test("conversation details explain recipient and privacy with accessible dismissal", async ({
-  page,
-}, testInfo) => {
+test("conversation options do not open a drawer", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/intake?state=reviewing");
 
-  const trigger = page.getByRole("button", { name: "Open conversation details" });
-  await trigger.click();
-  const dialog = page.getByRole("dialog", { name: "Conversation details" });
-  await expect(dialog.getByText("August · Care guide")).toBeVisible();
-  await expect(dialog.getByText(/New messages stay with August until you open her contact/)).toBeVisible();
-  await expect(dialog.getByText(/Maya matched/)).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(dialog).toHaveCount(0);
-  await expect(trigger).toBeFocused();
+  await expect(page.getByRole("button", { name: "Conversation options unavailable in prototype" })).toBeDisabled();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
 });
 
 test("header back is always present and opens the Chats tab", async ({

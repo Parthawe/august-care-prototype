@@ -164,7 +164,7 @@
 .conversationHeader > .headerAction:first-child { margin-left: -8px; }
 .headerActions { display: flex; align-items: center; flex: none; margin-right: -7px; }
 .headerActions .headerAction { margin: 0; color: var(--green-800); background: transparent; }
-.headerActions .headerAction:disabled { opacity: 1; cursor: default; }
+.headerActions .headerAction:disabled { color: var(--ink-muted); opacity: 0.52; cursor: default; }
 
 .conversationSearch {
   position: sticky;
@@ -1202,7 +1202,7 @@
   background: rgba(218, 241, 231, 0.9);
   box-shadow: inset 0 0 0 1px rgba(7, 95, 77, 0.08);
 }
-.bottomNav > button[data-inert="true"] { cursor: default; color: #687973; }
+.bottomNav > button[data-inert="true"] { cursor: default; color: #82918c; opacity: 0.62; }
 
 .navBadge {
   position: absolute;
@@ -1912,7 +1912,14 @@
       auto
       calc(64px + env(safe-area-inset-bottom));
   }
-  .conversationHeader { padding-block: 6px; }
+  .conversationHeader { gap: 6px; padding: 6px 9px; }
+  .conversationHeader > .headerAction:first-child { margin-left: -4px; }
+  .headerActions { margin-right: -3px; }
+  .headerAction { width: 36px; height: 40px; }
+  .avatar-regular, .augustIdentityMark-regular { width: 36px; height: 36px; }
+  .augustIdentityMark-regular { border-radius: 10px; font-size: 15px; }
+  .headerCopy strong { font-size: 15px; }
+  .headerCopy span { font-size: 11px; }
   .screen { scroll-padding-block-end: 48px; }
   .transcript, .contentStack { padding: 14px 13px 56px; }
   .careInbox { padding: 14px 13px 20px; }

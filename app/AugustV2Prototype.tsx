@@ -123,8 +123,23 @@ const clinicianHandoffMessage =
 const labRecommendationMessage =
   "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.";
 
-const AUGUST_THINKING_DELAY = 3_800;
+const STREAM_WORD_DELAY = 28;
+const AUGUST_THINKING_DELAY = 1_800;
+const AUGUST_HANDOFF_DELAY = 2_200;
+const CLINICIAN_REVIEW_DELAY = 2_400;
 const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
+
+function hasUrgentClinicianWarning(value: string) {
+  return /\b(cannot|can't|unable to|trouble|difficulty)\s+(breathe|breathing|swallow|swallowing|drink|drinking)\b|\b(spreading rash|facial swelling|face swelling|tongue swelling|throat swelling|severe chest pain|faint(?:ed|ing)?)\b/i.test(value);
+}
+
+function isNegativeResultConfirmation(value: string) {
+  return /\b(no|not mine|not my test|wrong result|did not|didn't|never completed|never took)\b/i.test(value);
+}
+
+function isAffirmativeResultConfirmation(value: string) {
+  return /\b(yes|confirmed|confirm|this is mine|my result|i completed|i took|add it)\b/i.test(value);
+}
 
 function getAugustIntakeHistory(answers: IntakeAnswers): Message[] {
   return [
@@ -360,7 +375,7 @@ function StreamingText({ text }: { text: string }) {
         return next;
       });
       if (screen && shouldFollow) requestAnimationFrame(() => screen.scrollTo({ top: screen.scrollHeight, behavior: "auto" }));
-    }, 42);
+    }, STREAM_WORD_DELAY);
 
     return () => window.clearInterval(timer);
   }, [chunks, reducedMotion]);
@@ -551,13 +566,13 @@ function Composer({
 
 function EncryptionNotice({ recipient = "August" }: { recipient?: "August" | "Maya" }) {
   const description = recipient === "Maya"
-    ? "Only you and Maya can read messages and attachments here. Maya can see the visit summary you confirmed."
-    : "Only you and August can read messages and attachments. Nothing is shared with a clinician until you choose.";
+    ? "Messages stay in this care conversation. Maya can see the visit summary you confirmed."
+    : "Messages stay with August. Nothing is shared with a clinician until you choose.";
 
   return (
     <div className={styles.encryptionNotice} role="note">
       <p>
-        <strong><LockKeyhole aria-hidden="true" size={12} /> End-to-end encrypted</strong>
+        <strong><LockKeyhole aria-hidden="true" size={12} /> Private conversation</strong>
         <span>{description}</span>
       </p>
     </div>
@@ -1117,11 +1132,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       return () => window.clearTimeout(revealTimer);
     }
 
-    const responseTimer = window.setTimeout(() => setReviewingPhase("responding"), AUGUST_THINKING_DELAY);
+    const responseTimer = window.setTimeout(() => setReviewingPhase("responding"), AUGUST_HANDOFF_DELAY);
     const wordCount = clinicianHandoffMessage.match(/\S+\s*/g)?.length ?? 1;
     const cardTimer = window.setTimeout(
       () => setReviewingPhase("complete"),
-      AUGUST_THINKING_DELAY + wordCount * 42 + 240,
+      AUGUST_HANDOFF_DELAY + wordCount * STREAM_WORD_DELAY + 220,
     );
     return () => {
       window.clearTimeout(responseTimer);
@@ -1137,11 +1152,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       return () => window.clearTimeout(revealTimer);
     }
 
-    const responseTimer = window.setTimeout(() => setRecommendationPhase("responding"), AUGUST_THINKING_DELAY);
+    const responseTimer = window.setTimeout(() => setRecommendationPhase("responding"), CLINICIAN_REVIEW_DELAY);
     const wordCount = labRecommendationMessage.match(/\S+\s*/g)?.length ?? 1;
     const completeTimer = window.setTimeout(
       () => setRecommendationPhase("complete"),
-      AUGUST_THINKING_DELAY + wordCount * 42 + 240,
+      CLINICIAN_REVIEW_DELAY + wordCount * STREAM_WORD_DELAY + 220,
     );
     return () => {
       window.clearTimeout(responseTimer);
@@ -1382,7 +1397,20 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: value, time: "Now" }]);
         setSubmittedMessages((current) => ({ ...current, "intake:reply": value }));
         setPending("maya");
-        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 1_100);
+        if (hasUrgentClinicianWarning(value)) {
+          const timer = window.setTimeout(() => {
+            setPatientReplies((current) => [...current, {
+              author: "maya",
+              channel: "maya",
+              content: "I’m concerned by what you described. Trouble swallowing liquids, breathing difficulty, or a spreading rash needs urgent in-person assessment now. Please seek emergency care, and call 911 if breathing becomes difficult, you feel faint, or swelling develops. I’m pausing the routine test plan.",
+              time: "Now",
+            }]);
+            setPending(null);
+          }, CLINICIAN_REVIEW_DELAY);
+          timers.current.push(timer);
+          return;
+        }
+        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, CLINICIAN_REVIEW_DELAY);
         timers.current.push(timer);
         return;
       }
@@ -1415,6 +1443,32 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: value, time: "Now" }]);
         setSubmittedMessages((current) => ({ ...current, "lab:confirmed": value }));
         setPending("august");
+        if (isNegativeResultConfirmation(value)) {
+          const timer = window.setTimeout(() => {
+            setPatientReplies((current) => [...current, {
+              author: "august",
+              channel: "august",
+              content: "Thanks for telling me. I won’t add this result or notify Maya. Tell me what looks wrong, or contact the lab, and I can help you resolve it.",
+              time: "Now",
+            }]);
+            setPending(null);
+          }, AUGUST_THINKING_DELAY);
+          timers.current.push(timer);
+          return;
+        }
+        if (!isAffirmativeResultConfirmation(value)) {
+          const timer = window.setTimeout(() => {
+            setPatientReplies((current) => [...current, {
+              author: "august",
+              channel: "august",
+              content: "I need a clear confirmation before I attach this result. Did you complete this test, and should I add it to Maya’s visit?",
+              time: "Now",
+            }]);
+            setPending(null);
+          }, AUGUST_THINKING_DELAY);
+          timers.current.push(timer);
+          return;
+        }
         const timer = window.setTimeout(() => {
           setPatientReplies((current) => [...current, {
             author: "august",
