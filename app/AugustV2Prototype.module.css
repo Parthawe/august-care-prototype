@@ -950,7 +950,7 @@
   grid-template-columns: 62px 62px minmax(0, 1fr);
   align-items: center;
   gap: 4px;
-  margin: 5px 20px max(7px, env(safe-area-inset-bottom));
+  margin: 3px 20px max(13px, calc(env(safe-area-inset-bottom) + 5px));
   padding: 3px 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.88);

@@ -300,6 +300,11 @@ test("mobile navigation uses the compact reference dock with August at the far r
   await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Chats");
   await expect(buttons.nth(2)).toHaveAttribute("aria-label", "August");
 
+  const shellBox = await page.getByRole("region", { name: "August care" }).boundingBox();
+  const navigationBox = await navigation.boundingBox();
+  const bottomGap = (shellBox?.y ?? 0) + (shellBox?.height ?? 0) - ((navigationBox?.y ?? 0) + (navigationBox?.height ?? 0));
+  expect(bottomGap).toBeGreaterThanOrEqual(12);
+
   await navigation.getByRole("button", { name: "Activity" }).click();
   await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
 
