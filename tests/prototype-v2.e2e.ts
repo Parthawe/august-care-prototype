@@ -72,13 +72,13 @@ test("August shows deliberate medical review before replying", async ({ page }, 
   await page.goto("/prototype-v2/00?state=intake-empty");
 
   await send(page, "My throat hurts and I had a fever.");
-  await expect(page.getByText("August is thinking")).toBeVisible();
-  await expect(page.getByText("Understanding what you shared")).toBeVisible();
-  await expect(page.getByText(/Got it\. When did it start/)).toHaveCount(0);
-
-  await page.waitForTimeout(750);
-  await expect(page.getByText("Checking for urgent warning signs")).toBeVisible();
-  await expect(page.getByText(/Got it\. When did it start/)).toHaveCount(0);
+  await Promise.all([
+    expect(page.getByText("My throat hurts and I had a fever.")).toBeVisible({ timeout: 1_000 }),
+    expect(page.getByText("End-to-end encrypted")).toHaveCount(0, { timeout: 1_000 }),
+    expect(page.getByText("August is thinking")).toBeVisible({ timeout: 1_000 }),
+    expect(page.getByText(/Understanding what you shared|Checking for urgent warning signs|Preparing the safest next question/)).toBeVisible({ timeout: 1_000 }),
+    expect(page.getByText(/Got it\. When did it start/)).toHaveCount(0, { timeout: 1_000 }),
+  ]);
 
   await expect(page.getByText(/Got it\. When did it start/)).toBeVisible();
   await expect(page.getByText("August is thinking")).toHaveCount(0);

@@ -668,6 +668,7 @@
 .contactMatchReasons svg { color: var(--green-600); }
 
 .clinicianContactCard > button {
+  scroll-margin-bottom: 20px;
   width: 100%;
   min-height: 48px;
   display: flex;
@@ -1572,7 +1573,8 @@
   }
   .statusBar { padding-top: calc(5px + env(safe-area-inset-top)); }
   .conversationHeader { padding-block: 6px; }
-  .transcript, .contentStack { padding: 14px 13px 20px; }
+  .screen { scroll-padding-block-end: 48px; }
+  .transcript, .contentStack { padding: 14px 13px 56px; }
   .careInbox { padding: 14px 13px 20px; }
   .attachmentThread { padding-inline: 13px; }
   .augustMessage, .clinicianMessage, .patientBubble { font-size: 14px; }

@@ -1042,12 +1042,22 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const messages = useMemo<Message[]>(() => {
     if (flow !== "intake") return [];
     const result: Message[] = [];
-    if (state === "empty") return [];
+    if (state === "empty") {
+      if (pending === "august" && answers.concern) {
+        result.push({ author: "patient", content: answers.concern, time: "9:41" });
+      }
+      return result;
+    }
     result.push(
       { author: "patient", content: answers.concern, time: "9:41" },
       { author: "august", content: "Got it. When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
     );
-    if (state === "concern") return result;
+    if (state === "concern") {
+      if (pending === "august" && answers.onset) {
+        result.push({ author: "patient", content: answers.onset, time: "9:43" });
+      }
+      return result;
+    }
     result.push(
       { author: "patient", content: answers.onset, time: "9:43" },
       { author: "august", content: intakeQuestions[0].prompt, time: "9:43" },
@@ -1060,9 +1070,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           { author: "august", content: intakeQuestions[index + 1].prompt, time: `9:${45 + index * 2}` },
         );
       }
+      if (pending === "august") {
+        const currentQuestion = intakeQuestions[gatheringStep];
+        result.push({ author: "patient", content: answers[currentQuestion.field], time: "Now" });
+      }
     }
     return result;
-  }, [answers, flow, gatheringStep, state]);
+  }, [answers, flow, gatheringStep, pending, state]);
 
   const composerConfig = (() => {
     if (completeJourney) {
@@ -1185,7 +1199,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
                 <div className={styles.transcript}>
                   {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
-                  {state === "empty" ? <EncryptionNotice /> : null}
+                  {state === "empty" && !pending ? <EncryptionNotice /> : null}
                   {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                   {pending ? <ResponseProgress person={pending} /> : null}
                 </div>
@@ -1211,7 +1225,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
               <div className={styles.transcript}>
                 {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
-                {state === "empty" ? <EncryptionNotice /> : null}
+                {state === "empty" && !pending ? <EncryptionNotice /> : null}
                 {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
                 {pending ? <ResponseProgress person={pending} /> : null}
               </div>
