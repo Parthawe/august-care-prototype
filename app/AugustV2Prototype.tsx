@@ -16,7 +16,6 @@ import {
   Bell,
   BookOpen,
   Building2,
-  Camera,
   CalendarDays,
   Check,
   CheckCheck,
@@ -773,7 +772,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFeedback, setSearchFeedback] = useState("");
-  const [chatMenuOpen, setChatMenuOpen] = useState(false);
   const [composerDraft, setComposerDraft] = useState("");
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -1174,17 +1172,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             <header className={styles.careInboxHeader}>
               <div><strong>Chats</strong></div>
               <div className={styles.chatHeaderActions}>
-                <label aria-label="Add an image to August" className={styles.chatHeaderAction}>
-                  <Camera aria-hidden="true" size={19} />
-                  <input accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleImageAttachment(file); event.target.value = ""; }} type="file" />
-                </label>
-                <button aria-expanded={chatMenuOpen} aria-label="Open Chats menu" className={styles.chatHeaderAction} onClick={() => setChatMenuOpen((current) => !current)} type="button"><MoreVertical aria-hidden="true" size={20} /></button>
-                {chatMenuOpen ? (
-                  <div className={styles.chatMenu} role="menu">
-                    <button onClick={() => { setChatMenuOpen(false); switchTab("august"); }} role="menuitem" type="button">New August chat</button>
-                    <button onClick={() => { setChatMenuOpen(false); switchTab("updates"); }} role="menuitem" type="button">View activity</button>
-                  </div>
-                ) : null}
+                <button aria-label="Chats options unavailable" className={styles.chatHeaderAction} disabled type="button"><MoreVertical aria-hidden="true" size={20} /></button>
               </div>
             </header>
           ) : showUpdates ? (
