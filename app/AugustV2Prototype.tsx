@@ -786,6 +786,7 @@ function CompleteJourneyConversation({
   onSaveEdit,
   patientReplies,
   pending,
+  reviewingPhase,
   state,
   submittedMessages,
 }: {
@@ -803,6 +804,7 @@ function CompleteJourneyConversation({
   onSaveEdit: () => void;
   patientReplies: Message[];
   pending: "august" | "maya" | null;
+  reviewingPhase: "thinking" | "responding" | "complete";
   state: PrototypeV2State;
   submittedMessages: Record<string, string>;
 }) {
@@ -840,8 +842,9 @@ function CompleteJourneyConversation({
         {state === "reviewing" ? (
           <>
             <MessageItem message={{ author: "patient", content: "Everything looks right. You can share it.", time: "9:51" }} />
-            <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} />
-            <ClinicianContactCard onContinue={() => onMove("intake", "reply")} responseEstimate={encounter.clinician.responseEstimate} />
+            {reviewingPhase === "thinking" ? <ResponseProgress mode="clinical" person="august" /> : null}
+            {reviewingPhase !== "thinking" ? <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} stream={reviewingPhase === "responding"} /> : null}
+            {reviewingPhase === "complete" ? <ClinicianContactCard onContinue={() => onMove("intake", "reply")} responseEstimate={encounter.clinician.responseEstimate} /> : null}
             {patientReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
           </>
         ) : null}
@@ -956,6 +959,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [submittedMessages, setSubmittedMessages] = useState<Record<string, string>>({});
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
+  const [reviewingPhase, setReviewingPhase] = useState<"thinking" | "responding" | "complete">("thinking");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -981,6 +985,26 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   useEffect(() => {
     if (searchOpen) requestAnimationFrame(() => searchInputRef.current?.focus());
   }, [searchOpen]);
+
+  useEffect(() => {
+    if (flow !== "intake" || state !== "reviewing") return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      const revealTimer = window.setTimeout(() => setReviewingPhase("complete"), 0);
+      return () => window.clearTimeout(revealTimer);
+    }
+
+    const responseTimer = window.setTimeout(() => setReviewingPhase("responding"), AUGUST_THINKING_DELAY);
+    const wordCount = clinicianHandoffMessage.match(/\S+\s*/g)?.length ?? 1;
+    const cardTimer = window.setTimeout(
+      () => setReviewingPhase("complete"),
+      AUGUST_THINKING_DELAY + wordCount * 42 + 240,
+    );
+    return () => {
+      window.clearTimeout(responseTimer);
+      window.clearTimeout(cardTimer);
+    };
+  }, [flow, state]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -1019,7 +1043,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       window.cancelAnimationFrame(frame);
       window.clearTimeout(scrollTimer);
     };
-  }, [completeJourney, flow, gatheringStep, patientReplies, pending, state]);
+  }, [completeJourney, flow, gatheringStep, patientReplies, pending, reviewingPhase, state]);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -1052,6 +1076,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current = [];
     setPending(null);
     setHandoff(null);
+    if (next === "reviewing") setReviewingPhase("thinking");
     setState(next);
   }
 
@@ -1060,6 +1085,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current = [];
     setPending(null);
     setHandoff(null);
+    if (nextFlow === "intake" && nextState === "reviewing") setReviewingPhase("thinking");
     if (nextFlow !== flow) setPatientReplies([]);
     setFlow(nextFlow);
     setState(nextState);
@@ -1480,6 +1506,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   onSaveEdit={saveSummaryEdit}
                   patientReplies={patientReplies}
                   pending={pending}
+                  reviewingPhase={reviewingPhase}
                   state={state}
                   submittedMessages={submittedMessages}
                 />
@@ -1509,8 +1536,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   <CircleCheck aria-hidden="true" size={18} />
                   <span>Only your confirmed summary was shared with Maya.</span>
                 </div>
-                <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} />
-                <ClinicianContactCard onContinue={() => changeState("reply")} responseEstimate={encounter.clinician.responseEstimate} />
+                {reviewingPhase === "thinking" ? <ResponseProgress mode="clinical" person="august" /> : null}
+                {reviewingPhase !== "thinking" ? <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} stream={reviewingPhase === "responding"} /> : null}
+                {reviewingPhase === "complete" ? <ClinicianContactCard onContinue={() => changeState("reply")} responseEstimate={encounter.clinician.responseEstimate} /> : null}
               </div>
             ) : null}
 
