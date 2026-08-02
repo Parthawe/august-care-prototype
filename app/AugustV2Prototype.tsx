@@ -572,7 +572,7 @@ function EncryptionNotice({ recipient = "August" }: { recipient?: "August" | "Ma
   return (
     <div className={styles.encryptionNotice} role="note">
       <p>
-        <strong><LockKeyhole aria-hidden="true" size={12} /> Private conversation</strong>
+        <strong><LockKeyhole aria-hidden="true" size={12} /> End-to-end encrypted</strong>
         <span>{description}</span>
       </p>
     </div>

@@ -41,7 +41,7 @@ test("empty state shows privacy context, dismissible prompts, and accepts an ima
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00");
 
-  await expect(page.getByText("Private conversation")).toBeVisible();
+  await expect(page.getByText("End-to-end encrypted")).toBeVisible();
   await expect(page.getByText(/Messages stay with August/)).toBeVisible();
   await expect(page.getByText("Continue from another AI")).toBeVisible();
   await expect(page.getByText("Want a clinician to review this?")).toBeVisible();
@@ -60,7 +60,7 @@ test("empty state shows privacy context, dismissible prompts, and accepts an ima
 
   await send(page, "My throat hurts and I had a fever.");
   await expect(page).toHaveURL(/state=intake-concern/);
-  await expect(page.getByText("Private conversation")).toHaveCount(0);
+  await expect(page.getByText("End-to-end encrypted")).toHaveCount(0);
 });
 
 test("the patient always starts a new August conversation", async ({ page }, testInfo) => {
@@ -79,7 +79,7 @@ test("August shows deliberate medical review before replying", async ({ page }, 
   await send(page, "My throat hurts and I had a fever.");
   await Promise.all([
     expect(page.getByText("My throat hurts and I had a fever.")).toBeVisible({ timeout: 1_000 }),
-    expect(page.getByText("Private conversation")).toHaveCount(0, { timeout: 1_000 }),
+    expect(page.getByText("End-to-end encrypted")).toHaveCount(0, { timeout: 1_000 }),
     expect(page.getByText("August is thinking")).toBeVisible({ timeout: 1_000 }),
     expect(page.getByText(/Of course\. I can help you work through/)).toHaveCount(0, { timeout: 1_000 }),
   ]);
