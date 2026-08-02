@@ -25,11 +25,14 @@ import {
   FileCheck2,
   ImagePlus,
   House,
+  HeartPulse,
   LayoutGrid,
   LockKeyhole,
   MapPin,
   MessageCircle,
+  Menu,
   Mic,
+  Moon,
   MoreVertical,
   Plus,
   Search,
@@ -579,13 +582,28 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
 
 function UpdatesTab({ careAvailable }: { careAvailable: boolean }) {
   return (
-    <div className={styles.tabPage}>
-      <div className={styles.tabIntro}><small>CARE ACTIVITY</small><h1>Activity</h1><p>Important changes from August, clinicians, labs, and pharmacies stay organized here.</p></div>
-      {careAvailable ? (
-        <div className={styles.updateItem}><span><Bell aria-hidden="true" size={18} /></span><div><small>CARE</small><strong>Maya is connected to your visit</strong><p>You will be notified when she replies or updates the plan.</p></div><time>Now</time></div>
-      ) : (
-        <div className={styles.emptyTabState}><Bell aria-hidden="true" size={20} /><strong>No updates yet</strong><span>Care activity will appear here as your visit progresses.</span></div>
-      )}
+    <div className={styles.healthDashboard}>
+      <section className={styles.healthHero}>
+        <span className={styles.healthGuideLabel}><Sparkles aria-hidden="true" size={14} /> August AI guide</span>
+        <h1>Hi Parth, August guides your health</h1>
+        <AugustIdentityMark size="large" />
+      </section>
+
+      <section aria-label="Health overview" className={styles.healthOverviewCard}>
+        <header><strong>Health overview</strong><button aria-label="Open health overview" disabled type="button"><ArrowRight aria-hidden="true" size={18} /></button></header>
+        <div aria-label="Health score 82 out of 100" className={styles.healthGauge} role="img">
+          <svg aria-hidden="true" viewBox="0 0 240 126">
+            <path d="M20 108 A100 100 0 0 1 220 108" pathLength="100" />
+            <path className={styles.healthGaugeValue} d="M20 108 A100 100 0 0 1 220 108" pathLength="100" />
+          </svg>
+          <span><small>Health score</small><strong>82</strong><b>/100</b></span>
+        </div>
+        <div className={styles.healthMetrics}>
+          <div><span><HeartPulse aria-hidden="true" size={16} /></span><small>Heart</small><strong>72 <b>bpm</b></strong></div>
+          <div><span><Moon aria-hidden="true" size={16} /></span><small>Sleep</small><strong>7h 45m</strong></div>
+          <div><span><UsersRound aria-hidden="true" size={16} /></span><small>Care</small><strong>{careAvailable ? "Active" : "Ready"}</strong></div>
+        </div>
+      </section>
     </div>
   );
 }
@@ -1267,9 +1285,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               </div>
             </header>
           ) : showUpdates ? (
-            <header className={styles.careInboxHeader}>
-              <div><strong>Activity</strong><span>Recent care updates</span></div>
-              <Clock3 aria-hidden="true" size={20} />
+            <header className={styles.healthHeader}>
+              <button aria-label="Menu unavailable in prototype" disabled type="button"><Menu aria-hidden="true" size={20} /></button>
+              <strong>August</strong>
+              <div><button aria-label="Notifications unavailable in prototype" disabled type="button"><Bell aria-hidden="true" size={19} /></button><AugustIdentityMark size="small" /></div>
             </header>
           ) : (
             <ConversationHeader
@@ -1471,7 +1490,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {showCareInbox ? (
               null
             ) : showUpdates ? (
-              <PassiveFooter icon={Bell} text="Updates appear automatically" />
+              null
             ) : composerConfig.kind === "composer" ? (
               <Composer disabled={composerConfig.disabled || Boolean(pending)} initialValue={composerDraft} key={`${composerConfig.recipient}-${composerDraft}`} onAttach={handleImageAttachment} onSubmit={(value) => { setComposerDraft(""); handleComposer(value); }} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
             ) : (
