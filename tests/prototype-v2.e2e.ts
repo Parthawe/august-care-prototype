@@ -222,6 +222,8 @@ test("summary transition keeps conversation history settled", async ({ page }, t
   const settledMessages = page.locator('[data-message-motion="settled"]');
   await expect(settledMessages).toHaveCount(9);
   await expect(page.getByText(/That’s everything I need for now/).locator('xpath=ancestor::*[@data-message-motion="enter"]')).toBeVisible();
+  await expect(page.getByText(/Reply yes to confirm/)).toBeVisible();
+  await expect(page.getByText(/I won’t share anything with a clinician until you do/)).toBeVisible();
 
   const historicalAnimation = await settledMessages.first().evaluate((element) => getComputedStyle(element).animationName);
   expect(historicalAnimation).toBe("none");

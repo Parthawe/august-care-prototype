@@ -659,6 +659,9 @@ function CompleteJourneyConversation({
         {state === "summary" ? (
           <>
             <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={onCancelEdit} onChange={onChangeEdit} onEdit={onEdit} onSave={onSaveEdit} />
+            <div className={styles.summaryPrompt}>
+              <MessageItem message={{ author: "august", content: "Does everything look right? Reply yes to confirm. I won’t share anything with a clinician until you do.", time: "9:50" }} />
+            </div>
           </>
         ) : null}
         {state === "reviewing" ? (

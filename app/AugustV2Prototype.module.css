@@ -503,6 +503,10 @@
   font-size: 9px;
 }
 
+.summaryPrompt .messageRow {
+  animation-delay: 210ms;
+}
+
 .summaryRow {
   width: 100%;
   min-height: 62px;
