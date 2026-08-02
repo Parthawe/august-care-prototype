@@ -30,6 +30,7 @@ import {
   LockKeyhole,
   MapPin,
   MessageCircle,
+  Mic,
   MoreVertical,
   Plus,
   Search,
@@ -125,13 +126,7 @@ function Avatar({
   size?: "small" | "regular" | "large";
 }) {
   if (person === "august") {
-    return (
-      <img
-        alt="August AI care guide"
-        className={`${styles.avatar} ${styles[`avatar-${size}`]}`}
-        src="/august-avatar.png"
-      />
-    );
+    return <AugustIdentityMark size={size} />;
   }
 
   return (
@@ -348,6 +343,7 @@ function Composer({
   recipient: "August" | "Maya";
 }) {
   const [value, setValue] = useState(initialValue);
+  const [recording, setRecording] = useState(false);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -399,7 +395,16 @@ function Composer({
               type="file"
             />
           </label>
-          <span className={styles.composerPrivacy}><LockKeyhole aria-hidden="true" size={12} /> Private</span>
+          <button
+            aria-label={recording ? "Stop audio recording" : "Record an audio message"}
+            aria-pressed={recording}
+            className={`${styles.attachmentButton} ${recording ? styles.recordingButton : ""}`}
+            disabled={disabled}
+            onClick={() => setRecording((current) => !current)}
+            type="button"
+          >
+            <Mic aria-hidden="true" size={18} />
+          </button>
           <button
             aria-label="Send message"
             className={styles.sendButton}

@@ -850,11 +850,19 @@
   display: grid;
   place-items: center;
   flex: none;
+  padding: 0;
+  border: 0;
   border-radius: 50%;
   color: var(--green-700);
   background: rgba(237, 248, 243, 0.92);
   cursor: pointer;
   transition: color 180ms ease, background-color 180ms ease, transform 160ms var(--motion-press);
+}
+
+.recordingButton {
+  color: #fff;
+  background: var(--green-700);
+  box-shadow: 0 0 0 4px rgba(16, 107, 83, 0.1);
 }
 
 .attachmentButton input {
@@ -903,8 +911,6 @@
   background: var(--green-700);
   box-shadow: 0 5px 14px rgba(16, 92, 73, 0.2);
 }
-
-.composerPrivacy { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; color: var(--ink-muted); font-size: 10px; font-weight: 600; }
 
 .sendButton:disabled { opacity: 0.32; cursor: not-allowed; transform: scale(0.9) rotate(-7deg); box-shadow: none; }
 
