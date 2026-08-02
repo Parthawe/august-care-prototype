@@ -302,6 +302,25 @@
   text-align: right;
 }
 
+.streamingCaret {
+  width: 2px;
+  height: 1em;
+  display: inline-block;
+  margin-left: 2px;
+  border-radius: 1px;
+  background: var(--green-700);
+  vertical-align: -0.12em;
+  animation: streamingCaretBlink 760ms steps(1, end) infinite;
+}
+
+@keyframes streamingCaretBlink {
+  50% { opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streamingCaret { display: none; animation: none; }
+}
+
 .patientBubble {
   padding: 10px 12px 7px;
   border-radius: 18px 5px 18px 18px;

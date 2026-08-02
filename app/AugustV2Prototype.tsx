@@ -194,7 +194,46 @@ function ConversationHeader({
   );
 }
 
-function MessageItem({ animate = true, message }: { animate?: boolean; message: Message }) {
+function StreamingText({ text }: { text: string }) {
+  const chunks = useMemo(() => text.match(/\S+\s*/g) ?? [text], [text]);
+  const [reducedMotion] = useState(() => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  const [visibleCount, setVisibleCount] = useState(reducedMotion ? chunks.length : 1);
+  const [complete, setComplete] = useState(reducedMotion || chunks.length <= 1);
+  const textRef = useRef<HTMLSpanElement>(null);
+
+  useEffect(() => {
+    if (reducedMotion || chunks.length <= 1) return;
+    const screen = textRef.current?.closest<HTMLElement>("[data-conversation-screen='true']");
+    const shouldFollow = screen
+      ? screen.scrollHeight - screen.scrollTop - screen.clientHeight < 120
+      : false;
+    const timer = window.setInterval(() => {
+      setVisibleCount((current) => {
+        const next = Math.min(current + 1, chunks.length);
+        if (next === chunks.length) {
+          window.clearInterval(timer);
+          setComplete(true);
+        }
+        return next;
+      });
+      if (screen && shouldFollow) requestAnimationFrame(() => screen.scrollTo({ top: screen.scrollHeight, behavior: "auto" }));
+    }, 42);
+
+    return () => window.clearInterval(timer);
+  }, [chunks, reducedMotion]);
+
+  return (
+    <>
+      <span className={styles.visuallyHidden}>{text}</span>
+      <span aria-hidden="true" ref={textRef}>
+        {chunks.slice(0, visibleCount).join("")}
+        {!complete ? <i className={styles.streamingCaret} /> : null}
+      </span>
+    </>
+  );
+}
+
+function MessageItem({ animate = true, message, stream = false }: { animate?: boolean; message: Message; stream?: boolean }) {
   if (message.author === "system") {
     return (
       <div className={`${styles.systemMessage} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
@@ -223,7 +262,7 @@ function MessageItem({ animate = true, message }: { animate?: boolean; message: 
     <div className={`${styles.messageRow} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
       <Avatar person={isMaya ? "maya" : "august"} size="small" />
       <div className={isMaya ? styles.clinicianMessage : styles.augustMessage}>
-        <p>{message.content}</p>
+        <p>{stream && !isMaya ? <StreamingText text={message.content} /> : message.content}</p>
         <time>{message.time ?? (isMaya ? "10:24" : "9:41")}</time>
       </div>
     </div>
@@ -1221,6 +1260,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     }
     return result;
   }, [answers, flow, gatheringStep, pending, state]);
+  const latestAugustMessageIndex = messages.reduce((latest, message, index) => message.author === "august" ? index : latest, -1);
 
   const composerConfig = (() => {
     if (completeJourney) {
@@ -1307,7 +1347,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             />
           )}
 
-          <div className={styles.screen} ref={transcriptRef}>
+          <div className={styles.screen} data-conversation-screen="true" ref={transcriptRef}>
             {searchOpen ? (
               <form className={styles.conversationSearch} onSubmit={searchConversation} role="search">
                 <Search aria-hidden="true" size={17} />
@@ -1333,7 +1373,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <div className={styles.transcript}>
                   {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
                   {state === "empty" && !pending ? <EncryptionNotice /> : null}
-                  {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
+                  {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} stream={index === latestAugustMessageIndex && !pending} />)}
                   {pending ? <ResponseProgress person={pending} /> : null}
                 </div>
               ) : (
@@ -1359,7 +1399,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div className={styles.transcript}>
                 {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
                 {state === "empty" && !pending ? <EncryptionNotice /> : null}
-                {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
+                {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} stream={index === latestAugustMessageIndex && !pending} />)}
                 {pending ? <ResponseProgress person={pending} /> : null}
               </div>
             ) : null}
