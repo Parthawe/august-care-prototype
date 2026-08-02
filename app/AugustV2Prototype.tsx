@@ -1080,13 +1080,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setState(next);
   }
 
-  function moveTo(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State) {
+  function moveTo(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State, preservePatientReplies = false) {
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
     setPending(null);
     setHandoff(null);
     if (nextFlow === "intake" && nextState === "reviewing") setReviewingPhase("thinking");
-    if (nextFlow !== flow) setPatientReplies([]);
+    if (nextFlow !== flow && !preservePatientReplies) setPatientReplies([]);
     setFlow(nextFlow);
     setState(nextState);
   }
@@ -1237,7 +1237,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       if (flow === "intake" && state === "reply") {
         setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
         setPending("maya");
-        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 1_100);
+        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended", true); }, 1_100);
         timers.current.push(timer);
         return;
       }

@@ -132,6 +132,20 @@ test("prescription continuation ends at prescription sent", async ({
   await expect(page).toHaveURL(/state=sent/);
 });
 
+test("Maya keeps the patient reply when the conversation advances to testing", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-reply");
+
+  const reply = "I can drink normally and I have not noticed a rash.";
+  await send(page, reply);
+
+  await expect(page.getByText(reply, { exact: true })).toBeVisible();
+  await expect(page.getByText(/recommend a rapid strep test/)).toBeVisible();
+  await expect(page.getByText(reply, { exact: true })).toBeVisible();
+});
+
 test("lab continuation offers only August-arranged nearby care", async ({
   page,
 }, testInfo) => {
