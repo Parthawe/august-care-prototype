@@ -117,6 +117,38 @@ const labRecommendationMessage =
 
 const AUGUST_THINKING_DELAY = 3_800;
 
+function getAugustIntakeHistory(answers: IntakeAnswers): Message[] {
+  return [
+    { author: "patient", content: answers.concern, time: "9:41" },
+    { author: "august", content: firstIntakeReply, time: "9:41" },
+    { author: "patient", content: answers.onset, time: "9:43" },
+    { author: "august", content: intakeQuestions[0].prompt, time: "9:43" },
+    { author: "patient", content: answers.warningSigns, time: "9:44" },
+    { author: "august", content: intakeQuestions[1].prompt, time: "9:45" },
+    { author: "patient", content: answers.history, time: "9:46" },
+    { author: "august", content: intakeQuestions[2].prompt, time: "9:47" },
+    { author: "patient", content: answers.allergies, time: "9:49" },
+  ];
+}
+
+function AugustPreviousConversation({ answers }: { answers: IntakeAnswers }) {
+  return (
+    <>
+      <div className={styles.dateMarker}>Earlier · August</div>
+      {getAugustIntakeHistory(answers).map((message, index) => (
+        <MessageItem animate={false} key={`august-history-${index}`} message={message} />
+      ))}
+      <MessageItem
+        animate={false}
+        message={{
+          author: "system",
+          content: "You confirmed the visit summary, and August shared it with Maya.",
+        }}
+      />
+    </>
+  );
+}
+
 function Avatar({
   person,
   size = "regular",
@@ -732,17 +764,7 @@ function CompleteJourneyConversation({
   pending: "august" | "maya" | null;
   state: PrototypeV2State;
 }) {
-  const fullIntake: Message[] = [
-    { author: "patient", content: answers.concern, time: "9:41" },
-    { author: "august", content: firstIntakeReply, time: "9:41" },
-    { author: "patient", content: answers.onset, time: "9:43" },
-    { author: "august", content: intakeQuestions[0].prompt, time: "9:43" },
-    { author: "patient", content: answers.warningSigns, time: "9:44" },
-    { author: "august", content: intakeQuestions[1].prompt, time: "9:45" },
-    { author: "patient", content: answers.history, time: "9:46" },
-    { author: "august", content: intakeQuestions[2].prompt, time: "9:47" },
-    { author: "patient", content: answers.allergies, time: "9:49" },
-  ];
+  const fullIntake = getAugustIntakeHistory(answers);
 
   if (flow === "intake" && ["empty", "concern", "gathering"].includes(state)) {
     return null;
@@ -800,6 +822,7 @@ function CompleteJourneyConversation({
   if (flow === "lab") {
     return (
       <div className={styles.transcript}>
+        <AugustPreviousConversation answers={answers} />
         <div className={styles.dateMarker}>Today · August</div>
         <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
         <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
@@ -907,7 +930,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     const scrollLatest = (behavior: ScrollBehavior) => {
       const conversationalState =
         completeJourney ||
-        (flow === "intake" && ["empty", "concern", "gathering", "reply"].includes(state));
+        (flow === "intake" && ["empty", "concern", "gathering", "reply"].includes(state)) ||
+        (flow === "lab" && state !== "recommended");
       transcriptRef.current?.scrollTo({
         top:
           conversationalState || patientReplies.length
@@ -1436,6 +1460,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "lab" && state === "nearby-lab" ? (
               <div className={styles.contentStack}>
+                <AugustPreviousConversation answers={answers} />
                 <div className={styles.dateMarker}>Today · August</div>
                 <MessageItem message={{ author: "system", content: "Maya sent the test order to your private August conversation." }} />
                 <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
@@ -1450,6 +1475,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "lab" && state === "confirmed" ? (
               <div className={styles.contentStack}>
+              <AugustPreviousConversation answers={answers} />
               <StatusReceipt
                 details="Your appointment and Maya’s order remain connected to this visit."
                 eyebrow="APPOINTMENT SCHEDULED"
