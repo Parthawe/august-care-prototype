@@ -14,6 +14,7 @@ import {
   ArrowRight,
   BatteryMedium,
   Bell,
+  BookOpen,
   Building2,
   Camera,
   CalendarDays,
@@ -25,6 +26,8 @@ import {
   Clock3,
   FileCheck2,
   ImagePlus,
+  House,
+  LayoutGrid,
   LockKeyhole,
   MapPin,
   MessageCircle,
@@ -35,6 +38,7 @@ import {
   Signal,
   Sparkles,
   UserRoundCheck,
+  UsersRound,
   Wifi,
   X,
   type LucideIcon,
@@ -401,32 +405,37 @@ function PassiveFooter({ icon: Icon, text }: { icon: LucideIcon; text: string })
 }
 
 type ProductTab = "updates" | "care" | "august";
+type ProductNavItem = ProductTab | "home" | "library";
 
 function ProductNavigation({ activeTab, careAvailable, onSelect }: {
   activeTab: ProductTab;
   careAvailable: boolean;
   onSelect: (tab: ProductTab) => void;
 }) {
-  const items: Array<{ id: ProductTab; label: string; icon?: LucideIcon }> = [
-    { id: "updates", label: "Activity", icon: Clock3 },
+  const items: Array<{ id: ProductNavItem; label: string; icon: LucideIcon; inert?: boolean }> = [
+    { id: "updates", label: "Activity", icon: LayoutGrid },
+    { id: "home", label: "Home", icon: House, inert: true },
     { id: "care", label: "Chats", icon: MessageCircle },
-    { id: "august", label: "August" },
+    { id: "library", label: "Library", icon: BookOpen, inert: true },
+    { id: "august", label: "August", icon: UsersRound },
   ];
 
   return (
     <nav aria-label="Primary navigation" className={styles.bottomNav} data-active-tab={activeTab}>
-      {items.map(({ id, icon: Icon, label }) => (
+      {items.map(({ id, icon: Icon, inert, label }) => (
         <button
-          aria-current={activeTab === id ? "page" : undefined}
+          aria-current={!inert && activeTab === id ? "page" : undefined}
+          aria-disabled={inert || undefined}
           aria-label={label}
-          className={activeTab === id ? styles.activeNav : undefined}
+          className={!inert && activeTab === id ? styles.activeNav : undefined}
+          data-inert={inert || undefined}
           key={id}
-          onClick={() => onSelect(id)}
+          onClick={() => { if (!inert) onSelect(id as ProductTab); }}
           type="button"
         >
-          {id === "august" ? <Avatar person="august" size="small" /> : Icon ? <Icon aria-hidden="true" size={21} strokeWidth={activeTab === id ? 2.4 : 2} /> : null}
+          <Icon aria-hidden="true" size={24} strokeWidth={!inert && activeTab === id ? 2.35 : 2} />
           {id === "care" && careAvailable && activeTab !== "care" ? <i aria-hidden="true" className={styles.navBadge} /> : null}
-          <span className={activeTab === id ? styles.navExpandedLabel : styles.visuallyHidden}>{label}</span>
+          <span className={styles.visuallyHidden}>{label}</span>
         </button>
       ))}
     </nav>

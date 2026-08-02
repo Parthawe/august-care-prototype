@@ -951,11 +951,11 @@
   position: relative;
   isolation: isolate;
   display: grid;
-  grid-template-columns: 62px 62px minmax(0, 1fr);
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   margin: 3px 20px max(13px, calc(env(safe-area-inset-bottom) + 5px));
-  padding: 3px 8px;
+  padding: 4px 7px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.88);
   border-radius: 999px;
@@ -968,9 +968,6 @@
   -webkit-backdrop-filter: blur(32px) saturate(1.45);
   backdrop-filter: blur(32px) saturate(1.45);
 }
-
-.bottomNav[data-active-tab="updates"] { grid-template-columns: minmax(0, 1fr) 62px 62px; }
-.bottomNav[data-active-tab="care"] { grid-template-columns: 62px minmax(0, 1fr) 62px; }
 
 .bottomNav::after {
   position: absolute;
@@ -987,10 +984,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 0;
   padding: 0;
   border: 0;
-  border-radius: 999px;
+  border-radius: 16px;
   color: #667b73;
   background: transparent;
   font: inherit;
@@ -1001,28 +998,19 @@
     transform 160ms var(--motion-press);
 }
 
-.bottomNav > button > svg,
-.bottomNav > button > .avatar { position: relative; z-index: 1; }
+.bottomNav > button > svg { position: relative; z-index: 1; }
 
-.bottomNav .avatar { width: 28px; height: 28px; filter: grayscale(0.48); transition: filter 200ms ease, transform 220ms var(--motion-ease), box-shadow 220ms var(--motion-ease); }
-.bottomNav .activeNav { color: #fff; background: #075f4d; box-shadow: 0 6px 16px rgba(7, 95, 77, 0.2); }
-.bottomNav .activeNav .avatar { filter: none; transform: scale(1.02); box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.94); }
-.bottomNav > button:disabled { cursor: default; opacity: 0.48; }
-
-.navExpandedLabel {
-  position: relative;
-  z-index: 1;
-  color: currentColor;
-  font-size: 13px;
-  font-weight: 650;
-  letter-spacing: -0.01em;
-  white-space: nowrap;
+.bottomNav .activeNav {
+  color: #075f4d;
+  background: rgba(218, 241, 231, 0.9);
+  box-shadow: inset 0 0 0 1px rgba(7, 95, 77, 0.08);
 }
+.bottomNav > button[data-inert="true"] { cursor: default; color: #687973; }
 
 .navBadge {
   position: absolute;
-  top: 7px;
-  right: calc(50% - 14px);
+  top: 6px;
+  right: calc(50% - 17px);
   width: 7px;
   height: 7px;
   border-radius: 50%;
