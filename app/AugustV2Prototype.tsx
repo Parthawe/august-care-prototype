@@ -512,6 +512,14 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
   );
 }
 
+function AugustLauncher({ onOpen }: { onOpen: () => void }) {
+  return (
+    <button aria-label="Start a new August chat" className={styles.newChatButton} onClick={onOpen} type="button">
+      <span aria-hidden="true" className={styles.augustFabMark} data-august-mark="true">a</span>
+    </button>
+  );
+}
+
 function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { careAvailable: boolean; onAskAugust: (query: string) => void; onOpenAugust: () => void; onOpenMaya: () => void }) {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<"all" | "unread" | "clinicians">("all");
@@ -573,14 +581,12 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
         {!showMaya && !showAugust && !query ? <div className={styles.emptyTabState}><MessageCircle aria-hidden="true" size={20} /><strong>No chats in this filter</strong><span>Your care conversations will appear here.</span></div> : null}
       </div>
 
-      <button aria-label="Start a new August chat" className={styles.newChatButton} onClick={onOpenAugust} type="button">
-        <span aria-hidden="true" className={styles.augustFabMark} data-august-mark="true">a</span>
-      </button>
+      <AugustLauncher onOpen={onOpenAugust} />
     </div>
   );
 }
 
-function UpdatesTab({ careAvailable }: { careAvailable: boolean }) {
+function UpdatesTab({ careAvailable, onOpenAugust }: { careAvailable: boolean; onOpenAugust: () => void }) {
   return (
     <div className={styles.healthDashboard}>
       <section className={styles.healthHero}>
@@ -604,6 +610,7 @@ function UpdatesTab({ careAvailable }: { careAvailable: boolean }) {
           <div><span><UsersRound aria-hidden="true" size={16} /></span><small>Care</small><strong>{careAvailable ? "Active" : "Ready"}</strong></div>
         </div>
       </section>
+      <AugustLauncher onOpen={onOpenAugust} />
     </div>
   );
 }
@@ -1320,7 +1327,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {showCareInbox ? (
               <CareInbox careAvailable={careAvailable} onAskAugust={askAugustFromChats} onOpenAugust={() => switchTab("august")} onOpenMaya={openMayaThread} />
             ) : showUpdates ? (
-              <UpdatesTab careAvailable={careAvailable} />
+              <UpdatesTab careAvailable={careAvailable} onOpenAugust={() => switchTab("august")} />
             ) : completeJourney ? (
               flow === "intake" && ["empty", "concern", "gathering"].includes(state) ? (
                 <div className={styles.transcript}>
