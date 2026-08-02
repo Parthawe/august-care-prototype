@@ -593,3 +593,14 @@ test("Maya presence reflects whether she is reviewing or available", async ({
   await page.goto("/prototype-v2/00?state=prescription-recommended");
   await expect(page.locator("header").getByText("Online", { exact: true })).toBeVisible();
 });
+
+test("Maya pauses before explaining the medication plan", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/prototype-v2/00?state=prescription-review");
+
+  await expect(page.getByText("Show me the medication plan.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Maya is reviewing/i)).toBeVisible();
+  await expect(page.getByText(/Penicillin V, 500 mg tablet/)).toHaveCount(0);
+  await expect(page.locator("[data-message-motion]").filter({ hasText: "Penicillin V, 500 mg tablet." })).toBeVisible({ timeout: 10_000 });
+});

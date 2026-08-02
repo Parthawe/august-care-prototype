@@ -124,6 +124,10 @@ const clinicianHandoffMessage =
 const labRecommendationMessage =
   "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.";
 
+function getPrescriptionPlanMessage(encounter: ReturnType<typeof createPrototypeV2Encounter>) {
+  return `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`;
+}
+
 const STREAM_WORD_DELAY = 28;
 const AUGUST_THINKING_DELAY = 1_800;
 const AUGUST_HANDOFF_DELAY = 2_200;
@@ -924,6 +928,7 @@ function CompleteJourneyConversation({
   reviewingPhase,
   state,
   submittedMessages,
+  treatmentPhase,
 }: {
   answers: IntakeAnswers;
   encounter: ReturnType<typeof createPrototypeV2Encounter>;
@@ -943,6 +948,7 @@ function CompleteJourneyConversation({
   reviewingPhase: "thinking" | "responding" | "complete";
   state: PrototypeV2State;
   submittedMessages: Record<string, string>;
+  treatmentPhase: "reviewing" | "responding" | "complete";
 }) {
   const fullIntake = getAugustIntakeHistory(answers);
   const conversationContext = `${flow}:${state}`;
@@ -1056,7 +1062,8 @@ function CompleteJourneyConversation({
         {state === "review" ? (
           <>
             <MessageItem message={{ author: "patient", content: submittedMessages["prescription:recommended"] ?? "Show me the medication plan.", time: "2:15" }} />
-            <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`, time: "2:16" }} stream />
+            {treatmentPhase === "reviewing" ? <ResponseProgress mode="clinical" person="maya" /> : null}
+            {treatmentPhase !== "reviewing" ? <MessageItem message={{ author: "maya", content: getPrescriptionPlanMessage(encounter), time: "2:16" }} stream={treatmentPhase === "responding"} /> : null}
           </>
         ) : null}
         {mayaReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} stream={index === mayaReplies.length - 1 && message.author !== "patient"} />)}
@@ -1108,6 +1115,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
   const [reviewingPhase, setReviewingPhase] = useState<"thinking" | "responding" | "complete">("thinking");
   const [recommendationPhase, setRecommendationPhase] = useState<"reviewing" | "responding" | "complete">("reviewing");
+  const [treatmentPhase, setTreatmentPhase] = useState<"reviewing" | "responding" | "complete">("reviewing");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -1175,6 +1183,27 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   }, [flow, state]);
 
   useEffect(() => {
+    if (flow !== "prescription" || state !== "review") return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      const revealTimer = window.setTimeout(() => setTreatmentPhase("complete"), 0);
+      return () => window.clearTimeout(revealTimer);
+    }
+
+    const message = getPrescriptionPlanMessage(encounter);
+    const responseTimer = window.setTimeout(() => setTreatmentPhase("responding"), CLINICIAN_REVIEW_DELAY);
+    const wordCount = message.match(/\S+\s*/g)?.length ?? 1;
+    const completeTimer = window.setTimeout(
+      () => setTreatmentPhase("complete"),
+      CLINICIAN_REVIEW_DELAY + wordCount * STREAM_WORD_DELAY + 220,
+    );
+    return () => {
+      window.clearTimeout(responseTimer);
+      window.clearTimeout(completeTimer);
+    };
+  }, [encounter, flow, state]);
+
+  useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set("state", completeJourney ? getCompleteJourneyId(flow, state) : state);
     window.history.replaceState({}, "", url);
@@ -1211,7 +1240,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       window.cancelAnimationFrame(frame);
       window.clearTimeout(scrollTimer);
     };
-  }, [completeJourney, flow, gatheringStep, patientReplies, pending, recommendationPhase, reviewingPhase, state]);
+  }, [completeJourney, flow, gatheringStep, patientReplies, pending, recommendationPhase, reviewingPhase, state, treatmentPhase]);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -1246,6 +1275,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setHandoff(null);
     if (next === "reviewing") setReviewingPhase("thinking");
     if (flow === "lab" && next === "recommended") setRecommendationPhase("reviewing");
+    if (flow === "prescription" && next === "review") setTreatmentPhase("reviewing");
     setState(next);
   }
 
@@ -1256,6 +1286,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setHandoff(null);
     if (nextFlow === "intake" && nextState === "reviewing") setReviewingPhase("thinking");
     if (nextFlow === "lab" && nextState === "recommended") setRecommendationPhase("reviewing");
+    if (nextFlow === "prescription" && nextState === "review") setTreatmentPhase("reviewing");
     if (nextFlow !== flow && !preservePatientReplies) setPatientReplies([]);
     setFlow(nextFlow);
     setState(nextState);
@@ -1610,7 +1641,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           : state === "pharmacy"
             ? "Tell August where to send it…"
             : `Message ${recipient}…`;
-      const awaitingMaya = flow === "lab" && state === "recommended" && recommendationPhase !== "complete";
+      const awaitingMaya = (flow === "lab" && state === "recommended" && recommendationPhase !== "complete") ||
+        (flow === "prescription" && state === "review" && treatmentPhase !== "complete");
       return { kind: "composer" as const, disabled: Boolean(pending) || awaitingMaya, placeholder, recipient };
     }
     if (flow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
@@ -1619,13 +1651,16 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (flow === "intake" && state === "concern") return { kind: "composer" as const, disabled: false, placeholder: "Add timing, severity, and fever…", recipient: "August" as const };
     if (flow === "intake" && state === "gathering") return { kind: "composer" as const, disabled: Boolean(pending), placeholder: intakeQuestions[gatheringStep].placeholder, recipient: "August" as const };
     if (!clinician) return { kind: "composer" as const, disabled: false, placeholder: "Message August…", recipient: "August" as const };
-    const awaitingMaya = flow === "lab" && state === "recommended" && recommendationPhase !== "complete";
+    const awaitingMaya = (flow === "lab" && state === "recommended" && recommendationPhase !== "complete") ||
+      (flow === "prescription" && state === "review" && treatmentPhase !== "complete");
     return { kind: "composer" as const, disabled: awaitingMaya, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
   const clinicianPresence = !clinician
     ? undefined
-    : pending === "maya" || (flow === "lab" && state === "recommended" && recommendationPhase !== "complete")
+    : pending === "maya" ||
+        (flow === "lab" && state === "recommended" && recommendationPhase !== "complete") ||
+        (flow === "prescription" && state === "review" && treatmentPhase !== "complete")
       ? "reviewing" as const
       : "online" as const;
   const subtitle = clinicianPresence === "reviewing"
@@ -1749,6 +1784,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   reviewingPhase={reviewingPhase}
                   state={state}
                   submittedMessages={submittedMessages}
+                  treatmentPhase={treatmentPhase}
                 />
               )
             ) : (
@@ -1819,8 +1855,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <MessageItem message={{ author: "system", content: "Result confirmed by you · Maya notified" }} />
                 <MessageItem message={{ author: "maya", content: "I reviewed your positive rapid strep result with the symptoms, safety answers, medicines, and allergies you shared. The result explains your sore throat and fever. An antibiotic is appropriate, and I recommend Penicillin V.", time: "2:14" }} />
                 <MessageItem message={{ author: "patient", content: submittedMessages["prescription:recommended"] ?? "Show me the medication plan.", time: "2:15" }} />
-                <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`, time: "2:16" }} stream />
-                <PrimaryAction onClick={() => changeState("pharmacy")}>Ask August to send it</PrimaryAction>
+                {treatmentPhase === "reviewing" ? <ResponseProgress mode="clinical" person="maya" /> : null}
+                {treatmentPhase !== "reviewing" ? <MessageItem message={{ author: "maya", content: getPrescriptionPlanMessage(encounter), time: "2:16" }} stream={treatmentPhase === "responding"} /> : null}
+                {treatmentPhase === "complete" ? <PrimaryAction onClick={() => changeState("pharmacy")}>Ask August to send it</PrimaryAction> : null}
               </div>
             ) : null}
 
