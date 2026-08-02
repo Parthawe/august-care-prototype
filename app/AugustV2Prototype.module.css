@@ -34,6 +34,7 @@
   width: 100%;
   height: 100%;
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   grid-template-rows:
     64px
     minmax(0, 1fr)
@@ -47,6 +48,8 @@
     var(--cream);
   box-shadow: 0 26px 64px rgba(16, 59, 49, 0.15);
 }
+
+.phone > * { min-width: 0; }
 
 .conversationHeader {
   display: flex;
@@ -202,6 +205,7 @@
 }
 
 .screen {
+  min-width: 0;
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
@@ -218,6 +222,8 @@
 
 .transcript,
 .contentStack {
+  width: 100%;
+  min-width: 0;
   min-height: 100%;
   padding: 20px 22px 28px;
 }
@@ -795,6 +801,8 @@
 }
 
 .emptyPromptShelf {
+  min-width: 0;
+  max-width: 100%;
   display: flex;
   gap: 10px;
   width: 100%;
@@ -803,48 +811,51 @@
   scroll-padding-inline: 16px;
   scroll-snap-type: x mandatory;
   scrollbar-width: none;
+  overscroll-behavior-inline: contain;
+  -webkit-overflow-scrolling: touch;
 }
 
 .emptyPromptShelf::-webkit-scrollbar { display: none; }
 
 .emptyPromptCard {
   position: relative;
-  width: min(292px, calc(100vw - 54px));
-  min-height: 154px;
+  width: min(292px, calc(100% - 48px));
+  min-height: 142px;
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-columns: 40px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
-  gap: 10px 12px;
+  gap: 9px 11px;
   flex: none;
-  padding: 14px;
+  padding: 13px;
   border: 1px solid rgba(16, 59, 49, 0.12);
   border-radius: 24px;
   background: rgba(255, 255, 255, 0.88);
   box-shadow: 0 8px 22px rgba(16, 59, 49, 0.06);
   scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .emptyPromptIcon {
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
+  border-radius: 13px;
   color: var(--green-700);
   background: var(--mint-100);
 }
 
 .emptyPromptCopy { min-width: 0; padding-top: 1px; }
-.emptyPromptCopy strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 16px; line-height: 1.2; letter-spacing: -0.015em; }
-.emptyPromptCopy p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.35; }
+.emptyPromptCopy strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 15px; line-height: 1.22; letter-spacing: -0.015em; }
+.emptyPromptCopy p { margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.38; }
 
 .emptyPromptCard > button {
-  min-height: 42px;
+  min-height: 40px;
   grid-column: 2;
   justify-self: start;
   padding: 0 16px;
   border: 1px solid var(--green-600);
-  border-radius: 14px;
+  border-radius: 999px;
   color: var(--green-700);
   background: rgba(255, 255, 255, 0.76);
   font: inherit;
@@ -977,10 +988,14 @@
 .sendButton:disabled { opacity: 0.32; cursor: not-allowed; transform: scale(0.9) rotate(-7deg); box-shadow: none; }
 
 .inputZone {
+  min-width: 0;
+  overflow: hidden;
   background: linear-gradient(180deg, rgba(245, 251, 248, 0.06), rgba(239, 248, 244, 0.78) 26%);
   -webkit-backdrop-filter: blur(22px) saturate(1.18);
   backdrop-filter: blur(22px) saturate(1.18);
 }
+
+.inputZone > * { min-width: 0; max-width: 100%; }
 
 .emergencyNotice {
   width: max-content;
@@ -1401,14 +1416,17 @@
 .emptyTabState span { max-width: 260px; font-size: 12px; line-height: 1.5; }
 
 .encryptionNotice {
+  width: min(100%, 310px);
   max-width: 310px;
   display: block;
   align-self: center;
-  margin-top: 4px;
+  margin: 4px auto 0;
   padding: 10px 13px;
+  border: 1px solid rgba(16, 59, 49, 0.06);
   border-radius: 12px;
   color: #597068;
   background: rgba(232, 244, 238, 0.88);
+  box-shadow: 0 5px 14px rgba(16, 59, 49, 0.035);
   font-size: 10px;
   line-height: 1.42;
   text-align: center;
