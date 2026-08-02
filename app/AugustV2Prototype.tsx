@@ -441,23 +441,24 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
     { id: "home", label: "Home", icon: House, inert: true },
     { id: "care", label: "Chats", icon: MessageCircle },
     { id: "library", label: "Library", icon: BookOpen, inert: true },
-    { id: "august", label: "August", icon: UsersRound },
+    { id: "august", label: "August", icon: UsersRound, inert: true },
   ];
 
   return (
     <nav aria-label="Primary navigation" className={styles.bottomNav} data-active-tab={activeTab}>
       {items.map(({ id, icon: Icon, inert, label }) => (
         <button
-          aria-current={!inert && activeTab === id ? "page" : undefined}
+          aria-current={activeTab === id ? "page" : undefined}
           aria-disabled={inert || undefined}
           aria-label={label}
-          className={!inert && activeTab === id ? styles.activeNav : undefined}
+          className={activeTab === id ? styles.activeNav : undefined}
           data-inert={inert || undefined}
+          disabled={inert}
           key={id}
           onClick={() => { if (!inert) onSelect(id as ProductTab); }}
           type="button"
         >
-          <Icon aria-hidden="true" size={20} strokeWidth={!inert && activeTab === id ? 2.3 : 2} />
+          <Icon aria-hidden="true" size={20} strokeWidth={activeTab === id ? 2.3 : 2} />
           {id === "care" && careAvailable && activeTab !== "care" ? <i aria-hidden="true" className={styles.navBadge} /> : null}
           <span className={styles.visuallyHidden}>{label}</span>
         </button>
