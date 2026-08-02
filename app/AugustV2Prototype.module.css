@@ -145,6 +145,7 @@
 .conversationHeader > .headerAction:first-child { margin-left: -8px; }
 .headerActions { display: flex; align-items: center; flex: none; margin-right: -7px; }
 .headerActions .headerAction { margin: 0; color: var(--green-800); background: transparent; }
+.headerActions .headerAction:disabled { opacity: 1; cursor: default; }
 
 .conversationSearch {
   position: sticky;

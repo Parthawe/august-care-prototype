@@ -191,13 +191,11 @@ function AugustIdentityMark({ size = "regular" }: { size?: "small" | "regular" |
 function ConversationHeader({
   clinician,
   onBack,
-  onDetails,
   onSearch,
   subtitle,
 }: {
   clinician: boolean;
   onBack: () => void;
-  onDetails: (trigger: HTMLButtonElement) => void;
   onSearch: () => void;
   subtitle: string;
 }) {
@@ -226,9 +224,9 @@ function ConversationHeader({
           <Search aria-hidden="true" size={19} />
         </button>
         <button
-          aria-label="Open conversation details"
+          aria-label="Conversation options unavailable in prototype"
           className={styles.headerAction}
-          onClick={(event) => onDetails(event.currentTarget)}
+          disabled
           type="button"
         >
           <MoreVertical aria-hidden="true" size={20} />
@@ -1026,6 +1024,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   useEffect(() => {
     if (!modalOpen) return;
+    const trigger = lastTriggerRef.current;
     firstDialogActionRef.current?.focus();
     function handleKey(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -1045,7 +1044,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     document.addEventListener("keydown", handleKey);
     return () => {
       document.removeEventListener("keydown", handleKey);
-      requestAnimationFrame(() => lastTriggerRef.current?.focus());
+      requestAnimationFrame(() => trigger?.focus());
     };
   }, [modalOpen]);
 
@@ -1432,7 +1431,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             <ConversationHeader
               clinician={clinician}
               onBack={() => switchTab("care")}
-              onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
               onSearch={() => setSearchOpen((current) => !current)}
               subtitle={subtitle}
             />
