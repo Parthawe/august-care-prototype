@@ -331,14 +331,19 @@ test("conversation details explain recipient and privacy with accessible dismiss
   await expect(trigger).toBeFocused();
 });
 
-test("header back follows the care context without showing a branch chooser", async ({
+test("header back is always present and opens the Care tab", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-empty");
+  await page.getByRole("button", { name: "Back to Care" }).click();
+  await expect(page.getByText("Your care conversations")).toBeVisible();
+  await expect(page.getByText("No clinician conversations yet")).toBeVisible();
+
   await page.goto("/prototype-v2/prescription?state=recommended");
-  await page.getByRole("button", { name: "Go to previous care step" }).click();
-  await expect(page).toHaveURL(/\/prototype-v2\/intake\?state=reply$/);
-  await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
+  await page.getByRole("button", { name: "Back to Care" }).click();
+  await expect(page.getByText("Your care conversations")).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
   await expect(page.getByText(/choose a clinician|choose an outcome/i)).toHaveCount(0);
 });
 

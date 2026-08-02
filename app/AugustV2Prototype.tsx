@@ -40,12 +40,8 @@ import {
 import styles from "./AugustV2Prototype.module.css";
 import {
   createPrototypeV2Encounter,
-  completeJourneyStates,
   defaultIntakeAnswers,
   getCompleteJourneyId,
-  getCompleteJourneyLocation,
-  getPreviousPrototypeV2State,
-  getPrototypeV2StateIndex,
   IntakeAnswers,
   PrototypeV2Flow,
   PrototypeV2State,
@@ -141,14 +137,12 @@ function StatusBar() {
 }
 
 function ConversationHeader({
-  canGoBack,
   clinician,
   onBack,
   onDetails,
   onSearch,
   subtitle,
 }: {
-  canGoBack: boolean;
   clinician: boolean;
   onBack: () => void;
   onDetails: (trigger: HTMLButtonElement) => void;
@@ -157,16 +151,14 @@ function ConversationHeader({
 }) {
   return (
     <header className={styles.conversationHeader}>
-      {canGoBack ? (
-        <button
-          aria-label="Go to previous care step"
-          className={styles.headerAction}
-          onClick={onBack}
-          type="button"
-        >
-          <ArrowLeft aria-hidden="true" size={20} />
-        </button>
-      ) : null}
+      <button
+        aria-label="Back to Care"
+        className={styles.headerAction}
+        onClick={onBack}
+        type="button"
+      >
+        <ArrowLeft aria-hidden="true" size={20} />
+      </button>
       <Avatar person={clinician ? "maya" : "august"} />
       <div className={styles.headerCopy}>
         <strong>{clinician ? "Maya (Clinician)" : "August"}</strong>
@@ -667,7 +659,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const timers = useRef<number[]>([]);
 
   const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(flow, state), answers }), [answers, flow, state]);
-  const stateIndex = getPrototypeV2StateIndex(flow, state);
   const clinician =
     (flow === "intake" && state === "reply") ||
     (flow === "lab" && state === "recommended") ||
@@ -767,24 +758,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setPending(null);
     setFlow(nextFlow);
     setState(nextState);
-  }
-
-  function goBack() {
-    if (completeJourney) {
-      const current = getCompleteJourneyLocation(getCompleteJourneyId(flow, state));
-      if (current.index > 0) {
-        const previousId = completeJourneyStates[current.index - 1];
-        const location = getCompleteJourneyLocation(previousId);
-        moveTo(location.flow, location.state);
-      }
-      return;
-    }
-    const previous = getPreviousPrototypeV2State(flow, state);
-    if (previous.flow !== flow) {
-      window.location.assign(`/prototype-v2/${previous.flow}?state=${previous.state}`);
-      return;
-    }
-    changeState(previous.state);
   }
 
   function switchTab(target: ProductTab) {
@@ -1071,9 +1044,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             </header>
           ) : (
             <ConversationHeader
-              canGoBack={completeJourney ? getCompleteJourneyLocation(getCompleteJourneyId(flow, state)).index > 0 : flow !== "intake" || stateIndex > 0}
               clinician={clinician}
-              onBack={goBack}
+              onBack={() => switchTab("care")}
               onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
               onSearch={() => setSearchOpen((current) => !current)}
               subtitle={subtitle}
