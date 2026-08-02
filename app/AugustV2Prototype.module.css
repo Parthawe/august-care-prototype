@@ -309,6 +309,27 @@
 .patientBubble p,
 .systemMessage p { margin: 0; white-space: pre-line; }
 
+.messageMapLink {
+  align-items: center;
+  border-top: 1px solid rgba(16, 59, 49, 0.1);
+  color: var(--green);
+  display: flex;
+  font-size: 13px;
+  font-weight: 700;
+  gap: 7px;
+  margin-top: 10px;
+  min-height: 44px;
+  padding-top: 5px;
+  text-decoration: none;
+  width: 100%;
+}
+
+.messageMapLink:focus-visible {
+  border-radius: 8px;
+  outline: 2px solid var(--green);
+  outline-offset: 2px;
+}
+
 .augustMessage > time,
 .clinicianMessage > time {
   display: block;

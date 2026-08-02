@@ -64,6 +64,7 @@ type Message = {
   content: string;
   imageName?: string;
   imageUrl?: string;
+  mapAddress?: string;
   time?: string;
 };
 
@@ -300,11 +301,20 @@ function MessageItem({ animate = true, message, stream = false }: { animate?: bo
   }
 
   const isMaya = message.author === "maya";
+  const mapUrl = message.mapAddress
+    ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(message.mapAddress)}`
+    : null;
   return (
     <div className={`${styles.messageRow} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
       <Avatar person={isMaya ? "maya" : "august"} size="small" />
       <div className={isMaya ? styles.clinicianMessage : styles.augustMessage}>
         <p>{stream ? <StreamingText text={message.content} /> : message.content}</p>
+        {mapUrl ? (
+          <a className={styles.messageMapLink} href={mapUrl} rel="noreferrer" target="_blank">
+            <MapPin aria-hidden="true" size={15} />
+            Open in Google Maps
+          </a>
+        ) : null}
         <time>{message.time ?? (isMaya ? "10:24" : "9:41")}</time>
       </div>
     </div>
@@ -882,7 +892,7 @@ function CompleteJourneyConversation({
         <AugustPreviousConversation answers={answers} />
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
-      {state === "confirmed" || pending !== "august" ? <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} /> : null}
+      {state === "confirmed" || pending !== "august" ? <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, mapAddress: encounter.lab.address, time: "10:28" }} /> : null}
         {state === "nearby-lab" && pending === "august" && submittedMessages["lab:nearby-lab"] ? (
           <>
             <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />
@@ -1649,7 +1659,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <AugustPreviousConversation answers={answers} />
                 <div className={styles.dateMarker}>Today · August</div>
                 <MessageItem message={{ author: "system", content: "Maya sent the test order to your private August conversation." }} />
-                <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
+                <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, mapAddress: encounter.lab.address, time: "10:28" }} />
                 {pending === "august" ? (
                   <>
                     <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />

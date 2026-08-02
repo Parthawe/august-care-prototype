@@ -174,12 +174,19 @@ test("lab continuation offers only August-arranged nearby care", async ({
   await page.goto("/prototype-v2/lab");
   await page.getByRole("button", { name: "Continue with August" }).click();
   await expect(page.getByText(/Mission Lab can take Maya’s order/)).toBeVisible();
+  const mapLink = page.getByRole("link", { name: "Open in Google Maps" });
+  await expect(mapLink).toBeVisible();
+  await expect(mapLink).toHaveAttribute(
+    "href",
+    "https://www.google.com/maps/search/?api=1&query=2400%20Mission%20St%2C%20San%20Francisco",
+  );
+  await expect(mapLink).toHaveAttribute("target", "_blank");
   await expect(page.getByRole("button", { name: "Yes, confirm appointment" })).toBeVisible();
   await expect(page.getByRole("button", { name: /upload|external/i })).toHaveCount(0);
   await page.getByRole("button", { name: "Yes, confirm appointment" }).click();
   await expect(
-    page.getByRole("heading", { name: "Appointment confirmed" }),
-  ).toBeVisible();
+    page.getByRole("heading", { name: "Your test result is ready" }),
+  ).toBeVisible({ timeout: 8_000 });
   await expect(page).toHaveURL(/state=confirmed/);
 });
 
