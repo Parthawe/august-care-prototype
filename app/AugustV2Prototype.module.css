@@ -663,8 +663,14 @@
   gap: 2px;
 }
 
+.handoffIdentity .augustIdentityMark {
+  border-radius: 50%;
+  color: #fff;
+  font-size: 21px;
+}
+
 .handoffIdentity strong { font-size: 14px; font-weight: 730; }
-.handoffIdentity span { color: var(--ink-soft); font-size: 10px; }
+.handoffIdentity > div:last-child span { color: var(--ink-soft); font-size: 10px; }
 
 .conversationHandoffCard > p {
   margin: 0;
