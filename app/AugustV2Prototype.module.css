@@ -1166,8 +1166,7 @@
 .tabActions button small { color: var(--ink-muted); font-size: 12px; }
 .tabActions button > svg { color: var(--ink-muted); }
 .tabActionIcon,
-.updateItem > span,
-.emptyTabState > svg {
+.updateItem > span {
   width: 42px;
   height: 42px;
   display: grid;
@@ -1176,6 +1175,15 @@
   border-radius: 50%;
   color: var(--green-700);
   background: var(--mint-100);
+}
+
+.emptyTabState > svg {
+  width: 28px;
+  height: 28px;
+  flex: none;
+  overflow: visible;
+  color: var(--green-700);
+  background: transparent;
 }
 
 .updateItem {
