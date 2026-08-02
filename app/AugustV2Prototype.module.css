@@ -94,6 +94,21 @@
 .avatar-regular { width: 42px; height: 42px; }
 .avatar-large { width: 56px; height: 56px; }
 
+.augustIdentityMark {
+  display: grid;
+  place-items: center;
+  flex: none;
+  color: #fff;
+  background: var(--green-700);
+  box-shadow: 0 4px 12px rgba(16, 89, 70, 0.16);
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.04em;
+}
+.augustIdentityMark-small { width: 25px; height: 25px; border-radius: 8px; font-size: 13px; }
+.augustIdentityMark-regular { width: 42px; height: 42px; border-radius: 12px; font-size: 17px; }
+.augustIdentityMark-large { width: 56px; height: 56px; border-radius: 16px; font-size: 21px; }
+
 .headerCopy {
   min-width: 0;
   display: flex;

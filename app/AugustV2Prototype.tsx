@@ -137,6 +137,18 @@ function Avatar({
   );
 }
 
+function AugustIdentityMark({ size = "regular" }: { size?: "small" | "regular" | "large" }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`${styles.augustIdentityMark} ${styles[`augustIdentityMark-${size}`]}`}
+      data-august-mark="true"
+    >
+      a
+    </span>
+  );
+}
+
 function StatusBar() {
   return (
     <div className={styles.statusBar} aria-hidden="true">
@@ -457,7 +469,7 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
   return (
     <div className={styles.careInbox}>
       <form className={styles.inboxSearch} onSubmit={submit} role="search">
-        <Avatar person="august" size="small" />
+        <AugustIdentityMark size="small" />
         <input aria-label="Ask August or search chats" onChange={(event) => setQuery(event.target.value)} placeholder="Ask August or search" type="search" value={query} />
         {query ? <button aria-label="Ask August" type="submit"><Send aria-hidden="true" size={16} /></button> : null}
       </form>
@@ -470,7 +482,7 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
 
       {query ? (
         <button className={styles.askAugustRow} onClick={() => onAskAugust(query.trim())} type="button">
-          <Avatar person="august" size="regular" />
+          <AugustIdentityMark size="regular" />
           <span><strong>Ask August</strong><small>{query.trim()}</small></span>
           <Send aria-hidden="true" size={17} />
         </button>
@@ -490,7 +502,7 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
 
         {showAugust ? (
           <button className={styles.inboxThread} onClick={onOpenAugust} type="button">
-            <Avatar person="august" size="large" />
+            <AugustIdentityMark size="large" />
             <span className={styles.inboxThreadCopy}>
               <span><strong>August</strong><small>Care guide</small></span>
               <span>Ask anything or continue your care.</span>
