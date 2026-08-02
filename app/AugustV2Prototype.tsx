@@ -61,6 +61,7 @@ type Props = {
 
 type Message = {
   author: "august" | "patient" | "maya" | "system";
+  channel?: "august" | "maya";
   content: string;
   imageName?: string;
   imageUrl?: string;
@@ -920,6 +921,8 @@ function CompleteJourneyConversation({
   submittedMessages: Record<string, string>;
 }) {
   const fullIntake = getAugustIntakeHistory(answers);
+  const augustReplies = patientReplies.filter((message) => message.channel === "august");
+  const mayaReplies = patientReplies.filter((message) => message.channel === "maya");
 
   if (flow === "intake" && ["empty", "concern", "gathering"].includes(state)) {
     return null;
@@ -931,7 +934,7 @@ function CompleteJourneyConversation({
         <div className={styles.dateMarker}>Today · Care</div>
         <EncryptionNotice recipient="Maya" />
         <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
-        {patientReplies.map((message, index) => <MessageItem key={`maya-first-reply-${index}`} message={message} />)}
+        {mayaReplies.map((message, index) => <MessageItem key={`maya-first-reply-${index}`} message={message} />)}
       </div>
     );
   }
@@ -956,7 +959,7 @@ function CompleteJourneyConversation({
             {reviewingPhase === "thinking" ? <ResponseProgress mode="clinical" person="august" /> : null}
             {reviewingPhase !== "thinking" ? <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} stream={reviewingPhase === "responding"} /> : null}
             {reviewingPhase === "complete" ? <ClinicianContactCard onContinue={() => onMove("intake", "reply")} responseEstimate={encounter.clinician.responseEstimate} /> : null}
-            {patientReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
+            {augustReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
           </>
         ) : null}
         {pending ? <ResponseProgress mode={flow === "intake" ? "clinical" : "coordination"} person={pending} /> : null}
@@ -978,8 +981,7 @@ function CompleteJourneyConversation({
             stream={recommendationPhase === "responding"}
           />
         ) : null}
-        {recommendationPhase === "complete" ? patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />) : null}
-        {recommendationPhase === "complete" && pending === "august" ? <ResponseProgress mode="scheduling" person="august" /> : null}
+        {recommendationPhase === "complete" ? mayaReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />) : null}
         {recommendationPhase === "complete" && handoff?.recipient === "august" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="august" /> : null}
       </div>
     );
@@ -1009,7 +1011,7 @@ function CompleteJourneyConversation({
             </div>
           </>
         ) : null}
-        {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
+        {augustReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
         {state === "nearby-lab" && pending === "august" && !submittedMessages["lab:nearby-lab"] ? <ResponseProgress mode="scheduling" person="august" /> : null}
         {state === "confirmed" && pending === "august" ? <ResponseProgress mode="clinical" person="august" /> : null}
         {state === "confirmed" && handoff?.recipient === "maya" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="maya" /> : null}
@@ -1032,8 +1034,7 @@ function CompleteJourneyConversation({
             <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`, time: "2:16" }} />
           </>
         ) : null}
-        {patientReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} />)}
-        {pending === "august" ? <ResponseProgress mode="coordination" person="august" /> : null}
+        {mayaReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} />)}
         {handoff?.recipient === "august" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="august" /> : null}
       </div>
     );
@@ -1056,7 +1057,7 @@ function CompleteJourneyConversation({
           <MessageItem message={{ author: "august", content: "Quick check-in: how is your throat feeling since you started the medication? Have you noticed a rash, swelling, trouble breathing, or any other reaction?", time: "Tomorrow · 9:15" }} />
         </>
       ) : null}
-      {patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />)}
+      {augustReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />)}
       {pending === "august" ? <ResponseProgress mode="coordination" person="august" /> : null}
     </div>
   );
@@ -1327,10 +1328,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function replyFromAugust(message: string, response: string) {
     if (pending) return;
-    setPatientReplies((current) => [...current, { author: "patient", content: message, time: "Now" }]);
+    setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: message, time: "Now" }]);
     setPending("august");
     const timer = window.setTimeout(() => {
-      setPatientReplies((current) => [...current, { author: "august", content: response, time: "Now" }]);
+      setPatientReplies((current) => [...current, { author: "august", channel: "august", content: response, time: "Now" }]);
       setPending(null);
     }, AUGUST_THINKING_DELAY);
     timers.current.push(timer);
@@ -1338,7 +1339,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function handOffToAugust(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State, message: string) {
     if (pending) return;
-    setPatientReplies((current) => [...current, { author: "patient", content: message, time: "Now" }]);
+    setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: message, time: "Now" }]);
     setHandoff({ recipient: "august", flow: nextFlow, state: nextState });
   }
 
@@ -1346,9 +1347,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (!handoff) return;
     const target = handoff;
     const startsClinicianReview = target.recipient === "maya" && target.flow === "prescription" && target.state === "recommended";
-    setPatientReplies([]);
     setHandoff(null);
-    moveTo(target.flow, target.state);
+    moveTo(target.flow, target.state, true);
     if (startsClinicianReview) {
       setPending("maya");
       const timer = window.setTimeout(() => setPending(null), AUGUST_THINKING_DELAY);
@@ -1379,7 +1379,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         return;
       }
       if (flow === "intake" && state === "reply") {
-        setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+        setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: value, time: "Now" }]);
         setSubmittedMessages((current) => ({ ...current, "intake:reply": value }));
         setPending("maya");
         const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 1_100);
@@ -1412,12 +1412,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         }
       }
       if (flow === "lab" && state === "confirmed") {
-        setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+        setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: value, time: "Now" }]);
         setSubmittedMessages((current) => ({ ...current, "lab:confirmed": value }));
         setPending("august");
         const timer = window.setTimeout(() => {
           setPatientReplies((current) => [...current, {
             author: "august",
+            channel: "august",
             content: "Thanks. I confirmed that this result belongs to you, added it to this visit, and notified Maya. She’ll review the result with your symptoms, medicines, and allergies before deciding on treatment.",
             time: "Now",
           }]);
@@ -1442,14 +1443,14 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       if (/^(yes|yes send it|send it|confirm|confirmed|okay|ok)$/.test(confirmationOnly)) return;
       const lastPatientMessage = [...patientReplies]
         .reverse()
-        .find((reply) => reply.author === "patient")
+        .find((reply) => reply.author === "patient" && reply.channel === "august")
         ?.content.trim().toLocaleLowerCase();
       if (lastPatientMessage === normalized) return;
       replyFromAugust(value, "The prescription has already been sent. I can still help with pharmacy timing, what happens next, or anything else about this care plan.");
       return;
     }
     if (flow !== "intake" || state === "reply") {
-      setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+      setPatientReplies((current) => [...current, { author: "patient", channel: clinician ? "maya" : "august", content: value, time: "Now" }]);
       return;
     }
     if (state === "empty") {
@@ -1718,7 +1719,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
-                {patientReplies.map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
+                {patientReplies.filter((message) => message.channel === "maya").map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
                 {completeJourney ? <PrimaryAction onClick={() => moveTo("lab", "recommended")}>Continue with Maya’s plan</PrimaryAction> : null}
               </div>
             ) : null}
@@ -1817,10 +1818,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               </div>
             ) : null}
 
-            {flow !== "intake" && patientReplies.length ? (
+            {flow !== "intake" && patientReplies.some((message) => message.channel === (clinician ? "maya" : "august")) ? (
               <div className={styles.threadContinuation}>
                 <div className={styles.dateMarker}>Your reply</div>
-                {patientReplies.map((message, index) => <MessageItem key={`decision-reply-${index}`} message={message} />)}
+                {patientReplies.filter((message) => message.channel === (clinician ? "maya" : "august")).map((message, index) => <MessageItem key={`decision-reply-${index}`} message={message} />)}
               </div>
             ) : null}
               </>

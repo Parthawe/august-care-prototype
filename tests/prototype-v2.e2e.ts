@@ -252,6 +252,26 @@ test("prescription completion ignores repeated confirmations and duplicate follo
   await expect(page.getByText(/The prescription has already been sent/)).toHaveCount(1);
 });
 
+test("Maya and August keep separate conversation histories", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=prescription-sent");
+
+  const pharmacyQuestion = "When will the pharmacy confirm?";
+  await send(page, pharmacyQuestion);
+  await expect(page.getByText(/The prescription has already been sent/)).toBeVisible({ timeout: 6_000 });
+
+  await page.getByRole("button", { name: "Chats", exact: true }).click();
+  await page.getByRole("button", { name: /Maya Clinician/ }).click();
+  await expect(page.getByText(/Penicillin V, 500 mg tablet/)).toBeVisible();
+  await expect(page.getByText(pharmacyQuestion, { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/The prescription has already been sent/)).toHaveCount(0);
+
+  await page.getByRole("button", { name: "Chats", exact: true }).click();
+  await page.getByRole("button", { name: /August Care guide/ }).click();
+  await expect(page.getByText(pharmacyQuestion, { exact: true })).toBeVisible();
+  await expect(page.getByText(/The prescription has already been sent/)).toBeVisible();
+});
+
 test("patient shell fills supported mobile viewports without reviewer chrome", async ({
   page,
 }) => {
