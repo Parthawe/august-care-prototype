@@ -111,6 +111,10 @@ const intakeReadyForReview =
 const clinicianHandoffMessage =
   "Based on your worsening throat pain and fever, this should be reviewed today. I found Maya Rao because she is a licensed California clinician who handles same-day throat concerns.\n\nI’ll share the summary you confirmed so you do not have to start over.";
 
+const labRecommendationMessage =
+  "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.";
+const labSchedulingRequest = "Please have August find a nearby appointment for me.";
+
 const AUGUST_THINKING_DELAY = 3_800;
 
 function Avatar({
@@ -733,7 +737,7 @@ function CompleteJourneyConversation({
         <div className={styles.dateMarker}>Today · Care</div>
         <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />)}
-        <MessageItem message={{ author: "maya", content: "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.", time: "10:27" }} />
+        <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
       </div>
     );
   }
@@ -741,6 +745,9 @@ function CompleteJourneyConversation({
   if (flow === "lab") {
     return (
       <div className={styles.transcript}>
+        <div className={styles.dateMarker}>Earlier · Care</div>
+        <MessageItem animate={false} message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
+        <MessageItem animate={false} message={{ author: "patient", content: labSchedulingRequest, time: "10:28" }} />
         <div className={styles.dateMarker}>Today · August</div>
         <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
         <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
@@ -1346,13 +1353,17 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "lab" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I’ve placed the order. August can help with the appointment.", time: "10:24" }} />
+                <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
                 <PrimaryAction onClick={() => changeState("nearby-lab")}>Continue with August</PrimaryAction>
               </div>
             ) : null}
 
             {flow === "lab" && state === "nearby-lab" ? (
               <div className={styles.contentStack}>
+                <div className={styles.dateMarker}>Earlier · Care</div>
+                <MessageItem animate={false} message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
+                <MessageItem animate={false} message={{ author: "patient", content: labSchedulingRequest, time: "10:28" }} />
+                <div className={styles.dateMarker}>Today · August</div>
                 <MessageItem message={{ author: "system", content: "Maya sent the test order to your private August conversation." }} />
                 <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
                 <PrimaryAction onClick={() => changeState("confirmed")}>Yes, confirm appointment</PrimaryAction>
