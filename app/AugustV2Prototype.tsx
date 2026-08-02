@@ -915,9 +915,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const showUpdates = conversationView === "updates";
   const activeTab: ProductTab = showUpdates
     ? "updates"
-    : showCareInbox || clinician
-      ? "care"
-      : "august";
+    : "care";
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
