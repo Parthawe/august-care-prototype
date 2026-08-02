@@ -892,7 +892,7 @@ function CompleteJourneyConversation({
         <AugustPreviousConversation answers={answers} />
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
-      {state === "confirmed" || pending !== "august" ? <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, mapAddress: encounter.lab.address, time: "10:28" }} /> : null}
+      <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, mapAddress: encounter.lab.address, time: "10:28" }} />
         {state === "nearby-lab" && pending === "august" && submittedMessages["lab:nearby-lab"] ? (
           <>
             <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />

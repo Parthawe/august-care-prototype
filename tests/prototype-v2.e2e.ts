@@ -190,6 +190,25 @@ test("lab continuation offers only August-arranged nearby care", async ({
   await expect(page).toHaveURL(/state=confirmed/);
 });
 
+test("August keeps the full lab conversation visible while thinking", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=lab-nearby-lab");
+
+  const intakeMessage = page.getByText("My throat has been hurting and I had a fever last night.", { exact: true });
+  const locationMessage = page.getByText(/Mission Lab can take Maya’s order/);
+  await expect(intakeMessage).toBeVisible();
+  await expect(locationMessage).toBeVisible();
+
+  await send(page, "Yes, that time works for me.");
+
+  await expect(page.getByText("August is thinking", { exact: true })).toBeVisible({ timeout: 1_000 });
+  await expect(intakeMessage).toBeVisible();
+  await expect(locationMessage).toBeVisible();
+  await expect(page.getByText("Yes, that time works for me.", { exact: true })).toBeVisible();
+});
+
 test("patient shell fills supported mobile viewports without reviewer chrome", async ({
   page,
 }) => {
