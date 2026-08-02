@@ -23,7 +23,6 @@ import {
   ClipboardCheck,
   Clock3,
   FileCheck2,
-  House,
   LockKeyhole,
   MapPin,
   MessageCircle,
@@ -310,7 +309,7 @@ function PassiveFooter({ icon: Icon, text }: { icon: LucideIcon; text: string })
   );
 }
 
-type ProductTab = "home" | "care" | "updates" | "august";
+type ProductTab = "updates" | "care" | "august";
 
 function ProductNavigation({ activeTab, careAvailable, onSelect }: {
   activeTab: ProductTab;
@@ -318,14 +317,13 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
   onSelect: (tab: ProductTab) => void;
 }) {
   const items: Array<{ id: ProductTab; label: string; icon?: LucideIcon }> = [
-    { id: "home", label: "Home", icon: House },
+    { id: "updates", label: "Activity", icon: Clock3 },
     { id: "care", label: "Care", icon: MessageCircle },
-    { id: "updates", label: "Updates", icon: Bell },
     { id: "august", label: "August" },
   ];
 
   return (
-    <nav aria-label="Primary navigation" className={styles.bottomNav}>
+    <nav aria-label="Primary navigation" className={styles.bottomNav} data-active-tab={activeTab}>
       {items.map(({ id, icon: Icon, label }) => (
         <button
           aria-current={activeTab === id ? "page" : undefined}
@@ -337,7 +335,7 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
         >
           {id === "august" ? <Avatar person="august" size="small" /> : Icon ? <Icon aria-hidden="true" size={21} strokeWidth={activeTab === id ? 2.4 : 2} /> : null}
           {id === "care" && careAvailable && activeTab !== "care" ? <i aria-hidden="true" className={styles.navBadge} /> : null}
-          <span className={styles.visuallyHidden}>{label}</span>
+          <span className={activeTab === id ? styles.navExpandedLabel : styles.visuallyHidden}>{label}</span>
         </button>
       ))}
     </nav>
@@ -376,22 +374,10 @@ function CareInbox({ careAvailable, onOpenAugust, onOpenMaya }: { careAvailable:
   );
 }
 
-function HomeTab({ careAvailable, onOpenAugust, onOpenCare }: { careAvailable: boolean; onOpenAugust: () => void; onOpenCare: () => void }) {
-  return (
-    <div className={styles.tabPage}>
-      <div className={styles.tabIntro}><small>TODAY</small><h1>Your care, in one place.</h1><p>Continue privately with August or return to an active care conversation.</p></div>
-      <div className={styles.tabActions}>
-        <button onClick={onOpenAugust} type="button"><Avatar person="august" size="regular" /><span><strong>Continue with August</strong><small>Private care guidance</small></span><ChevronRight aria-hidden="true" size={18} /></button>
-        <button onClick={onOpenCare} type="button"><span className={styles.tabActionIcon}><MessageCircle aria-hidden="true" size={19} /></span><span><strong>{careAvailable ? "Open Care" : "Care conversations"}</strong><small>{careAvailable ? "Maya is connected to this visit" : "No clinician connected yet"}</small></span><ChevronRight aria-hidden="true" size={18} /></button>
-      </div>
-    </div>
-  );
-}
-
 function UpdatesTab({ careAvailable }: { careAvailable: boolean }) {
   return (
     <div className={styles.tabPage}>
-      <div className={styles.tabIntro}><small>CARE ACTIVITY</small><h1>Updates</h1><p>Important changes from August, clinicians, labs, and pharmacies stay organized here.</p></div>
+      <div className={styles.tabIntro}><small>CARE ACTIVITY</small><h1>Activity</h1><p>Important changes from August, clinicians, labs, and pharmacies stay organized here.</p></div>
       {careAvailable ? (
         <div className={styles.updateItem}><span><Bell aria-hidden="true" size={18} /></span><div><small>CARE</small><strong>Maya is connected to your visit</strong><p>You will be notified when she replies or updates the plan.</p></div><time>Now</time></div>
       ) : (
@@ -650,7 +636,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
-  const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "home" | "updates">("thread");
+  const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -666,15 +652,12 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const modalOpen = detailsOpen;
   const careAvailable = flow !== "intake" || ["reviewing", "reply"].includes(state);
   const showCareInbox = conversationView === "care-inbox";
-  const showHome = conversationView === "home";
   const showUpdates = conversationView === "updates";
-  const activeTab: ProductTab = showHome
-    ? "home"
-    : showUpdates
-      ? "updates"
-      : showCareInbox || clinician
-        ? "care"
-        : "august";
+  const activeTab: ProductTab = showUpdates
+    ? "updates"
+    : showCareInbox || clinician
+      ? "care"
+      : "august";
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
 
@@ -761,10 +744,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   }
 
   function switchTab(target: ProductTab) {
-    if (target === "home") {
-      setConversationView("home");
-      return;
-    }
     if (target === "updates") {
       setConversationView("updates");
       return;
@@ -1032,15 +1011,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div><strong>Care</strong><span>Your care conversations</span></div>
               <Clock3 aria-hidden="true" size={20} />
             </header>
-          ) : showHome ? (
-            <header className={styles.careInboxHeader}>
-              <div><strong>Home</strong><span>Your care</span></div>
-              <House aria-hidden="true" size={20} />
-            </header>
           ) : showUpdates ? (
             <header className={styles.careInboxHeader}>
-              <div><strong>Updates</strong><span>Care activity</span></div>
-              <Bell aria-hidden="true" size={20} />
+              <div><strong>Activity</strong><span>Recent care updates</span></div>
+              <Clock3 aria-hidden="true" size={20} />
             </header>
           ) : (
             <ConversationHeader
@@ -1071,8 +1045,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : null}
             {showCareInbox ? (
               <CareInbox careAvailable={careAvailable} onOpenAugust={() => switchTab("august")} onOpenMaya={openMayaThread} />
-            ) : showHome ? (
-              <HomeTab careAvailable={careAvailable} onOpenAugust={() => switchTab("august")} onOpenCare={() => switchTab("care")} />
             ) : showUpdates ? (
               <UpdatesTab careAvailable={careAvailable} />
             ) : completeJourney ? (
@@ -1234,8 +1206,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           <div className={styles.inputZone}>
             {showCareInbox ? (
               <PassiveFooter icon={MessageCircle} text="Choose a conversation to continue" />
-            ) : showHome ? (
-              <PassiveFooter icon={House} text="Choose where to continue" />
             ) : showUpdates ? (
               <PassiveFooter icon={Bell} text="Updates appear automatically" />
             ) : composerConfig.kind === "composer" ? (

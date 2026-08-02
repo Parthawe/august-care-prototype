@@ -261,23 +261,19 @@ test("Care opens an inbox before entering Maya’s clean conversation", async ({
   await expect(page.getByText(/New messages here go directly to her/)).toHaveCount(0);
 });
 
-test("mobile navigation exposes four useful tabs with August at the far right", async ({ page }, testInfo) => {
+test("mobile navigation uses the compact reference dock with August at the far right", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-empty");
 
   const navigation = page.getByRole("navigation", { name: "Primary navigation" });
   const buttons = navigation.getByRole("button");
-  await expect(buttons).toHaveCount(4);
-  await expect(buttons.nth(0)).toHaveAttribute("aria-label", "Home");
+  await expect(buttons).toHaveCount(3);
+  await expect(buttons.nth(0)).toHaveAttribute("aria-label", "Activity");
   await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Care");
-  await expect(buttons.nth(2)).toHaveAttribute("aria-label", "Updates");
-  await expect(buttons.nth(3)).toHaveAttribute("aria-label", "August");
+  await expect(buttons.nth(2)).toHaveAttribute("aria-label", "August");
 
-  await navigation.getByRole("button", { name: "Home" }).click();
-  await expect(page.getByRole("heading", { name: "Your care, in one place." })).toBeVisible();
-
-  await navigation.getByRole("button", { name: "Updates" }).click();
-  await expect(page.getByRole("heading", { name: "Updates" })).toBeVisible();
+  await navigation.getByRole("button", { name: "Activity" }).click();
+  await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
 
   await navigation.getByRole("button", { name: "Care" }).click();
   await expect(page.getByText("No clinician conversations yet")).toBeVisible();
