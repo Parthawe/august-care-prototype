@@ -30,7 +30,6 @@ import {
   LockKeyhole,
   MapPin,
   MessageCircle,
-  Menu,
   Mic,
   Moon,
   MoreVertical,
@@ -615,9 +614,9 @@ function UpdatesTab({ careAvailable, onOpenAugust }: { careAvailable: boolean; o
   return (
     <div className={styles.healthDashboard}>
       <section className={styles.healthHero}>
-        <span className={styles.healthGuideLabel}><Sparkles aria-hidden="true" size={14} /> August AI guide</span>
-        <h1>Hi Parth, August guides your health</h1>
-        <AugustIdentityMark size="large" />
+        <span className={styles.healthGuideLabel}><Sparkles aria-hidden="true" size={14} /> Your health</span>
+        <h1>Good morning, Parth</h1>
+        <p>Your care, records, and recent activity stay connected here.</p>
       </section>
 
       <section aria-label="Health overview" className={styles.healthOverviewCard}>
@@ -1310,9 +1309,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             </header>
           ) : showUpdates ? (
             <header className={styles.healthHeader}>
-              <button aria-label="Menu unavailable in prototype" disabled type="button"><Menu aria-hidden="true" size={20} /></button>
               <strong>August</strong>
-              <div><button aria-label="Notifications unavailable in prototype" disabled type="button"><Bell aria-hidden="true" size={19} /></button><AugustIdentityMark size="small" /></div>
+              <div>
+                <button aria-label="Notifications unavailable in prototype" disabled type="button"><Bell aria-hidden="true" size={19} /></button>
+                <button aria-label="Menu unavailable in prototype" disabled type="button"><MoreVertical aria-hidden="true" size={20} /></button>
+              </div>
             </header>
           ) : (
             <ConversationHeader
