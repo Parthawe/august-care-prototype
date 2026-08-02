@@ -45,7 +45,7 @@ test("empty state shows encryption context and accepts an image attachment", asy
   await expect(page.getByText("Want a clinician to review this?")).toHaveCount(0);
   await expect(page.getByText("Hi Parth. Tell me what’s going on.")).toHaveCount(0);
 
-  await page.locator('input[type="file"]').setInputFiles({
+  await page.getByLabel("Add an image").setInputFiles({
     name: "throat-photo.png",
     mimeType: "image/png",
     buffer: Buffer.from("prototype-image"),

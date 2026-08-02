@@ -732,18 +732,18 @@
 }
 
 .composer {
-  min-height: 56px;
+  min-height: 102px;
   display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 5px 6px 5px 10px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
   border: 1px solid rgba(16, 59, 49, 0.1);
-  border-radius: 29px;
+  border-radius: 27px;
   border-color: rgba(255, 255, 255, 0.74);
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 10px 30px rgba(16, 59, 49, 0.09), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  -webkit-backdrop-filter: blur(24px) saturate(1.25);
-  backdrop-filter: blur(24px) saturate(1.25);
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.86), rgba(247, 252, 249, 0.68));
+  box-shadow: 0 14px 34px rgba(16, 59, 49, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.96), inset 0 0 0 1px rgba(16, 59, 49, 0.025);
+  -webkit-backdrop-filter: blur(28px) saturate(1.34);
+  backdrop-filter: blur(28px) saturate(1.34);
   transform-origin: center bottom;
   transition:
     border-color 180ms ease,
@@ -752,16 +752,35 @@
     transform 180ms var(--motion-ease);
 }
 
+.composerPrompt {
+  width: 100%;
+  min-height: 42px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 9px;
+  padding: 0 8px;
+  color: var(--green-700);
+}
+
+.composerTools {
+  width: 100%;
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .attachmentButton {
   position: relative;
-  width: 44px;
-  height: 44px;
+  width: 40px;
+  height: 40px;
   display: grid;
   place-items: center;
   flex: none;
   border-radius: 50%;
   color: var(--green-700);
-  background: var(--mint-100);
+  background: rgba(237, 248, 243, 0.92);
   cursor: pointer;
   transition: color 180ms ease, background-color 180ms ease, transform 160ms var(--motion-press);
 }
@@ -782,14 +801,14 @@
 
 .composer input {
   min-width: 0;
-  height: 44px;
-  flex: 1;
+  width: 100%;
+  height: 42px;
   border: 0;
   outline: 0;
   color: var(--ink);
   background: transparent;
   font: inherit;
-  font-size: 16px;
+  font-size: 15px;
 }
 
 .composer input::placeholder { color: #89978f; }
@@ -805,12 +824,15 @@
 .composer input:focus-visible { outline: 0; }
 
 .sendButton {
-  width: 44px;
-  height: 44px;
+  width: 42px;
+  height: 42px;
+  margin-left: auto;
   color: #fff;
   background: var(--green-700);
   box-shadow: 0 5px 14px rgba(16, 92, 73, 0.2);
 }
+
+.composerPrivacy { display: inline-flex; align-items: center; gap: 4px; margin-left: 2px; color: var(--ink-muted); font-size: 10px; font-weight: 600; }
 
 .sendButton:disabled { opacity: 0.32; cursor: not-allowed; transform: scale(0.9) rotate(-7deg); box-shadow: none; }
 

@@ -24,6 +24,7 @@ import {
   ClipboardCheck,
   Clock3,
   FileCheck2,
+  ImagePlus,
   LockKeyhole,
   MapPin,
   MessageCircle,
@@ -32,6 +33,7 @@ import {
   Search,
   Send,
   Signal,
+  Sparkles,
   UserRoundCheck,
   Wifi,
   X,
@@ -262,35 +264,56 @@ function Composer({
   return (
     <div className={styles.composerRegion}>
       <form className={styles.composer} onSubmit={submit}>
-        <label className={styles.attachmentButton}>
-          <span className={styles.visuallyHidden}>Add an image</span>
-          <Plus aria-hidden="true" size={22} />
+        <div className={styles.composerPrompt}>
+          <Sparkles aria-hidden="true" size={16} />
           <input
-            accept="image/*"
+            aria-label={`Message ${recipient}`}
             disabled={disabled}
-            onChange={(event) => {
-              const file = event.target.files?.[0];
-              if (file) onAttach(file);
-              event.target.value = "";
-            }}
-            type="file"
+            onChange={(event) => setValue(event.target.value)}
+            placeholder={placeholder}
+            value={value}
           />
-        </label>
-        <input
-          aria-label={`Message ${recipient}`}
-          disabled={disabled}
-          onChange={(event) => setValue(event.target.value)}
-          placeholder={placeholder}
-          value={value}
-        />
-        <button
-          aria-label="Send message"
-          className={styles.sendButton}
-          disabled={disabled || !value.trim()}
-          type="submit"
-        >
-          <Send aria-hidden="true" size={18} />
-        </button>
+        </div>
+        <div className={styles.composerTools}>
+          <label className={styles.attachmentButton}>
+            <span className={styles.visuallyHidden}>Add an image</span>
+            <Plus aria-hidden="true" size={20} />
+            <input
+              accept="image/*"
+              disabled={disabled}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) onAttach(file);
+                event.target.value = "";
+              }}
+              type="file"
+            />
+          </label>
+          <label className={styles.attachmentButton}>
+            <span className={styles.visuallyHidden}>Take a photo</span>
+            <ImagePlus aria-hidden="true" size={18} />
+            <input
+              accept="image/*"
+              capture="environment"
+              disabled={disabled}
+              onChange={(event) => {
+                const file = event.target.files?.[0];
+                if (file) onAttach(file);
+                event.target.value = "";
+              }}
+              type="file"
+            />
+          </label>
+          <span className={styles.composerPrivacy}><LockKeyhole aria-hidden="true" size={12} /> Private</span>
+          <button
+            aria-label="Send message"
+            className={styles.sendButton}
+            disabled={disabled || !value.trim()}
+            type="submit"
+          >
+            <Send aria-hidden="true" size={18} />
+          </button>
+        </div>
       </form>
     </div>
   );
