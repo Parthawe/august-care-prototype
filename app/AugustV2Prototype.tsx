@@ -432,7 +432,7 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
           onClick={() => { if (!inert) onSelect(id as ProductTab); }}
           type="button"
         >
-          <Icon aria-hidden="true" size={24} strokeWidth={!inert && activeTab === id ? 2.35 : 2} />
+          <Icon aria-hidden="true" size={20} strokeWidth={!inert && activeTab === id ? 2.3 : 2} />
           {id === "care" && careAvailable && activeTab !== "care" ? <i aria-hidden="true" className={styles.navBadge} /> : null}
           <span className={styles.visuallyHidden}>{label}</span>
         </button>

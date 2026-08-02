@@ -953,9 +953,9 @@
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   align-items: center;
-  gap: 2px;
-  margin: 3px 20px max(13px, calc(env(safe-area-inset-bottom) + 5px));
-  padding: 4px 7px;
+  gap: 0;
+  margin: 4px 18px max(13px, calc(env(safe-area-inset-bottom) + 5px));
+  padding: 4px 8px;
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.88);
   border-radius: 999px;
@@ -980,14 +980,17 @@
 
 .bottomNav > button {
   position: relative;
-  min-height: 48px;
+  width: 44px;
+  height: 44px;
+  min-height: 44px;
   display: flex;
   align-items: center;
   justify-content: center;
+  justify-self: center;
   gap: 0;
   padding: 0;
   border: 0;
-  border-radius: 16px;
+  border-radius: 50%;
   color: #667b73;
   background: transparent;
   font: inherit;
@@ -1009,10 +1012,10 @@
 
 .navBadge {
   position: absolute;
-  top: 6px;
-  right: calc(50% - 17px);
-  width: 7px;
-  height: 7px;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
   border-radius: 50%;
   background: var(--green-600);
   box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
