@@ -822,6 +822,7 @@ function CompleteJourneyConversation({
         <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />)}
         <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
+        {pending === "august" ? <ResponseProgress mode="scheduling" person="august" /> : null}
       </div>
     );
   }
@@ -830,10 +831,10 @@ function CompleteJourneyConversation({
     return (
       <div className={styles.transcript}>
         <AugustPreviousConversation answers={answers} />
-        <div className={styles.dateMarker}>Today · August</div>
-        <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
-        <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
-        {state === "nearby-lab" && pending === "august" ? (
+      <div className={styles.dateMarker}>Today · August</div>
+      <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
+      {pending !== "august" ? <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} /> : null}
+        {state === "nearby-lab" && pending === "august" && submittedMessages["lab:nearby-lab"] ? (
           <>
             <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />
             <ResponseProgress mode="scheduling" person="august" />
@@ -846,6 +847,7 @@ function CompleteJourneyConversation({
           </>
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
+        {state === "nearby-lab" && pending === "august" && !submittedMessages["lab:nearby-lab"] ? <ResponseProgress mode="scheduling" person="august" /> : null}
         {state === "confirmed" && pending === "august" ? <ResponseProgress mode="clinical" person="august" /> : null}
       </div>
     );
@@ -864,6 +866,7 @@ function CompleteJourneyConversation({
           </>
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} />)}
+        {pending === "august" ? <ResponseProgress mode="coordination" person="august" /> : null}
       </div>
     );
   }
@@ -872,7 +875,10 @@ function CompleteJourneyConversation({
     <div className={styles.transcript}>
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent her signed prescription to August for pharmacy support." }} />
-      <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} />
+      {state === "sent" || pending !== "august" || submittedMessages["prescription:pharmacy"] ? <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} /> : null}
+      {state === "pharmacy" && pending === "august" && submittedMessages["prescription:pharmacy"] ? (
+        <MessageItem message={{ author: "patient", content: submittedMessages["prescription:pharmacy"], time: "Now" }} />
+      ) : null}
       {state === "sent" ? (
         <>
           <MessageItem message={{ author: "patient", content: submittedMessages["prescription:pharmacy"] ?? "Yes, send it there.", time: "2:19" }} />
@@ -880,6 +886,7 @@ function CompleteJourneyConversation({
         </>
       ) : null}
       {patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />)}
+      {pending === "august" ? <ResponseProgress mode="coordination" person="august" /> : null}
     </div>
   );
 }
@@ -1097,6 +1104,41 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current.push(timer);
   }
 
+  function replyFromAugust(message: string, response: string) {
+    if (pending) return;
+    setPatientReplies((current) => [...current, { author: "patient", content: message, time: "Now" }]);
+    setPending("august");
+    const timer = window.setTimeout(() => {
+      setPatientReplies((current) => [...current, { author: "august", content: response, time: "Now" }]);
+      setPending(null);
+    }, AUGUST_THINKING_DELAY);
+    timers.current.push(timer);
+  }
+
+  function handOffToAugust(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State, message: string) {
+    if (pending) return;
+    setPatientReplies((current) => [...current, { author: "patient", content: message, time: "Now" }]);
+    setPending("august");
+    const timer = window.setTimeout(() => {
+      setPatientReplies([]);
+      setPending(null);
+      setFlow(nextFlow);
+      setState(nextState);
+    }, AUGUST_THINKING_DELAY);
+    timers.current.push(timer);
+  }
+
+  function confirmPrescription(message = "Yes, send it there.") {
+    if (pending) return;
+    setSubmittedMessages((current) => ({ ...current, "prescription:pharmacy": message }));
+    setPending("august");
+    const timer = window.setTimeout(() => {
+      setPending(null);
+      setState("sent");
+    }, AUGUST_THINKING_DELAY);
+    timers.current.push(timer);
+  }
+
   function handleComposer(value: string) {
     if (completeJourney) {
       const normalized = value.toLowerCase();
@@ -1116,7 +1158,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         return;
       }
       if (flow === "lab" && state === "recommended") {
-        moveTo("lab", "nearby-lab");
+        handOffToAugust("lab", "nearby-lab", value);
         return;
       }
       if (flow === "lab" && state === "nearby-lab") {
@@ -1125,26 +1167,17 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           return;
         }
         if (/\b(no|change|different|cannot|can't)\b/.test(normalized)) {
-          setPatientReplies((current) => [
-            ...current,
-            { author: "patient", content: value, time: "Now" },
-            { author: "august", content: "Of course. Tell me which day, time, or area works better and I’ll look again.", time: "Now" },
-          ]);
+          replyFromAugust(value, "Of course. Tell me which day, time, or area works better and I’ll look again.");
           return;
         }
       }
       if (flow === "prescription" && state === "pharmacy") {
         if (/\b(yes|send|confirm|okay|ok)\b/.test(normalized)) {
-          setSubmittedMessages((current) => ({ ...current, "prescription:pharmacy": value }));
-          moveTo("prescription", "sent");
+          confirmPrescription(value);
           return;
         }
         if (/\b(no|change|different)\b/.test(normalized)) {
-          setPatientReplies((current) => [
-            ...current,
-            { author: "patient", content: value, time: "Now" },
-            { author: "august", content: "No problem. Tell me the pharmacy name or neighborhood you prefer.", time: "Now" },
-          ]);
+          replyFromAugust(value, "No problem. Tell me the pharmacy name or neighborhood you prefer.");
           return;
         }
       }
@@ -1163,16 +1196,12 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         return;
       }
       if (flow === "prescription" && state === "review") {
-        moveTo("prescription", "pharmacy");
+        handOffToAugust("prescription", "pharmacy", value);
         return;
       }
     }
     if (flow === "prescription" && state === "sent") {
-      setPatientReplies((current) => [
-        ...current,
-        { author: "patient", content: value, time: "Now" },
-        { author: "august", content: "The prescription has already been sent. I can still help with pharmacy timing, what happens next, or anything else about this care plan.", time: "Now" },
-      ]);
+      replyFromAugust(value, "The prescription has already been sent. I can still help with pharmacy timing, what happens next, or anything else about this care plan.");
       return;
     }
     if (flow !== "intake" || state === "reply") {
