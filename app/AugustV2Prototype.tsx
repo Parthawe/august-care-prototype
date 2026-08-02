@@ -316,7 +316,6 @@ function AugustThinkingIndicator() {
     <div aria-label="August is thinking" className={styles.thinkingRow} role="status">
       <Avatar person="august" size="small" />
       <div className={styles.thinkingSurface}>
-        <Sparkles aria-hidden="true" size={14} />
         <span>August is thinking</span>
         <span aria-hidden="true" className={styles.thinkingDots}><i /><i /><i /></span>
       </div>
