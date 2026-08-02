@@ -754,6 +754,7 @@ function CompleteJourneyConversation({
   patientReplies,
   pending,
   state,
+  submittedMessages,
 }: {
   answers: IntakeAnswers;
   encounter: ReturnType<typeof createPrototypeV2Encounter>;
@@ -768,6 +769,7 @@ function CompleteJourneyConversation({
   patientReplies: Message[];
   pending: "august" | "maya" | null;
   state: PrototypeV2State;
+  submittedMessages: Record<string, string>;
 }) {
   const fullIntake = getAugustIntakeHistory(answers);
 
@@ -833,13 +835,13 @@ function CompleteJourneyConversation({
         <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
         {state === "nearby-lab" && pending === "august" ? (
           <>
-            <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "Now" }} />
+            <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />
             <ResponseProgress mode="scheduling" person="august" />
           </>
         ) : null}
         {state === "confirmed" ? (
           <>
-            <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "10:29" }} />
+            <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, that time works for me.", time: "10:29" }} />
             <MessageItem message={{ author: "august", content: `You’re confirmed for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is already attached, and I’ll return the result to her visit.`, time: "10:30" }} />
           </>
         ) : null}
@@ -872,7 +874,7 @@ function CompleteJourneyConversation({
       <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} />
       {state === "sent" ? (
         <>
-          <MessageItem message={{ author: "patient", content: "Yes, send it there.", time: "2:19" }} />
+          <MessageItem message={{ author: "patient", content: submittedMessages["prescription:pharmacy"] ?? "Yes, send it there.", time: "2:19" }} />
           <MessageItem message={{ author: "august", content: `Done. I sent Maya’s prescription to ${encounter.prescription.pharmacy}. The pharmacy owns the next step, and I’ll post its confirmation in Care.`, time: "2:20" }} />
         </>
       ) : null}
@@ -895,6 +897,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
+  const [submittedMessages, setSubmittedMessages] = useState<Record<string, string>>({});
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
   const transcriptRef = useRef<HTMLDivElement>(null);
@@ -1082,8 +1085,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current.push(timer);
   }
 
-  function confirmLabAppointment() {
+  function confirmLabAppointment(message = "Yes, confirm appointment") {
     if (pending) return;
+    setSubmittedMessages((current) => ({ ...current, "lab:nearby-lab": message }));
     setPending("august");
     const timer = window.setTimeout(() => {
       setPending(null);
@@ -1116,7 +1120,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
       if (flow === "lab" && state === "nearby-lab") {
         if (/\b(yes|works|confirm|okay|ok)\b/.test(normalized)) {
-          confirmLabAppointment();
+          confirmLabAppointment(value);
           return;
         }
         if (/\b(no|change|different|cannot|can't)\b/.test(normalized)) {
@@ -1130,6 +1134,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
       if (flow === "prescription" && state === "pharmacy") {
         if (/\b(yes|send|confirm|okay|ok)\b/.test(normalized)) {
+          setSubmittedMessages((current) => ({ ...current, "prescription:pharmacy": value }));
           moveTo("prescription", "sent");
           return;
         }
@@ -1373,6 +1378,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   patientReplies={patientReplies}
                   pending={pending}
                   state={state}
+                  submittedMessages={submittedMessages}
                 />
               )
             ) : (
@@ -1471,10 +1477,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
                 {pending === "august" ? (
                   <>
-                    <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "Now" }} />
+                    <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />
                     <ResponseProgress mode="scheduling" person="august" />
                   </>
-                ) : <PrimaryAction onClick={confirmLabAppointment}>Yes, confirm appointment</PrimaryAction>}
+                ) : <PrimaryAction onClick={() => confirmLabAppointment("Yes, confirm appointment")}>Yes, confirm appointment</PrimaryAction>}
               </div>
             ) : null}
 
