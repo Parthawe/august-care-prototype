@@ -253,10 +253,21 @@
   align-items: flex-start;
   gap: 10px;
   transform-origin: left bottom;
-  animation: messageIn 240ms var(--motion-ease) both;
+  will-change: opacity, transform;
+  animation: messageIncoming 220ms var(--motion-ease) both;
 }
 
-.patientRow { justify-content: flex-end; transform-origin: right bottom; }
+.patientRow {
+  justify-content: flex-end;
+  transform-origin: right bottom;
+  animation-name: messageOutgoing;
+  animation-duration: 200ms;
+}
+
+.messageStatic {
+  animation: none !important;
+  will-change: auto;
+}
 
 .augustMessage,
 .clinicianMessage,
@@ -354,7 +365,6 @@
   border: 1px solid var(--line);
   border-radius: 7px 17px 17px 17px;
   background: rgba(255, 255, 255, 0.86);
-  animation: messageIn 200ms var(--motion-ease) both;
 }
 
 .typing i {
@@ -373,7 +383,7 @@
   align-items: flex-start;
   gap: 10px;
   transform-origin: left bottom;
-  animation: messageIn 240ms var(--motion-ease) both;
+  animation: messageIncoming 220ms var(--motion-ease) both;
 }
 
 .thinkingSurface {
@@ -469,7 +479,7 @@
   box-shadow: 0 10px 28px rgba(16, 59, 49, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.78);
   -webkit-backdrop-filter: blur(18px) saturate(1.15);
   backdrop-filter: blur(18px) saturate(1.15);
-  animation: surfaceRise 280ms var(--motion-ease) both;
+  animation: surfaceRise 300ms 90ms var(--motion-ease) both;
 }
 
 .summaryCard header {
@@ -1492,9 +1502,14 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@keyframes messageIn {
-  from { opacity: 0; transform: translateY(7px) scale(0.985); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+@keyframes messageIncoming {
+  from { opacity: 0; transform: translate3d(-6px, 7px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@keyframes messageOutgoing {
+  from { opacity: 0; transform: translate3d(8px, 7px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
 }
 
 @keyframes noticeIn {

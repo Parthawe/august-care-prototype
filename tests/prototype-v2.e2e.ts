@@ -215,6 +215,18 @@ test("reduced motion keeps the journey stable without visible animation", async 
   expect(motion.transitionDuration).toBeLessThanOrEqual(0.01);
 });
 
+test("summary transition keeps conversation history settled", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-summary");
+
+  const settledMessages = page.locator('[data-message-motion="settled"]');
+  await expect(settledMessages).toHaveCount(9);
+  await expect(page.getByText(/That’s everything I need for now/).locator('xpath=ancestor::*[@data-message-motion="enter"]')).toBeVisible();
+
+  const historicalAnimation = await settledMessages.first().evaluate((element) => getComputedStyle(element).animationName);
+  expect(historicalAnimation).toBe("none");
+});
+
 test("summary editing stays inline inside the conversation", async ({
   page,
 }, testInfo) => {

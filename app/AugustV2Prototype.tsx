@@ -183,10 +183,10 @@ function ConversationHeader({
   );
 }
 
-function MessageItem({ message }: { message: Message }) {
+function MessageItem({ animate = true, message }: { animate?: boolean; message: Message }) {
   if (message.author === "system") {
     return (
-      <div className={styles.systemMessage}>
+      <div className={`${styles.systemMessage} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
         <CircleCheck aria-hidden="true" size={16} />
         <p>{message.content}</p>
       </div>
@@ -195,7 +195,7 @@ function MessageItem({ message }: { message: Message }) {
 
   if (message.author === "patient") {
     return (
-      <div className={`${styles.messageRow} ${styles.patientRow}`}>
+      <div className={`${styles.messageRow} ${styles.patientRow} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
         <div className={styles.patientBubble}>
           {message.imageUrl ? <img alt={message.imageName ?? "Patient attachment"} className={styles.messageImage} src={message.imageUrl} /> : null}
           <p>{message.content}</p>
@@ -209,7 +209,7 @@ function MessageItem({ message }: { message: Message }) {
 
   const isMaya = message.author === "maya";
   return (
-    <div className={styles.messageRow}>
+    <div className={`${styles.messageRow} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
       <Avatar person={isMaya ? "maya" : "august"} size="small" />
       <div className={isMaya ? styles.clinicianMessage : styles.augustMessage}>
         <p>{message.content}</p>
@@ -654,7 +654,7 @@ function CompleteJourneyConversation({
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today</div>
-        {fullIntake.map((message, index) => <MessageItem key={`complete-intake-${index}`} message={message} />)}
+        {fullIntake.map((message, index) => <MessageItem animate={false} key={`complete-intake-${index}`} message={message} />)}
         <MessageItem message={{ author: "august", content: "That’s everything I need for now. I organized it below so you can check it before anything is shared.", time: "9:50" }} />
         {state === "summary" ? (
           <>
