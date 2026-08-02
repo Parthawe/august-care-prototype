@@ -304,7 +304,7 @@ function MessageItem({ animate = true, message, stream = false }: { animate?: bo
     <div className={`${styles.messageRow} ${animate ? "" : styles.messageStatic}`} data-message-motion={animate ? "enter" : "settled"}>
       <Avatar person={isMaya ? "maya" : "august"} size="small" />
       <div className={isMaya ? styles.clinicianMessage : styles.augustMessage}>
-        <p>{stream && !isMaya ? <StreamingText text={message.content} /> : message.content}</p>
+        <p>{stream ? <StreamingText text={message.content} /> : message.content}</p>
         <time>{message.time ?? (isMaya ? "10:24" : "9:41")}</time>
       </div>
     </div>
@@ -786,6 +786,7 @@ function CompleteJourneyConversation({
   onSaveEdit,
   patientReplies,
   pending,
+  recommendationPhase,
   reviewingPhase,
   state,
   submittedMessages,
@@ -804,6 +805,7 @@ function CompleteJourneyConversation({
   onSaveEdit: () => void;
   patientReplies: Message[];
   pending: "august" | "maya" | null;
+  recommendationPhase: "reviewing" | "responding" | "complete";
   reviewingPhase: "thinking" | "responding" | "complete";
   state: PrototypeV2State;
   submittedMessages: Record<string, string>;
@@ -854,14 +856,22 @@ function CompleteJourneyConversation({
   }
 
   if (flow === "lab" && state === "recommended") {
+    const preservedReply = submittedMessages["intake:reply"];
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
         <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
-        {patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />)}
-        <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
-        {pending === "august" ? <ResponseProgress mode="scheduling" person="august" /> : null}
-        {handoff?.recipient === "august" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="august" /> : null}
+        {preservedReply ? <MessageItem message={{ author: "patient", content: preservedReply, time: "10:25" }} /> : null}
+        {recommendationPhase === "reviewing" ? <ResponseProgress mode="clinical" person="maya" /> : null}
+        {recommendationPhase !== "reviewing" ? (
+          <MessageItem
+            message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }}
+            stream={recommendationPhase === "responding"}
+          />
+        ) : null}
+        {recommendationPhase === "complete" ? patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />) : null}
+        {recommendationPhase === "complete" && pending === "august" ? <ResponseProgress mode="scheduling" person="august" /> : null}
+        {recommendationPhase === "complete" && handoff?.recipient === "august" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="august" /> : null}
       </div>
     );
   }
@@ -960,6 +970,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
   const [reviewingPhase, setReviewingPhase] = useState<"thinking" | "responding" | "complete">("thinking");
+  const [recommendationPhase, setRecommendationPhase] = useState<"reviewing" | "responding" | "complete">("reviewing");
   const transcriptRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
@@ -1007,6 +1018,26 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   }, [flow, state]);
 
   useEffect(() => {
+    if (flow !== "lab" || state !== "recommended") return;
+    const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reducedMotion) {
+      const revealTimer = window.setTimeout(() => setRecommendationPhase("complete"), 0);
+      return () => window.clearTimeout(revealTimer);
+    }
+
+    const responseTimer = window.setTimeout(() => setRecommendationPhase("responding"), AUGUST_THINKING_DELAY);
+    const wordCount = labRecommendationMessage.match(/\S+\s*/g)?.length ?? 1;
+    const completeTimer = window.setTimeout(
+      () => setRecommendationPhase("complete"),
+      AUGUST_THINKING_DELAY + wordCount * 42 + 240,
+    );
+    return () => {
+      window.clearTimeout(responseTimer);
+      window.clearTimeout(completeTimer);
+    };
+  }, [flow, state]);
+
+  useEffect(() => {
     const url = new URL(window.location.href);
     url.searchParams.set("state", completeJourney ? getCompleteJourneyId(flow, state) : state);
     window.history.replaceState({}, "", url);
@@ -1043,7 +1074,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       window.cancelAnimationFrame(frame);
       window.clearTimeout(scrollTimer);
     };
-  }, [completeJourney, flow, gatheringStep, patientReplies, pending, reviewingPhase, state]);
+  }, [completeJourney, flow, gatheringStep, patientReplies, pending, recommendationPhase, reviewingPhase, state]);
 
   useEffect(() => {
     if (!modalOpen) return;
@@ -1077,6 +1108,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setPending(null);
     setHandoff(null);
     if (next === "reviewing") setReviewingPhase("thinking");
+    if (flow === "lab" && next === "recommended") setRecommendationPhase("reviewing");
     setState(next);
   }
 
@@ -1086,6 +1118,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setPending(null);
     setHandoff(null);
     if (nextFlow === "intake" && nextState === "reviewing") setReviewingPhase("thinking");
+    if (nextFlow === "lab" && nextState === "recommended") setRecommendationPhase("reviewing");
     if (nextFlow !== flow && !preservePatientReplies) setPatientReplies([]);
     setFlow(nextFlow);
     setState(nextState);
@@ -1236,8 +1269,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
       if (flow === "intake" && state === "reply") {
         setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+        setSubmittedMessages((current) => ({ ...current, "intake:reply": value }));
         setPending("maya");
-        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended", true); }, 1_100);
+        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 1_100);
         timers.current.push(timer);
         return;
       }
@@ -1385,7 +1419,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           : state === "pharmacy"
             ? "Tell August where to send it…"
             : `Message ${recipient}…`;
-      return { kind: "composer" as const, disabled: Boolean(pending), placeholder, recipient };
+      const awaitingMaya = flow === "lab" && state === "recommended" && recommendationPhase !== "complete";
+      return { kind: "composer" as const, disabled: Boolean(pending) || awaitingMaya, placeholder, recipient };
     }
     if (flow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
     if (flow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "August is connecting you with Maya" };
@@ -1393,7 +1428,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (flow === "intake" && state === "concern") return { kind: "composer" as const, disabled: false, placeholder: "Add timing, severity, and fever…", recipient: "August" as const };
     if (flow === "intake" && state === "gathering") return { kind: "composer" as const, disabled: Boolean(pending), placeholder: intakeQuestions[gatheringStep].placeholder, recipient: "August" as const };
     if (!clinician) return { kind: "composer" as const, disabled: false, placeholder: "Message August…", recipient: "August" as const };
-    return { kind: "composer" as const, disabled: false, placeholder: "Message Maya…", recipient: "Maya" as const };
+    const awaitingMaya = flow === "lab" && state === "recommended" && recommendationPhase !== "complete";
+    return { kind: "composer" as const, disabled: awaitingMaya, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
   const subtitle = clinician ? "Usually replies in 2 to 4 hours" : "Care guide";
@@ -1506,6 +1542,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   onSaveEdit={saveSummaryEdit}
                   patientReplies={patientReplies}
                   pending={pending}
+                  recommendationPhase={recommendationPhase}
                   reviewingPhase={reviewingPhase}
                   state={state}
                   submittedMessages={submittedMessages}
@@ -1596,8 +1633,14 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "lab" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
-                <PrimaryAction onClick={() => changeState("nearby-lab")}>Continue with August</PrimaryAction>
+                {recommendationPhase === "reviewing" ? <ResponseProgress mode="clinical" person="maya" /> : null}
+                {recommendationPhase !== "reviewing" ? (
+                  <MessageItem
+                    message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }}
+                    stream={recommendationPhase === "responding"}
+                  />
+                ) : null}
+                {recommendationPhase === "complete" ? <PrimaryAction onClick={() => changeState("nearby-lab")}>Continue with August</PrimaryAction> : null}
               </div>
             ) : null}
 

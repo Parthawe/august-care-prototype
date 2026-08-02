@@ -142,8 +142,29 @@ test("Maya keeps the patient reply when the conversation advances to testing", a
   await send(page, reply);
 
   await expect(page.getByText(reply, { exact: true })).toBeVisible();
-  await expect(page.getByText(/recommend a rapid strep test/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "recommend a rapid strep test" })).toBeVisible({ timeout: 8_000 });
   await expect(page.getByText(reply, { exact: true })).toBeVisible();
+});
+
+test("Maya reviews one patient message before revealing her test recommendation", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/prototype-v2/00?state=intake-reply");
+
+  const reply = "I can drink normally and I have not noticed a rash.";
+  await send(page, reply);
+
+  await expect(page.getByText(reply, { exact: true })).toBeVisible();
+  await expect(page.getByLabel("Maya is reviewing the result")).toBeVisible({ timeout: 2_000 });
+  await expect(page.locator("p").filter({ hasText: "recommend a rapid strep test" })).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeDisabled();
+
+  await expect(page.locator("p").filter({ hasText: "recommend a rapid strep test" })).toBeVisible({ timeout: 8_000 });
+  await expect(page.getByLabel("Maya is reviewing the result")).toHaveCount(0);
+  await expect(page.getByText(reply, { exact: true })).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeEnabled({ timeout: 8_000 });
 });
 
 test("lab continuation offers only August-arranged nearby care", async ({
