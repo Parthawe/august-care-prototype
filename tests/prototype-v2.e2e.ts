@@ -43,7 +43,7 @@ test("empty state shows encryption context and accepts an image attachment", asy
   await expect(page.getByText("End-to-end encrypted")).toBeVisible();
   await expect(page.getByText(/Only you and August can read messages and attachments/)).toBeVisible();
   await expect(page.getByText("Want a clinician to review this?")).toHaveCount(0);
-  await expect(page.getByText("Hi Parth. Tell me what’s going on.")).toHaveCount(0);
+  await expect(page.getByText("Hi Anuruddh. Tell me what’s going on.")).toHaveCount(0);
 
   await page.getByLabel("Add an image").setInputFiles({
     name: "throat-photo.png",
@@ -62,7 +62,7 @@ test("the patient always starts a new August conversation", async ({ page }, tes
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-concern");
 
-  await expect(page.getByText("Hi Parth. Tell me what’s going on.")).toHaveCount(0);
+  await expect(page.getByText("Hi Anuruddh. Tell me what’s going on.")).toHaveCount(0);
   await expect(page.getByText("My throat has been hurting and I had a fever last night.")).toBeVisible();
   await expect(page.getByText(/Of course\. I can help you work through/)).toBeVisible();
 });
@@ -114,7 +114,7 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await page
     .getByRole("button", { name: "Continue conversation" })
     .click();
-  await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
+  await expect(page.getByText(/Hi Anuruddh\. I reviewed your fever/)).toBeVisible();
   await expect(page.locator("header").getByText("Maya (Clinician)")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeVisible();
   await expect(page.getByText(/choose a clinician/i)).toHaveCount(0);
@@ -292,7 +292,7 @@ test("Chats opens an inbox before entering Maya’s clean conversation", async (
   await expect(page.getByRole("textbox")).toHaveCount(0);
 
   await page.getByRole("button", { name: /Maya Clinician/ }).click();
-  await expect(page.getByText(/Hi Parth\. I reviewed what you shared/)).toBeVisible();
+  await expect(page.getByText(/Hi Anuruddh\. I reviewed what you shared/)).toBeVisible();
   await expect(page.getByText(/New messages here go directly to her/)).toHaveCount(0);
 });
 

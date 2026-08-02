@@ -630,7 +630,7 @@ function UpdatesTab({ careAvailable, onOpenAugust }: { careAvailable: boolean; o
     <div className={styles.healthDashboard}>
       <section className={styles.healthHero}>
         <span className={styles.healthGuideLabel}><Sparkles aria-hidden="true" size={14} /> Your health</span>
-        <h1>Good morning, Parth</h1>
+        <h1>Good morning, Anuruddh</h1>
         <p>Your care, records, and recent activity stay connected here.</p>
       </section>
 
@@ -819,7 +819,7 @@ function CompleteJourneyConversation({
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
         <EncryptionNotice recipient="Maya" />
-        <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
+        <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`maya-first-reply-${index}`} message={message} />)}
       </div>
     );
@@ -857,7 +857,7 @@ function CompleteJourneyConversation({
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
-        <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
+        <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />)}
         <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
         {pending === "august" ? <ResponseProgress mode="scheduling" person="august" /> : null}
@@ -1546,7 +1546,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today · Care</div>
                 <EncryptionNotice recipient="Maya" />
-                <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
+                <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
                 {patientReplies.map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}

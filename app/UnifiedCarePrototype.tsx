@@ -153,7 +153,7 @@ const seededSymptomMessages: ChatMessage[] = [
   {
     id: "seed-august-1",
     sender: "august",
-    text: "Hi Parth—what would you like help with today?",
+    text: "Hi Anuruddh—what would you like help with today?",
     time: "9:40",
   },
   {
@@ -1248,8 +1248,8 @@ export function UnifiedCarePrototype({
     }
     addMaya(
       flow === "prescription"
-        ? "Hi Parth—I reviewed your request and history. Have you ever had a serious reaction to this medication, and are you taking anything else right now?"
-        : "Hi Parth—I reviewed what you shared. Is the throat swelling stronger on one side, and are you still able to drink normally?",
+        ? "Hi Anuruddh—I reviewed your request and history. Have you ever had a serious reaction to this medication, and are you taking anything else right now?"
+        : "Hi Anuruddh—I reviewed what you shared. Is the throat swelling stronger on one side, and are you still able to drink normally?",
     );
     setPhase("maya-active");
   };

@@ -94,7 +94,7 @@ const augustBase: Message[] = [
   {
     id: "a-1",
     author: "august",
-    text: "Hi Parth—what would you like help with today?",
+    text: "Hi Anuruddh—what would you like help with today?",
     time: "9:40",
   },
   {
@@ -782,7 +782,7 @@ export function RefinedMessagingPrototype() {
       {
         id: "m-1",
         author: "maya",
-        text: "Hi Parth—I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?",
+        text: "Hi Anuruddh—I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?",
         time: "10:24",
       },
     ];

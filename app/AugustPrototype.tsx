@@ -826,13 +826,13 @@ function HomeScreen({
       <div className="screen home-screen continuity-home">
         <nav className="home-nav">
           <Brand />
-          <span className="avatar" aria-label="Parth profile">
+          <span className="avatar" aria-label="Anuruddh profile">
             P
           </span>
         </nav>
         <section className="home-hero">
           <Pill>Conversation saved</Pill>
-          <span className="home-greeting">Welcome back, Parth</span>
+          <span className="home-greeting">Welcome back, Anuruddh</span>
           <h2>Your care is waiting.</h2>
           <p>
             Return whenever you are ready. Your answers and current step are
@@ -885,7 +885,7 @@ function HomeScreen({
       ) : (
         <nav className="home-nav">
           <Brand />
-          <span className="avatar" aria-label="Parth profile">
+          <span className="avatar" aria-label="Anuruddh profile">
             P
           </span>
         </nav>
@@ -912,7 +912,7 @@ function HomeScreen({
             </button>
           )}
         </div>
-        <span className="home-greeting">Good morning, Parth</span>
+        <span className="home-greeting">Good morning, Anuruddh</span>
         <h2>{experience.homeTitle}</h2>
         <p>{experience.homeIntro}</p>
       </section>
