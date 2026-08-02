@@ -775,6 +775,67 @@
   padding: 0 16px 24px;
 }
 
+.emptyPromptShelf {
+  display: flex;
+  gap: 10px;
+  width: 100%;
+  overflow-x: auto;
+  padding: 6px 16px 10px;
+  scroll-padding-inline: 16px;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+}
+
+.emptyPromptShelf::-webkit-scrollbar { display: none; }
+
+.emptyPromptCard {
+  position: relative;
+  width: min(292px, calc(100vw - 54px));
+  min-height: 154px;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  gap: 10px 12px;
+  flex: none;
+  padding: 14px;
+  border: 1px solid rgba(16, 59, 49, 0.12);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 8px 22px rgba(16, 59, 49, 0.06);
+  scroll-snap-align: start;
+}
+
+.emptyPromptIcon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  color: var(--green-700);
+  background: var(--mint-100);
+}
+
+.emptyPromptCopy { min-width: 0; padding-top: 1px; }
+.emptyPromptCopy strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 16px; line-height: 1.2; letter-spacing: -0.015em; }
+.emptyPromptCopy p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.35; }
+
+.emptyPromptCard > button {
+  min-height: 42px;
+  grid-column: 2;
+  justify-self: start;
+  padding: 0 16px;
+  border: 1px solid var(--green-600);
+  border-radius: 14px;
+  color: var(--green-700);
+  background: rgba(255, 255, 255, 0.76);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.emptyPromptCard > button:active { transform: scale(0.98); }
+
 .composerRegion {
   position: relative;
   display: flex;

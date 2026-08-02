@@ -417,6 +417,50 @@ function EncryptionNotice({ recipient = "August" }: { recipient?: "August" | "Ma
   );
 }
 
+function EmptyAugustPrompts({ onSelect }: { onSelect: (starter: string) => void }) {
+  const prompts = [
+    {
+      action: "Continue",
+      description: "Bring over health context you’ve already shared without starting again.",
+      icon: Sparkles,
+      starter: "I want to continue from another AI.",
+      title: "Continue from another AI",
+    },
+    {
+      action: "Ask the care team",
+      description: "Share what you want reviewed, then send it securely.",
+      icon: UsersRound,
+      starter: "I want a clinician to review this.",
+      title: "Want a clinician to review this?",
+    },
+    {
+      action: "Connect records",
+      description: "Give August context from your labs, medications, and reports.",
+      icon: BookOpen,
+      starter: "I want to connect my health records.",
+      title: "Connect your health records",
+    },
+  ];
+
+  return (
+    <section aria-label="Ways to start with August" className={styles.emptyPromptShelf}>
+      {prompts.map((prompt) => {
+        const Icon = prompt.icon;
+        return (
+          <article className={styles.emptyPromptCard} key={prompt.title}>
+            <div className={styles.emptyPromptIcon}><Icon aria-hidden="true" size={21} /></div>
+            <div className={styles.emptyPromptCopy}>
+              <strong>{prompt.title}</strong>
+              <p>{prompt.description}</p>
+            </div>
+            <button onClick={() => onSelect(prompt.starter)} type="button">{prompt.action}</button>
+          </article>
+        );
+      })}
+    </section>
+  );
+}
+
 function PassiveFooter({ icon: Icon, text }: { icon: LucideIcon; text: string }) {
   return (
     <div className={styles.passiveFooter} role="status">
@@ -1421,6 +1465,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           </div>
 
           <div className={styles.inputZone}>
+            {!showCareInbox && !showUpdates && flow === "intake" && state === "empty" && !pending ? (
+              <EmptyAugustPrompts onSelect={setComposerDraft} />
+            ) : null}
             {showCareInbox ? (
               null
             ) : showUpdates ? (
