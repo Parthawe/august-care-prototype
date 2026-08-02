@@ -157,6 +157,39 @@ function AugustPreviousConversation({ answers }: { answers: IntakeAnswers }) {
   );
 }
 
+function MayaPreviousConversation({ submittedMessages }: { submittedMessages: Record<string, string> }) {
+  return (
+    <>
+      <div className={styles.dateMarker}>Earlier · Care</div>
+      <MessageItem
+        animate={false}
+        message={{
+          author: "maya",
+          content: "Hi Anuruddh. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?",
+          time: "10:24",
+        }}
+      />
+      <MessageItem
+        animate={false}
+        message={{
+          author: "patient",
+          content: submittedMessages["intake:reply"] ?? "I can drink normally and I have not noticed a rash.",
+          time: "10:25",
+        }}
+      />
+      <MessageItem animate={false} message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
+      <MessageItem
+        animate={false}
+        message={{
+          author: "patient",
+          content: submittedMessages["lab:recommended"] ?? "Please have August help me schedule the test.",
+          time: "10:28",
+        }}
+      />
+    </>
+  );
+}
+
 function Avatar({
   person,
   size = "regular",
@@ -921,6 +954,7 @@ function CompleteJourneyConversation({
   if (flow === "prescription" && ["recommended", "review"].includes(state)) {
     return (
       <div className={styles.transcript}>
+        <MayaPreviousConversation submittedMessages={submittedMessages} />
         <div className={styles.dateMarker}>Later · Care</div>
         <MessageItem message={{ author: "system", content: "Result confirmed by you · Maya notified" }} />
         {state === "recommended" && pending === "maya" ? <ResponseProgress mode="clinical" person="maya" /> : (
@@ -1286,6 +1320,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         return;
       }
       if (flow === "lab" && state === "recommended") {
+        setSubmittedMessages((current) => ({ ...current, "lab:recommended": value }));
         handOffToAugust("lab", "nearby-lab", value);
         return;
       }
@@ -1603,6 +1638,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "prescription" && state === "recommended" ? (
               <div className={styles.contentStack}>
+                <MayaPreviousConversation submittedMessages={submittedMessages} />
+                <div className={styles.dateMarker}>Later · Care</div>
                 <MessageItem message={{ author: "system", content: "Result confirmed by you · Maya notified" }} />
                 <MessageItem message={{ author: "maya", content: "I reviewed your positive rapid strep result with the symptoms, safety answers, medicines, and allergies you shared. The result explains your sore throat and fever. An antibiotic is appropriate, and I recommend Penicillin V.", time: "2:14" }} />
                 <PrimaryAction onClick={() => changeState("review")}>Read treatment plan</PrimaryAction>
@@ -1611,6 +1648,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "prescription" && state === "review" ? (
               <div className={styles.contentStack}>
+                <MayaPreviousConversation submittedMessages={submittedMessages} />
+                <div className={styles.dateMarker}>Later · Care</div>
+                <MessageItem message={{ author: "system", content: "Result confirmed by you · Maya notified" }} />
+                <MessageItem message={{ author: "maya", content: "I reviewed your positive rapid strep result with the symptoms, safety answers, medicines, and allergies you shared. The result explains your sore throat and fever. An antibiotic is appropriate, and I recommend Penicillin V.", time: "2:14" }} />
+                <MessageItem message={{ author: "patient", content: submittedMessages["prescription:recommended"] ?? "Show me the medication plan.", time: "2:15" }} />
                 <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`, time: "2:16" }} />
                 <PrimaryAction onClick={() => changeState("pharmacy")}>Ask August to send it</PrimaryAction>
               </div>

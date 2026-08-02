@@ -209,6 +209,19 @@ test("August keeps the full lab conversation visible while thinking", async ({
   await expect(page.getByText("Yes, that time works for me.", { exact: true })).toBeVisible();
 });
 
+test("Maya keeps her earlier messages when the medication decision arrives", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=prescription-recommended");
+
+  await expect(page.getByText(/Hi Anuruddh\. I reviewed what you shared/)).toBeVisible();
+  await expect(page.getByText("I can drink normally and I have not noticed a rash.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/Before I decide on medication, I recommend a rapid strep test today/)).toBeVisible();
+  await expect(page.getByText("Please have August help me schedule the test.", { exact: true })).toBeVisible();
+  await expect(page.getByText(/I reviewed your positive rapid strep result/)).toBeVisible();
+});
+
 test("patient shell fills supported mobile viewports without reviewer chrome", async ({
   page,
 }) => {
