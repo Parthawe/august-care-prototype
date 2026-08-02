@@ -793,6 +793,12 @@ function CompleteJourneyConversation({
 
   return (
     <div className={styles.transcript}>
+      <div className={styles.dateMarker}>Earlier · Care</div>
+      <MessageItem animate={false} message={{ author: "system", content: "Your rapid strep result returned to Maya’s visit." }} />
+      <MessageItem animate={false} message={{ author: "maya", content: "Your rapid strep test is positive. That result explains your symptoms and means an antibiotic is appropriate. I also checked the medicines and allergies you shared. I recommend Penicillin V.", time: "2:14" }} />
+      <MessageItem animate={false} message={{ author: "patient", content: "Show me the medication plan.", time: "2:15" }} />
+      <MessageItem animate={false} message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}.\n\nI prescribed this after reviewing your test result and allergy history. August can help send it to a pharmacy.`, time: "2:16" }} />
+      <MessageItem animate={false} message={{ author: "patient", content: "Please have August send it to my pharmacy.", time: "2:17" }} />
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent her signed prescription to August for pharmacy support." }} />
       <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} />
@@ -802,7 +808,7 @@ function CompleteJourneyConversation({
           <MessageItem message={{ author: "august", content: `Done. I sent Maya’s prescription to ${encounter.prescription.pharmacy}. The pharmacy owns the next step, and I’ll post its confirmation in Care.`, time: "2:20" }} />
         </>
       ) : null}
-      {state !== "sent" ? patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />) : null}
+      {patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />)}
     </div>
   );
 }
@@ -1081,7 +1087,14 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         moveTo("prescription", "pharmacy");
         return;
       }
-      if (flow === "prescription" && state === "sent") return;
+    }
+    if (flow === "prescription" && state === "sent") {
+      setPatientReplies((current) => [
+        ...current,
+        { author: "patient", content: value, time: "Now" },
+        { author: "august", content: "The prescription has already been sent. I can still help with pharmacy timing, what happens next, or anything else about this care plan.", time: "Now" },
+      ]);
+      return;
     }
     if (flow !== "intake" || state === "reply") {
       setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
@@ -1163,9 +1176,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   const composerConfig = (() => {
     if (completeJourney) {
-      if (flow === "prescription" && state === "sent") {
-        return { kind: "passive" as const, icon: Bell, text: "Pharmacy updates will appear in Care" };
-      }
       const recipient = clinician ? "Maya" as const : "August" as const;
       const placeholder = state === "summary"
         ? "Reply or edit the summary…"
@@ -1176,7 +1186,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             : `Message ${recipient}…`;
       return { kind: "composer" as const, disabled: Boolean(pending), placeholder, recipient };
     }
-    if (state === "sent" || state === "confirmed") return { kind: "passive" as const, icon: Bell, text: "Updates will appear in Care" };
     if (flow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
     if (flow === "intake" && state === "reviewing") return { kind: "passive" as const, icon: Clock3, text: "August is connecting you with Maya" };
     if (flow === "intake" && state === "empty") return { kind: "composer" as const, disabled: false, placeholder: "Tell August what’s going on…", recipient: "August" as const };
