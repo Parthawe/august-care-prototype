@@ -234,6 +234,24 @@ test("August keeps intake and testing history when pharmacy support begins", asy
   await expect(page.getByText(/Castro Community Pharmacy is/)).toBeVisible();
 });
 
+test("prescription completion ignores repeated confirmations and duplicate follow-ups", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=prescription-sent");
+
+  await expect(page.getByText("Yes, send it there.", { exact: true })).toHaveCount(1);
+  await send(page, "yes");
+  await expect(page.getByText("yes", { exact: true })).toHaveCount(0);
+  await expect(page.getByText(/The prescription has already been sent/)).toHaveCount(0);
+
+  await send(page, "When will the pharmacy confirm?");
+  await expect(page.getByText(/The prescription has already been sent/)).toBeVisible({ timeout: 6_000 });
+  await send(page, "When will the pharmacy confirm?");
+  await expect(page.getByText("When will the pharmacy confirm?", { exact: true })).toHaveCount(1);
+  await expect(page.getByText(/The prescription has already been sent/)).toHaveCount(1);
+});
+
 test("patient shell fills supported mobile viewports without reviewer chrome", async ({
   page,
 }) => {

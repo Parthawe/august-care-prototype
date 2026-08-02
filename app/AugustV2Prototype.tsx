@@ -1368,8 +1368,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   }
 
   function handleComposer(value: string) {
+    const normalized = value.trim().toLocaleLowerCase();
     if (completeJourney) {
-      const normalized = value.toLowerCase();
       if (flow === "intake" && state === "summary" && /\b(yes|right|correct|share|looks good)\b/.test(normalized)) {
         moveTo("intake", "reviewing");
         return;
@@ -1438,6 +1438,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
     }
     if (flow === "prescription" && state === "sent") {
+      const confirmationOnly = normalized.replace(/[.!?]/g, "").trim();
+      if (/^(yes|yes send it|send it|confirm|confirmed|okay|ok)$/.test(confirmationOnly)) return;
+      const lastPatientMessage = [...patientReplies]
+        .reverse()
+        .find((reply) => reply.author === "patient")
+        ?.content.trim().toLocaleLowerCase();
+      if (lastPatientMessage === normalized) return;
       replyFromAugust(value, "The prescription has already been sent. I can still help with pharmacy timing, what happens next, or anything else about this care plan.");
       return;
     }
