@@ -157,6 +157,67 @@ function AugustPreviousConversation({ answers }: { answers: IntakeAnswers }) {
   );
 }
 
+function AugustPreviousTestingConversation({
+  answers,
+  encounter,
+  submittedMessages,
+}: {
+  answers: IntakeAnswers;
+  encounter: ReturnType<typeof createPrototypeV2Encounter>;
+  submittedMessages: Record<string, string>;
+}) {
+  return (
+    <>
+      <AugustPreviousConversation answers={answers} />
+      <div className={styles.dateMarker}>Earlier · August · Testing</div>
+      <MessageItem animate={false} message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
+      <MessageItem
+        animate={false}
+        message={{
+          author: "august",
+          content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`,
+          mapAddress: encounter.lab.address,
+          time: "10:28",
+        }}
+      />
+      <MessageItem
+        animate={false}
+        message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, that time works for me.", time: "10:29" }}
+      />
+      <MessageItem
+        animate={false}
+        message={{
+          author: "august",
+          content: `You’re scheduled for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is attached, and this visit will stay open while we wait for the result.`,
+          time: "10:30",
+        }}
+      />
+      <div className={styles.dateMarker}>Earlier · Result ready</div>
+      <MessageItem animate={false} message={{ author: "system", content: "Mission Lab returned your rapid strep result to this visit." }} />
+      <MessageItem
+        animate={false}
+        message={{
+          author: "august",
+          content: "Your rapid strep result is ready. Before I notify Maya, please confirm that you completed this test and want the result added to this visit.",
+          time: "1:58",
+        }}
+      />
+      <MessageItem
+        animate={false}
+        message={{ author: "patient", content: submittedMessages["lab:confirmed"] ?? "Yes, I completed this test. Add the result to my visit.", time: "1:59" }}
+      />
+      <MessageItem
+        animate={false}
+        message={{
+          author: "august",
+          content: "Thanks. I confirmed that this result belongs to you, added it to this visit, and notified Maya. She’ll review it with your symptoms, medicines, and allergies before deciding on treatment.",
+          time: "2:00",
+        }}
+      />
+    </>
+  );
+}
+
 function MayaPreviousConversation({ submittedMessages }: { submittedMessages: Record<string, string> }) {
   return (
     <>
@@ -980,6 +1041,7 @@ function CompleteJourneyConversation({
 
   return (
     <div className={styles.transcript}>
+      <AugustPreviousTestingConversation answers={answers} encounter={encounter} submittedMessages={submittedMessages} />
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent her signed prescription to August for pharmacy support." }} />
       {state === "sent" || pending !== "august" || submittedMessages["prescription:pharmacy"] ? <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} /> : null}
@@ -1351,6 +1413,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
       if (flow === "lab" && state === "confirmed") {
         setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+        setSubmittedMessages((current) => ({ ...current, "lab:confirmed": value }));
         setPending("august");
         const timer = window.setTimeout(() => {
           setPatientReplies((current) => [...current, {

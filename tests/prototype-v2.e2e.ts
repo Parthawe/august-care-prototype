@@ -222,6 +222,18 @@ test("Maya keeps her earlier messages when the medication decision arrives", asy
   await expect(page.getByText(/I reviewed your positive rapid strep result/)).toBeVisible();
 });
 
+test("August keeps intake and testing history when pharmacy support begins", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=prescription-pharmacy");
+
+  await expect(page.getByText(/Of course\. I can help you work through/)).toBeAttached();
+  await expect(page.getByText(/Mission Lab can take Maya’s order/)).toBeAttached();
+  await expect(page.getByText(/Your rapid strep result is ready/)).toBeAttached();
+  await expect(page.getByText(/Castro Community Pharmacy is/)).toBeVisible();
+});
+
 test("patient shell fills supported mobile viewports without reviewer chrome", async ({
   page,
 }) => {
