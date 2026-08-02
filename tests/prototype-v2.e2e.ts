@@ -78,14 +78,14 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page.getByText(/I found a clinician who fits this visit/)).toBeVisible();
   await expect(page.locator("header").getByText("August", { exact: true })).toBeVisible();
   await expect(page.getByText("August is connecting you with Maya")).toBeVisible();
-  await expect(page.getByText("To Maya")).toHaveCount(0);
+  await expect(page.getByRole("textbox", { name: "Message Maya" })).toHaveCount(0);
   await expect(page.locator("header").getByText("Maya (Clinician)")).toHaveCount(0);
   await page
     .getByRole("button", { name: "Continue conversation" })
     .click();
   await expect(page.getByText(/Hi Parth\. I reviewed your fever/)).toBeVisible();
   await expect(page.locator("header").getByText("Maya (Clinician)")).toBeVisible();
-  await expect(page.getByText("To Maya")).toBeVisible();
+  await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeVisible();
   await expect(page.getByText(/choose a clinician/i)).toHaveCount(0);
 });
 

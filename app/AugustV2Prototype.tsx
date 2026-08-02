@@ -285,9 +285,6 @@ function Composer({
           <Send aria-hidden="true" size={18} />
         </button>
       </form>
-      <span>
-        <LockKeyhole aria-hidden="true" size={11} /> To {recipient}
-      </span>
     </div>
   );
 }
@@ -295,9 +292,8 @@ function Composer({
 function EncryptionNotice() {
   return (
     <div className={styles.encryptionNotice} role="note">
-      <LockKeyhole aria-hidden="true" size={13} />
       <p>
-        <strong>End-to-end encrypted</strong>
+        <strong><LockKeyhole aria-hidden="true" size={12} /> End-to-end encrypted</strong>
         <span>Only you and August can read messages and attachments. Nothing is shared with a clinician until you choose.</span>
       </p>
     </div>
