@@ -436,6 +436,8 @@ test("complete journey runs from intake through testing and prescription", async
   await send(page, "Yes, I completed this test. Add it to Maya’s visit.");
   await page.getByRole("button", { name: "Open Maya conversation" }).click();
   await expect(page.getByText(/positive rapid strep result/)).toBeVisible();
+  await expect(page.getByText("Please ask August to arrange it.", { exact: true })).toHaveCount(1);
+  await expect(page.getByText("Yes, I completed this test. Add it to Maya’s visit.", { exact: true })).toHaveCount(0);
   await send(page, "Show me the medication plan.");
   await send(page, "Ask August to send it to the pharmacy.");
   await page.getByRole("button", { name: "Open August conversation" }).click();

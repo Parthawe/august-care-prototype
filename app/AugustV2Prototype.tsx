@@ -62,6 +62,7 @@ type Props = {
 type Message = {
   author: "august" | "patient" | "maya" | "system";
   channel?: "august" | "maya";
+  context?: string;
   content: string;
   imageName?: string;
   imageUrl?: string;
@@ -944,8 +945,9 @@ function CompleteJourneyConversation({
   submittedMessages: Record<string, string>;
 }) {
   const fullIntake = getAugustIntakeHistory(answers);
-  const augustReplies = patientReplies.filter((message) => message.channel === "august");
-  const mayaReplies = patientReplies.filter((message) => message.channel === "maya");
+  const conversationContext = `${flow}:${state}`;
+  const augustReplies = patientReplies.filter((message) => message.channel === "august" && message.context === conversationContext);
+  const mayaReplies = patientReplies.filter((message) => message.channel === "maya" && message.context === conversationContext);
 
   if (flow === "intake" && ["empty", "concern", "gathering"].includes(state)) {
     return null;
@@ -1351,10 +1353,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function replyFromAugust(message: string, response: string) {
     if (pending) return;
-    setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: message, time: "Now" }]);
+    const replyContext = `${flow}:${state}`;
+    setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: message, context: replyContext, time: "Now" }]);
     setPending("august");
     const timer = window.setTimeout(() => {
-      setPatientReplies((current) => [...current, { author: "august", channel: "august", content: response, time: "Now" }]);
+      setPatientReplies((current) => [...current, { author: "august", channel: "august", content: response, context: replyContext, time: "Now" }]);
       setPending(null);
     }, AUGUST_THINKING_DELAY);
     timers.current.push(timer);
@@ -1362,7 +1365,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function handOffToAugust(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State, message: string) {
     if (pending) return;
-    setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: message, time: "Now" }]);
+    setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: message, context: `${flow}:${state}`, time: "Now" }]);
     setHandoff({ recipient: "august", flow: nextFlow, state: nextState });
   }
 
@@ -1392,6 +1395,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function handleComposer(value: string) {
     const normalized = value.trim().toLocaleLowerCase();
+    const messageContext = `${flow}:${state}`;
     if (completeJourney) {
       if (flow === "intake" && state === "summary" && /\b(yes|right|correct|share|looks good)\b/.test(normalized)) {
         moveTo("intake", "reviewing");
@@ -1402,7 +1406,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         return;
       }
       if (flow === "intake" && state === "reply") {
-        setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: value, time: "Now" }]);
+        setPatientReplies((current) => [...current, { author: "patient", channel: "maya", content: value, context: messageContext, time: "Now" }]);
         setSubmittedMessages((current) => ({ ...current, "intake:reply": value }));
         setPending("maya");
         if (hasUrgentClinicianWarning(value)) {
@@ -1411,6 +1415,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               author: "maya",
               channel: "maya",
               content: "I’m concerned by what you described. Trouble swallowing liquids, breathing difficulty, or a spreading rash needs urgent in-person assessment now. Please seek emergency care, and call 911 if breathing becomes difficult, you feel faint, or swelling develops. I’m pausing the routine test plan.",
+              context: messageContext,
               time: "Now",
             }]);
             setPending(null);
@@ -1448,7 +1453,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         }
       }
       if (flow === "lab" && state === "confirmed") {
-        setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: value, time: "Now" }]);
+        setPatientReplies((current) => [...current, { author: "patient", channel: "august", content: value, context: messageContext, time: "Now" }]);
         setSubmittedMessages((current) => ({ ...current, "lab:confirmed": value }));
         setPending("august");
         if (isNegativeResultConfirmation(value)) {
@@ -1457,6 +1462,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               author: "august",
               channel: "august",
               content: "Thanks for telling me. I won’t add this result or notify Maya. Tell me what looks wrong, or contact the lab, and I can help you resolve it.",
+              context: messageContext,
               time: "Now",
             }]);
             setPending(null);
@@ -1470,6 +1476,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               author: "august",
               channel: "august",
               content: "I need a clear confirmation before I attach this result. Did you complete this test, and should I add it to Maya’s visit?",
+              context: messageContext,
               time: "Now",
             }]);
             setPending(null);
@@ -1482,6 +1489,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             author: "august",
             channel: "august",
             content: "Thanks. I confirmed that this result belongs to you, added it to this visit, and notified Maya. She’ll review the result with your symptoms, medicines, and allergies before deciding on treatment.",
+            context: messageContext,
             time: "Now",
           }]);
           setPending(null);
@@ -1512,7 +1520,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       return;
     }
     if (flow !== "intake" || state === "reply") {
-      setPatientReplies((current) => [...current, { author: "patient", channel: clinician ? "maya" : "august", content: value, time: "Now" }]);
+      setPatientReplies((current) => [...current, { author: "patient", channel: clinician ? "maya" : "august", content: value, context: messageContext, time: "Now" }]);
       return;
     }
     if (state === "empty") {
@@ -1789,7 +1797,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <MessageItem message={{ author: "maya", content: "Hi Anuruddh. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} stream />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
-                {patientReplies.filter((message) => message.channel === "maya").map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
+                {patientReplies.filter((message) => message.channel === "maya" && message.context === "intake:reply").map((message, index) => <MessageItem key={`reply-${index}`} message={message} />)}
                 {completeJourney ? <PrimaryAction onClick={() => moveTo("lab", "recommended")}>Continue with Maya’s plan</PrimaryAction> : null}
               </div>
             ) : null}
@@ -1888,10 +1896,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               </div>
             ) : null}
 
-            {flow !== "intake" && patientReplies.some((message) => message.channel === (clinician ? "maya" : "august")) ? (
+            {flow !== "intake" && patientReplies.some((message) => message.channel === (clinician ? "maya" : "august") && message.context === `${flow}:${state}`) ? (
               <div className={styles.threadContinuation}>
                 <div className={styles.dateMarker}>Your reply</div>
-                {patientReplies.filter((message) => message.channel === (clinician ? "maya" : "august")).map((message, index, replies) => <MessageItem key={`decision-reply-${index}`} message={message} stream={index === replies.length - 1 && message.author !== "patient"} />)}
+                {patientReplies.filter((message) => message.channel === (clinician ? "maya" : "august") && message.context === `${flow}:${state}`).map((message, index, replies) => <MessageItem key={`decision-reply-${index}`} message={message} stream={index === replies.length - 1 && message.author !== "patient"} />)}
               </div>
             ) : null}
               </>
