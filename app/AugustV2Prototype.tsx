@@ -769,7 +769,7 @@ function CompleteJourneyConversation({
             <MessageItem message={{ author: "august", content: `You’re confirmed for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is already attached, and I’ll return the result to her visit.`, time: "10:30" }} />
           </>
         ) : null}
-        {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
+        {state !== "confirmed" ? patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />) : null}
       </div>
     );
   }
@@ -802,7 +802,7 @@ function CompleteJourneyConversation({
           <MessageItem message={{ author: "august", content: `Done. I sent Maya’s prescription to ${encounter.prescription.pharmacy}. The pharmacy owns the next step, and I’ll post its confirmation in Care.`, time: "2:20" }} />
         </>
       ) : null}
-      {patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />)}
+      {state !== "sent" ? patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />) : null}
     </div>
   );
 }
@@ -925,6 +925,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
     setPending(null);
+    if (nextFlow !== flow) setPatientReplies([]);
     setFlow(nextFlow);
     setState(nextState);
   }
@@ -1080,6 +1081,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         moveTo("prescription", "pharmacy");
         return;
       }
+      if (flow === "prescription" && state === "sent") return;
     }
     if (flow !== "intake" || state === "reply") {
       setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
@@ -1161,6 +1163,9 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   const composerConfig = (() => {
     if (completeJourney) {
+      if (flow === "prescription" && state === "sent") {
+        return { kind: "passive" as const, icon: Bell, text: "Pharmacy updates will appear in Care" };
+      }
       const recipient = clinician ? "Maya" as const : "August" as const;
       const placeholder = state === "summary"
         ? "Reply or edit the summary…"
