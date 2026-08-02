@@ -111,6 +111,8 @@ const intakeReadyForReview =
 const clinicianHandoffMessage =
   "Based on your worsening throat pain and fever, this should be reviewed today. I found Maya Rao because she is a licensed California clinician who handles same-day throat concerns.\n\nI’ll share the summary you confirmed so you do not have to start over.";
 
+const AUGUST_THINKING_DELAY = 3_800;
+
 function Avatar({
   person,
   size = "regular",
@@ -276,8 +278,8 @@ function AugustThinkingIndicator({
 
   useEffect(() => {
     const phaseTimers = [
-      window.setTimeout(() => setPhase(1), 560),
-      window.setTimeout(() => setPhase(2), 1_140),
+      window.setTimeout(() => setPhase(1), 900),
+      window.setTimeout(() => setPhase(2), 1_850),
     ];
     return () => phaseTimers.forEach(window.clearTimeout);
   }, []);
@@ -290,8 +292,19 @@ function AugustThinkingIndicator({
           <Sparkles aria-hidden="true" size={13} />
           August is thinking
         </strong>
-        <span className={styles.thinkingPhase} key={phase}>{phases[phase]}</span>
-        <span className={styles.thinkingProgress} aria-hidden="true"><i /></span>
+        <ol className={styles.thinkingSteps}>
+          {phases.map((item, index) => {
+            const status = index < phase ? "complete" : index === phase ? "current" : "upcoming";
+            return (
+              <li className={styles[`thinkingStep-${status}`]} key={item}>
+                <span aria-hidden="true" className={styles.thinkingStepMark}>
+                  {status === "complete" ? <Check size={11} strokeWidth={2.8} /> : <i />}
+                </span>
+                <span>{item}</span>
+              </li>
+            );
+          })}
+        </ol>
       </div>
     </div>
   );
@@ -971,7 +984,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function replyThen(next: PrototypeV2State, person: "august" | "maya") {
     setPending(person);
-    const timer = window.setTimeout(() => { setPending(null); changeState(next); }, person === "maya" ? 1_100 : 1_850);
+    const timer = window.setTimeout(() => { setPending(null); changeState(next); }, person === "maya" ? 1_100 : AUGUST_THINKING_DELAY);
     timers.current.push(timer);
   }
 
@@ -1058,7 +1071,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       setAnswers((current) => ({ ...current, [question.field]: value }));
       if (gatheringStep < intakeQuestions.length - 1) {
         setPending("august");
-        const timer = window.setTimeout(() => { setGatheringStep((current) => current + 1); setPending(null); }, 1_850);
+        const timer = window.setTimeout(() => { setGatheringStep((current) => current + 1); setPending(null); }, AUGUST_THINKING_DELAY);
         timers.current.push(timer);
       } else {
         replyThen("summary", "august");

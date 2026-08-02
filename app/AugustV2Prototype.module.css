@@ -402,8 +402,8 @@
 }
 
 .thinkingSurface {
-  width: min(252px, calc(100% - 38px));
-  padding: 11px 13px 10px;
+  width: min(270px, calc(100% - 38px));
+  padding: 12px 14px 13px;
   border: 1px solid rgba(16, 59, 49, 0.075);
   border-radius: 5px 18px 18px 18px;
   background: rgba(255, 255, 255, 0.9);
@@ -424,33 +424,16 @@
 
 .thinkingTitle svg { flex: none; }
 
-.thinkingPhase {
-  display: block;
-  min-height: 17px;
-  margin-top: 5px;
-  color: var(--ink-soft);
-  font-size: 12px;
-  line-height: 1.4;
-  animation: thinkingPhaseIn 180ms var(--motion-ease) both;
-}
-
-.thinkingProgress {
-  display: block;
-  height: 2px;
-  margin-top: 9px;
-  overflow: hidden;
-  border-radius: 999px;
-  background: var(--mint-100);
-}
-
-.thinkingProgress i {
-  display: block;
-  width: 46%;
-  height: 100%;
-  border-radius: inherit;
-  background: var(--green-600);
-  animation: thinkingSweep 1.12s ease-in-out infinite;
-}
+.thinkingSteps { display: flex; flex-direction: column; gap: 7px; margin: 10px 0 0; padding: 0; list-style: none; }
+.thinkingSteps li { display: grid; grid-template-columns: 16px minmax(0, 1fr); align-items: center; gap: 7px; color: var(--ink-muted); font-size: 11px; line-height: 1.35; transition: color 180ms ease, opacity 180ms ease; }
+.thinkingStepMark { width: 16px; height: 16px; display: grid; place-items: center; border: 1px solid rgba(16, 89, 70, 0.16); border-radius: 50%; color: #fff; background: rgba(235, 245, 240, 0.82); }
+.thinkingStepMark i { width: 4px; height: 4px; display: block; border-radius: 50%; background: #8aa097; }
+.thinkingStep-complete { color: var(--ink-soft) !important; }
+.thinkingStep-complete .thinkingStepMark { border-color: var(--green-600); background: var(--green-600); }
+.thinkingStep-current { color: var(--ink) !important; font-weight: 650; }
+.thinkingStep-current .thinkingStepMark { border-color: rgba(16, 89, 70, 0.28); background: var(--mint-100); box-shadow: 0 0 0 3px rgba(46, 135, 111, 0.09); }
+.thinkingStep-current .thinkingStepMark i { background: var(--green-700); animation: thinkingPulse 900ms ease-in-out infinite; }
+.thinkingStep-upcoming { opacity: 0.56; }
 
 .screenIntro { padding: 3px 2px 1px; }
 
@@ -1498,15 +1481,9 @@
   35% { transform: translateY(-3px); opacity: 1; }
 }
 
-@keyframes thinkingPhaseIn {
-  from { opacity: 0; transform: translateY(3px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes thinkingSweep {
-  0% { transform: translateX(-105%); opacity: 0.45; }
-  45% { opacity: 1; }
-  100% { transform: translateX(220%); opacity: 0.45; }
+@keyframes thinkingPulse {
+  0%, 100% { opacity: 0.46; transform: scale(0.72); }
+  50% { opacity: 1; transform: scale(1.2); }
 }
 
 @keyframes chromeIn {
@@ -1620,6 +1597,6 @@
 @media (prefers-reduced-motion: reduce) {
   .screen { scroll-behavior: auto; }
   .typing i { animation: none; }
-  .thinkingProgress i { width: 68%; transform: none; }
+  .thinkingStep-current .thinkingStepMark i { animation: none; transform: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }
