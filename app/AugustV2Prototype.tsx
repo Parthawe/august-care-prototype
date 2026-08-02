@@ -82,22 +82,31 @@ const intakeQuestions = [
   {
     field: "warningSigns" as const,
     prompt:
-      "Any trouble breathing, difficulty swallowing liquids, fainting, or severe chest pain?",
+      "That helps. The timing, change in symptoms, and fever tell me this needs a careful safety check.\n\nAre you having trouble breathing, unable to swallow liquids, feeling faint, or having severe chest pain?",
     placeholder: "Tell August about any warning signs…",
   },
   {
     field: "history" as const,
     prompt:
-      "Any major health conditions, and what medicines are you taking now?",
+      "That’s reassuring. Being able to breathe and drink normally makes an emergency problem less likely.\n\nDo you have any major health conditions, and what medicines are you taking now?",
     placeholder: "Add health history and medicines…",
   },
   {
     field: "allergies" as const,
     prompt:
-      "Any medication allergies or previous reactions to antibiotics?",
+      "Got it. I’ve noted your health history and current medicines.\n\nDo you have any medication allergies or previous reactions to antibiotics?",
     placeholder: "Add allergies or reactions…",
   },
 ] as const;
+
+const firstIntakeReply =
+  "Of course. I can help you work through what’s going on and what the next best step might be.\n\nA sore throat with a fever is often caused by an infection, but I want to check a few details before saying how concerning it is.\n\nWhen did it start, is it getting better or worse, and what was your highest temperature?";
+
+const intakeReadyForReview =
+  "Thanks. I’ve got the main details: how long this has been going on, how it is changing, your fever, urgent warning signs, health history, medicines, and allergies.\n\nBased on what you shared, a same-day clinician review is the safest next step. I’ve organized everything below so you can check it before anything is shared.";
+
+const clinicianHandoffMessage =
+  "Based on your worsening throat pain and fever, this should be reviewed today. I found Maya Rao because she is a licensed California clinician who handles same-day throat concerns.\n\nI’ll share the summary you confirmed so you do not have to start over.";
 
 function Avatar({
   person,
@@ -626,7 +635,7 @@ function CompleteJourneyConversation({
 }) {
   const fullIntake: Message[] = [
     { author: "patient", content: answers.concern, time: "9:41" },
-    { author: "august", content: "Got it. When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
+    { author: "august", content: firstIntakeReply, time: "9:41" },
     { author: "patient", content: answers.onset, time: "9:43" },
     { author: "august", content: intakeQuestions[0].prompt, time: "9:43" },
     { author: "patient", content: answers.warningSigns, time: "9:44" },
@@ -655,7 +664,7 @@ function CompleteJourneyConversation({
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today</div>
         {fullIntake.map((message, index) => <MessageItem animate={false} key={`complete-intake-${index}`} message={message} />)}
-        <MessageItem message={{ author: "august", content: "That’s everything I need for now. I organized it below so you can check it before anything is shared.", time: "9:50" }} />
+        <MessageItem message={{ author: "august", content: intakeReadyForReview, time: "9:50" }} />
         {state === "summary" ? (
           <>
             <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={onCancelEdit} onChange={onChangeEdit} onEdit={onEdit} onSave={onSaveEdit} />
@@ -667,7 +676,7 @@ function CompleteJourneyConversation({
         {state === "reviewing" ? (
           <>
             <MessageItem message={{ author: "patient", content: "Everything looks right. You can share it.", time: "9:51" }} />
-            <MessageItem message={{ author: "august", content: "I found a clinician who fits this visit. I’m sharing her contact here so you can continue directly.", time: "9:52" }} />
+            <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} />
             <ClinicianContactCard onContinue={() => onMove("intake", "reply")} responseEstimate={encounter.clinician.responseEstimate} />
             {patientReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
           </>
@@ -1053,7 +1062,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     }
     result.push(
       { author: "patient", content: answers.concern, time: "9:41" },
-      { author: "august", content: "Got it. When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
+      { author: "august", content: firstIntakeReply, time: "9:41" },
     );
     if (state === "concern") {
       if (pending === "august" && answers.onset) {
@@ -1236,7 +1245,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "intake" && state === "summary" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "august", content: "I’ve organized what you told me. Read it once, edit anything that is off, then choose whether to share it with a clinician.", time: "9:50" }} />
+                <MessageItem message={{ author: "august", content: intakeReadyForReview, time: "9:50" }} />
                 <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={() => setEditField(null)} onChange={setEditValue} onEdit={openSummaryEdit} onSave={saveSummaryEdit} />
                 <PrimaryAction onClick={() => changeState("reviewing")}>Confirm and connect</PrimaryAction>
               </div>
@@ -1248,7 +1257,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   <CircleCheck aria-hidden="true" size={18} />
                   <span>Only your confirmed summary was shared with Maya.</span>
                 </div>
-                <MessageItem message={{ author: "august", content: "I found a clinician who fits this visit. I’m sharing her contact here so you can continue directly.", time: "9:52" }} />
+                <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} />
                 <ClinicianContactCard onContinue={() => changeState("reply")} responseEstimate={encounter.clinician.responseEstimate} />
               </div>
             ) : null}

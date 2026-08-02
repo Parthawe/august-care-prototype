@@ -64,7 +64,7 @@ test("the patient always starts a new August conversation", async ({ page }, tes
 
   await expect(page.getByText("Hi Parth. Tell me what’s going on.")).toHaveCount(0);
   await expect(page.getByText("My throat has been hurting and I had a fever last night.")).toBeVisible();
-  await expect(page.getByText(/Got it\. When did it start/)).toBeVisible();
+  await expect(page.getByText(/Of course\. I can help you work through/)).toBeVisible();
 });
 
 test("August shows deliberate medical review before replying", async ({ page }, testInfo) => {
@@ -77,10 +77,10 @@ test("August shows deliberate medical review before replying", async ({ page }, 
     expect(page.getByText("End-to-end encrypted")).toHaveCount(0, { timeout: 1_000 }),
     expect(page.getByText("August is thinking")).toBeVisible({ timeout: 1_000 }),
     expect(page.getByText(/Understanding what you shared|Checking for urgent warning signs|Preparing the safest next question/)).toBeVisible({ timeout: 1_000 }),
-    expect(page.getByText(/Got it\. When did it start/)).toHaveCount(0, { timeout: 1_000 }),
+    expect(page.getByText(/Of course\. I can help you work through/)).toHaveCount(0, { timeout: 1_000 }),
   ]);
 
-  await expect(page.getByText(/Got it\. When did it start/)).toBeVisible();
+  await expect(page.getByText(/Of course\. I can help you work through/)).toBeVisible();
   await expect(page.getByText("August is thinking")).toHaveCount(0);
 });
 
@@ -92,16 +92,21 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
 
   await send(page, "My throat hurts and I had a fever.");
   await expect(page).toHaveURL(/state=concern/);
+  await expect(page.getByText(/what the next best step might be/)).toBeVisible();
   await send(page, "Five days, worse today, 102 degrees.");
   await expect(page).toHaveURL(/state=gathering/);
+  await expect(page.getByText(/needs a careful safety check/)).toBeVisible();
   await send(page, "No trouble breathing, swallowing, fainting, or chest pain.");
+  await expect(page.getByText(/makes an emergency problem less likely/)).toBeVisible();
   await send(page, "No major conditions. Ibuprofen occasionally.");
+  await expect(page.getByText(/I’ve noted your health history and current medicines/)).toBeVisible();
   await send(page, "No medication allergies.");
 
   await expect(page).toHaveURL(/state=summary/);
+  await expect(page.getByText(/a same-day clinician review is the safest next step/)).toBeVisible();
   await expect(page.getByText("Confirm what August gathered.")).toBeVisible();
   await page.getByRole("button", { name: "Confirm and connect" }).click();
-  await expect(page.getByText(/I found a clinician who fits this visit/)).toBeVisible();
+  await expect(page.getByText(/I found Maya Rao because she is a licensed California clinician/)).toBeVisible();
   await expect(page.locator("header").getByText("August", { exact: true })).toBeVisible();
   await expect(page.getByText("August is connecting you with Maya")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Message Maya" })).toHaveCount(0);
@@ -221,7 +226,7 @@ test("summary transition keeps conversation history settled", async ({ page }, t
 
   const settledMessages = page.locator('[data-message-motion="settled"]');
   await expect(settledMessages).toHaveCount(9);
-  await expect(page.getByText(/That’s everything I need for now/).locator('xpath=ancestor::*[@data-message-motion="enter"]')).toBeVisible();
+  await expect(page.getByText(/Thanks\. I’ve got the main details/).locator('xpath=ancestor::*[@data-message-motion="enter"]')).toBeVisible();
   await expect(page.getByText(/Reply yes to confirm/)).toBeVisible();
   await expect(page.getByText(/I won’t share anything with a clinician until you do/)).toBeVisible();
 
