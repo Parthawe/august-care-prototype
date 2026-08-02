@@ -798,24 +798,39 @@
 .passiveFooter svg { color: var(--green-600); }
 
 .bottomNav {
+  position: relative;
+  isolation: isolate;
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   align-items: center;
   gap: 2px;
-  margin: 5px 16px max(9px, env(safe-area-inset-bottom));
-  padding: 4px 7px;
-  border: 1px solid rgba(16, 59, 49, 0.09);
-  border-radius: 28px;
-  border-color: rgba(255, 255, 255, 0.76);
-  background: rgba(255, 255, 255, 0.7);
-  box-shadow: 0 12px 32px rgba(16, 59, 49, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
-  -webkit-backdrop-filter: blur(26px) saturate(1.3);
-  backdrop-filter: blur(26px) saturate(1.3);
+  margin: 5px 20px max(7px, env(safe-area-inset-bottom));
+  padding: 3px 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 999px;
+  background: rgba(250, 253, 251, 0.74);
+  box-shadow:
+    0 14px 34px rgba(16, 59, 49, 0.14),
+    0 3px 10px rgba(16, 59, 49, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.96),
+    inset 0 0 0 1px rgba(16, 59, 49, 0.035);
+  -webkit-backdrop-filter: blur(32px) saturate(1.45);
+  backdrop-filter: blur(32px) saturate(1.45);
+}
+
+.bottomNav::after {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(118deg, rgba(255, 255, 255, 0.46), rgba(255, 255, 255, 0.08) 46%, rgba(220, 241, 232, 0.28));
+  content: "";
+  pointer-events: none;
 }
 
 .bottomNav > button {
   position: relative;
-  min-height: 50px;
+  min-height: 48px;
   display: grid;
   place-items: center;
   padding: 0;
@@ -831,9 +846,25 @@
     transform 160ms var(--motion-press);
 }
 
+.bottomNav > button::before {
+  position: absolute;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: rgba(224, 243, 235, 0.94);
+  opacity: 0;
+  transform: scale(0.72);
+  transition: opacity 180ms ease, transform 220ms var(--motion-ease);
+  content: "";
+}
+
+.bottomNav > button > svg,
+.bottomNav > button > .avatar { position: relative; z-index: 1; }
+
 .bottomNav .avatar { width: 28px; height: 28px; filter: grayscale(0.48); transition: filter 200ms ease, transform 220ms var(--motion-ease), box-shadow 220ms var(--motion-ease); }
-.bottomNav .activeNav { color: var(--green-800); background: rgba(227, 245, 237, 0.84); }
-.bottomNav .activeNav .avatar { filter: none; transform: scale(1.04); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--green-700); }
+.bottomNav .activeNav { color: var(--green-800); background: transparent; }
+.bottomNav .activeNav::before { opacity: 1; transform: scale(1); }
+.bottomNav .activeNav .avatar { filter: none; transform: scale(1.02); box-shadow: 0 0 0 2px var(--paper), 0 0 0 3.5px var(--green-700); }
 .bottomNav > button:disabled { cursor: default; opacity: 0.48; }
 
 .navBadge {
