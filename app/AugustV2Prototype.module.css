@@ -51,6 +51,63 @@
 
 .phone > * { min-width: 0; }
 
+.conversationTransition {
+  position: absolute;
+  inset: 0;
+  z-index: 40;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background:
+    radial-gradient(circle at 50% 42%, rgba(222, 238, 231, 0.9), transparent 34%),
+    rgba(247, 252, 249, 0.94);
+  -webkit-backdrop-filter: blur(24px) saturate(1.12);
+  backdrop-filter: blur(24px) saturate(1.12);
+}
+
+.conversationTransitionCovering {
+  animation: conversationCover 220ms var(--motion-ease) both;
+}
+
+.conversationTransitionRevealing {
+  pointer-events: none;
+  animation: conversationReveal 280ms var(--motion-ease) both;
+}
+
+.conversationTransitionIdentity {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  min-width: 190px;
+  padding: 14px 18px;
+  border: 1px solid rgba(16, 59, 49, 0.1);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: 0 16px 42px rgba(16, 59, 49, 0.12);
+  animation: conversationIdentityIn 260ms var(--motion-ease) both;
+}
+
+.conversationTransitionIdentity > span,
+.conversationTransitionIdentity > img {
+  border-radius: 50%;
+}
+
+.conversationTransitionIdentity > div {
+  display: grid;
+  gap: 2px;
+}
+
+.conversationTransitionIdentity strong {
+  font-size: 16px;
+  line-height: 1.2;
+}
+
+.conversationTransitionIdentity span {
+  color: var(--ink-soft);
+  font-size: 13px;
+  line-height: 1.35;
+}
+
 .conversationHeader {
   display: flex;
   align-items: center;
@@ -376,6 +433,21 @@
 
 @media (prefers-reduced-motion: reduce) {
   .streamingCaret { display: none; animation: none; }
+}
+
+@keyframes conversationCover {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes conversationReveal {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes conversationIdentityIn {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .patientBubble {

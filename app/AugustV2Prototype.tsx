@@ -83,6 +83,11 @@ type ConversationHandoff = {
   state: PrototypeV2State;
 };
 
+type ConversationTransition = {
+  recipient: "august" | "maya";
+  phase: "covering" | "revealing";
+};
+
 const summaryLabels: Record<keyof IntakeAnswers, string> = {
   concern: "Concern",
   onset: "Timing and severity",
@@ -1110,6 +1115,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
   const [handoff, setHandoff] = useState<ConversationHandoff | null>(null);
+  const [conversationTransition, setConversationTransition] = useState<ConversationTransition | null>(null);
   const [submittedMessages, setSubmittedMessages] = useState<Record<string, string>>({});
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
@@ -1122,6 +1128,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const firstDialogActionRef = useRef<HTMLButtonElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
   const timers = useRef<number[]>([]);
+  const conversationTimers = useRef<number[]>([]);
 
   const encounter = useMemo(() => ({ ...createPrototypeV2Encounter(flow, state), answers }), [answers, flow, state]);
   const clinician =
@@ -1136,7 +1143,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     ? "updates"
     : "care";
 
-  useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
+  useEffect(() => () => {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    conversationTimers.current.forEach((timer) => window.clearTimeout(timer));
+  }, []);
 
   useEffect(() => {
     if (searchOpen) requestAnimationFrame(() => searchInputRef.current?.focus());
@@ -1292,6 +1302,31 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     setState(nextState);
   }
 
+  function transitionToConversation(recipient: "august" | "maya", commit: () => void) {
+    if (conversationTransition) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      commit();
+      return;
+    }
+
+    conversationTimers.current.forEach((timer) => window.clearTimeout(timer));
+    conversationTimers.current = [];
+    setConversationTransition({ recipient, phase: "covering" });
+
+    const swapTimer = window.setTimeout(() => {
+      commit();
+      setConversationTransition({ recipient, phase: "revealing" });
+      const finishTimer = window.setTimeout(() => setConversationTransition(null), 280);
+      conversationTimers.current.push(finishTimer);
+    }, 220);
+    conversationTimers.current.push(swapTimer);
+  }
+
+  function moveToConversation(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State) {
+    const recipient = nextFlow === "intake" && nextState === "reply" ? "maya" : clinician ? "august" : "maya";
+    transitionToConversation(recipient, () => moveTo(nextFlow, nextState));
+  }
+
   function switchTab(target: ProductTab) {
     if (target === "updates") {
       setConversationView("updates");
@@ -1404,13 +1439,15 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (!handoff) return;
     const target = handoff;
     const startsClinicianReview = target.recipient === "maya" && target.flow === "prescription" && target.state === "recommended";
-    setHandoff(null);
-    moveTo(target.flow, target.state, true);
-    if (startsClinicianReview) {
-      setPending("maya");
-      const timer = window.setTimeout(() => setPending(null), AUGUST_THINKING_DELAY);
-      timers.current.push(timer);
-    }
+    transitionToConversation(target.recipient, () => {
+      setHandoff(null);
+      moveTo(target.flow, target.state, true);
+      if (startsClinicianReview) {
+        setPending("maya");
+        const timer = window.setTimeout(() => setPending(null), AUGUST_THINKING_DELAY);
+        timers.current.push(timer);
+      }
+    });
   }
 
   function confirmPrescription(message = "Yes, send it there.") {
@@ -1776,7 +1813,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   onChangeEdit={setEditValue}
                   onEdit={openSummaryEdit}
                   onOpenHandoff={openPreparedHandoff}
-                  onMove={moveTo}
+                  onMove={moveToConversation}
                   onSaveEdit={saveSummaryEdit}
                   patientReplies={patientReplies}
                   pending={pending}
@@ -1822,7 +1859,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 </div>
                 {reviewingPhase === "thinking" ? <ResponseProgress mode="clinical" person="august" /> : null}
                 {reviewingPhase !== "thinking" ? <MessageItem message={{ author: "august", content: clinicianHandoffMessage, time: "9:52" }} stream={reviewingPhase === "responding"} /> : null}
-                {reviewingPhase === "complete" ? <ClinicianContactCard onContinue={() => changeState("reply")} responseEstimate={encounter.clinician.responseEstimate} /> : null}
+                {reviewingPhase === "complete" ? <ClinicianContactCard onContinue={() => transitionToConversation("maya", () => changeState("reply"))} responseEstimate={encounter.clinician.responseEstimate} /> : null}
               </div>
             ) : null}
 
@@ -1959,7 +1996,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : showUpdates ? (
               null
             ) : composerConfig.kind === "composer" ? (
-              <Composer disabled={composerConfig.disabled || Boolean(pending)} initialValue={composerDraft} key={`${composerConfig.recipient}-${composerDraft}`} onAttach={handleImageAttachment} onSubmit={(value) => { setComposerDraft(""); handleComposer(value); }} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
+              <Composer disabled={composerConfig.disabled || Boolean(pending) || Boolean(conversationTransition)} initialValue={composerDraft} key={`${composerConfig.recipient}-${composerDraft}`} onAttach={handleImageAttachment} onSubmit={(value) => { setComposerDraft(""); handleComposer(value); }} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
             ) : (
               <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
             )}
@@ -1970,6 +2007,22 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             careAvailable={careAvailable}
             onSelect={switchTab}
           />
+          {conversationTransition ? (
+            <div
+              aria-label={`Opening ${conversationTransition.recipient === "maya" ? "Maya" : "August"} conversation`}
+              aria-live="polite"
+              className={`${styles.conversationTransition} ${conversationTransition.phase === "covering" ? styles.conversationTransitionCovering : styles.conversationTransitionRevealing}`}
+              role="status"
+            >
+              <div className={styles.conversationTransitionIdentity}>
+                {conversationTransition.recipient === "maya" ? <Avatar person="maya" size="large" /> : <AugustIdentityMark size="large" />}
+                <div>
+                  <strong>{conversationTransition.recipient === "maya" ? "Maya" : "August"}</strong>
+                  <span>Opening conversation</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
         </section>
       </div>
 

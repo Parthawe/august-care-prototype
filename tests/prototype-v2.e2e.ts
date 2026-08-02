@@ -96,7 +96,7 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
 
   await send(page, "My throat hurts and I had a fever.");
   await expect(page).toHaveURL(/state=concern/);
-  await expect(page.getByText(/what the next best step might be/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "what the next best step might be" })).toBeVisible();
   await send(page, "Five days, worse today, 102 degrees.");
   await expect(page).toHaveURL(/state=gathering/);
   await expect(page.locator("p").filter({ hasText: "needs a careful safety check" })).toBeVisible();
@@ -122,6 +122,25 @@ test("intake gathers context, confirms it, and connects directly to Maya", async
   await expect(page.locator("header").getByText("Maya (Clinician)")).toBeVisible();
   await expect(page.getByRole("textbox", { name: "Message Maya" })).toBeVisible();
   await expect(page.getByText(/choose a clinician/i)).toHaveCount(0);
+});
+
+test("the explicit handoff transitions between separate conversations", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.goto("/prototype-v2/00?state=intake-reviewing");
+
+  const continueButton = page.getByRole("button", { name: "Continue conversation" });
+  await expect(continueButton).toBeVisible({ timeout: 10_000 });
+  await continueButton.click();
+
+  const transition = page.getByRole("status", { name: "Opening Maya conversation" });
+  await expect(transition).toBeVisible();
+  await expect(transition.getByText("Maya", { exact: true })).toBeVisible();
+  await expect(page.locator("header").getByText("Maya (Clinician)")).toBeVisible({ timeout: 2_000 });
+  await expect(transition).toHaveCount(0, { timeout: 2_000 });
+  await expect(page.locator("p").filter({ hasText: "Hi Anuruddh. I reviewed what you shared." })).toBeVisible();
 });
 
 test("prescription continuation ends at prescription sent", async ({
@@ -249,7 +268,7 @@ test("Maya keeps her earlier messages when the medication decision arrives", asy
   await expect(page.getByText("I can drink normally and I have not noticed a rash.", { exact: true })).toBeVisible();
   await expect(page.getByText(/Before I decide on medication, I recommend a rapid strep test today/)).toBeVisible();
   await expect(page.getByText("Please have August help me schedule the test.", { exact: true })).toBeVisible();
-  await expect(page.getByText(/I reviewed your positive rapid strep result/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "I reviewed your positive rapid strep result" })).toBeVisible();
 });
 
 test("August keeps intake and testing history when pharmacy support begins", async ({
@@ -261,7 +280,7 @@ test("August keeps intake and testing history when pharmacy support begins", asy
   await expect(page.getByText(/Of course\. I can help you work through/)).toBeAttached();
   await expect(page.getByText(/Mission Lab can take Maya’s order/)).toBeAttached();
   await expect(page.getByText(/Your rapid strep result is ready/)).toBeAttached();
-  await expect(page.getByText(/Castro Community Pharmacy is/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "Castro Community Pharmacy is" })).toBeVisible();
 });
 
 test("prescription completion ignores repeated confirmations and duplicate follow-ups", async ({
@@ -276,10 +295,10 @@ test("prescription completion ignores repeated confirmations and duplicate follo
   await expect(page.getByText(/The prescription has already been sent/)).toHaveCount(0);
 
   await send(page, "When will the pharmacy confirm?");
-  await expect(page.getByText(/The prescription has already been sent/)).toBeVisible({ timeout: 6_000 });
+  await expect(page.locator("p").filter({ hasText: "The prescription has already been sent" })).toBeVisible({ timeout: 6_000 });
   await send(page, "When will the pharmacy confirm?");
   await expect(page.getByText("When will the pharmacy confirm?", { exact: true })).toHaveCount(1);
-  await expect(page.getByText(/The prescription has already been sent/)).toHaveCount(1);
+  await expect(page.locator("p").filter({ hasText: "The prescription has already been sent" })).toHaveCount(1);
 });
 
 test("Maya and August keep separate conversation histories", async ({ page }, testInfo) => {
@@ -288,7 +307,7 @@ test("Maya and August keep separate conversation histories", async ({ page }, te
 
   const pharmacyQuestion = "When will the pharmacy confirm?";
   await send(page, pharmacyQuestion);
-  await expect(page.getByText(/The prescription has already been sent/)).toBeVisible({ timeout: 6_000 });
+  await expect(page.locator("p").filter({ hasText: "The prescription has already been sent" })).toBeVisible({ timeout: 6_000 });
 
   await page.getByRole("button", { name: "Chats", exact: true }).click();
   await page.getByRole("button", { name: /Maya Clinician/ }).click();
@@ -429,20 +448,20 @@ test("complete journey runs from intake through testing and prescription", async
   await expect(page.getByText("Licensed in California")).toBeVisible();
   await page.getByRole("button", { name: "Continue conversation" }).click();
   await send(page, "I can drink normally and I have not noticed a rash.");
-  await expect(page.getByText(/recommend a rapid strep test/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "recommend a rapid strep test" })).toBeVisible({ timeout: 10_000 });
   await send(page, "Please ask August to arrange it.");
   await page.getByRole("button", { name: "Open August conversation" }).click();
   await send(page, "Yes, that time works.");
   await send(page, "Yes, I completed this test. Add it to Maya’s visit.");
   await page.getByRole("button", { name: "Open Maya conversation" }).click();
-  await expect(page.getByText(/positive rapid strep result/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "positive rapid strep result" })).toBeVisible();
   await expect(page.getByText("Please ask August to arrange it.", { exact: true })).toHaveCount(1);
   await expect(page.getByText("Yes, I completed this test. Add it to Maya’s visit.", { exact: true })).toHaveCount(0);
   await send(page, "Show me the medication plan.");
   await send(page, "Ask August to send it to the pharmacy.");
   await page.getByRole("button", { name: "Open August conversation" }).click();
   await send(page, "Yes, send it there.");
-  await expect(page.getByText(/Done\. I sent Maya’s prescription/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: "Done. I sent Maya’s prescription" })).toBeVisible();
   await expect(page).toHaveURL(/state=prescription-sent/);
 });
 
