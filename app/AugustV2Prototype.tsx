@@ -753,7 +753,6 @@ function CompleteJourneyConversation({
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
         <EncryptionNotice recipient="Maya" />
-        <MessageItem message={{ author: "patient", content: "Hi Maya. Please review the information I confirmed with August.", time: "10:23" }} />
         <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`maya-first-reply-${index}`} message={message} />)}
       </div>
@@ -1381,7 +1380,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today · Care</div>
                 <EncryptionNotice recipient="Maya" />
-                <MessageItem message={{ author: "patient", content: "Hi Maya. Please review the information I confirmed with August.", time: "10:23" }} />
                 <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
