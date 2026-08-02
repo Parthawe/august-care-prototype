@@ -114,7 +114,6 @@ const clinicianHandoffMessage =
 
 const labRecommendationMessage =
   "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.";
-const labSchedulingRequest = "Please have August find a nearby appointment for me.";
 
 const AUGUST_THINKING_DELAY = 3_800;
 
@@ -756,9 +755,6 @@ function CompleteJourneyConversation({
   if (flow === "lab") {
     return (
       <div className={styles.transcript}>
-        <div className={styles.dateMarker}>Earlier · Care</div>
-        <MessageItem animate={false} message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
-        <MessageItem animate={false} message={{ author: "patient", content: labSchedulingRequest, time: "10:28" }} />
         <div className={styles.dateMarker}>Today · August</div>
         <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
         <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
@@ -798,12 +794,6 @@ function CompleteJourneyConversation({
 
   return (
     <div className={styles.transcript}>
-      <div className={styles.dateMarker}>Earlier · Care</div>
-      <MessageItem animate={false} message={{ author: "system", content: "Your rapid strep result returned to Maya’s visit." }} />
-      <MessageItem animate={false} message={{ author: "maya", content: "Your rapid strep test is positive. That result explains your symptoms and means an antibiotic is appropriate. I also checked the medicines and allergies you shared. I recommend Penicillin V.", time: "2:14" }} />
-      <MessageItem animate={false} message={{ author: "patient", content: "Show me the medication plan.", time: "2:15" }} />
-      <MessageItem animate={false} message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}.\n\nI prescribed this after reviewing your test result and allergy history. August can help send it to a pharmacy.`, time: "2:16" }} />
-      <MessageItem animate={false} message={{ author: "patient", content: "Please have August send it to my pharmacy.", time: "2:17" }} />
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent her signed prescription to August for pharmacy support." }} />
       <MessageItem message={{ author: "august", content: `${encounter.prescription.pharmacy} is ${encounter.prescription.pharmacyDistance}. It is at ${encounter.prescription.pharmacyAddress} and is ${encounter.prescription.pharmacyAvailability.toLowerCase()}. It accepts electronic prescriptions.\n\nShould I send Maya’s signed prescription there?`, time: "2:18" }} />
@@ -1401,9 +1391,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "lab" && state === "nearby-lab" ? (
               <div className={styles.contentStack}>
-                <div className={styles.dateMarker}>Earlier · Care</div>
-                <MessageItem animate={false} message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
-                <MessageItem animate={false} message={{ author: "patient", content: labSchedulingRequest, time: "10:28" }} />
                 <div className={styles.dateMarker}>Today · August</div>
                 <MessageItem message={{ author: "system", content: "Maya sent the test order to your private August conversation." }} />
                 <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
