@@ -234,6 +234,16 @@
   gap: 17px;
 }
 
+.resultReadyBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 17px;
+}
+
+.resultReadyTranscript {
+  padding-bottom: 128px;
+}
+
 .contentStack {
   display: flex;
   flex-direction: column;

@@ -313,19 +313,6 @@ function MessageItem({ animate = true, message, stream = false }: { animate?: bo
   );
 }
 
-function TypingIndicator({ person }: { person: "august" | "maya" }) {
-  return (
-    <div className={styles.messageRow} aria-label={`${person} is typing`}>
-      <Avatar person={person} size="small" />
-      <div className={styles.typing}>
-        <i />
-        <i />
-        <i />
-      </div>
-    </div>
-  );
-}
-
 function AugustThinkingIndicator() {
   return (
     <div aria-label="August is thinking" className={styles.thinkingRow} role="status">
@@ -333,6 +320,19 @@ function AugustThinkingIndicator() {
       <div className={styles.thinkingSurface}>
         <Sparkles aria-hidden="true" size={14} />
         <span>August is thinking</span>
+        <span aria-hidden="true" className={styles.thinkingDots}><i /><i /><i /></span>
+      </div>
+    </div>
+  );
+}
+
+function ClinicianReviewIndicator() {
+  return (
+    <div aria-label="Maya is reviewing the result" className={styles.thinkingRow} role="status">
+      <Avatar person="maya" size="small" />
+      <div className={styles.thinkingSurface}>
+        <ClipboardCheck aria-hidden="true" size={14} />
+        <span>Maya is reviewing the result</span>
         <span aria-hidden="true" className={styles.thinkingDots}><i /><i /><i /></span>
       </div>
     </div>
@@ -347,7 +347,7 @@ function ResponseProgress({
 }) {
   return person === "august"
     ? <AugustThinkingIndicator />
-    : <TypingIndicator person="maya" />;
+    : <ClinicianReviewIndicator />;
 }
 
 function Composer({
@@ -863,11 +863,11 @@ function CompleteJourneyConversation({
 
   if (flow === "lab") {
     return (
-      <div className={styles.transcript}>
+      <div className={`${styles.transcript} ${state === "confirmed" ? styles.resultReadyTranscript : ""}`}>
         <AugustPreviousConversation answers={answers} />
       <div className={styles.dateMarker}>Today · August</div>
       <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
-      {pending !== "august" ? <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} /> : null}
+      {state === "confirmed" || pending !== "august" ? <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} /> : null}
         {state === "nearby-lab" && pending === "august" && submittedMessages["lab:nearby-lab"] ? (
           <>
             <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, confirm appointment", time: "Now" }} />
@@ -877,7 +877,12 @@ function CompleteJourneyConversation({
         {state === "confirmed" ? (
           <>
             <MessageItem message={{ author: "patient", content: submittedMessages["lab:nearby-lab"] ?? "Yes, that time works for me.", time: "10:29" }} />
-            <MessageItem message={{ author: "august", content: `You’re confirmed for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is already attached, and I’ll return the result to her visit.`, time: "10:30" }} />
+            <MessageItem message={{ author: "august", content: `You’re scheduled for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is attached, and this visit will stay open while we wait for the result.`, time: "10:30" }} />
+            <div className={styles.resultReadyBlock} data-scroll-anchor="true">
+              <div className={styles.dateMarker}>Later · Result ready</div>
+              <MessageItem message={{ author: "system", content: "Mission Lab returned your rapid strep result to this visit." }} />
+              <MessageItem message={{ author: "august", content: "Your rapid strep result is ready. Before I notify Maya, please confirm that you completed this test and want the result added to this visit.", time: "1:58" }} />
+            </div>
           </>
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
@@ -892,12 +897,14 @@ function CompleteJourneyConversation({
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Later · Care</div>
-        <MessageItem message={{ author: "system", content: "Your rapid strep result returned to Maya’s visit." }} />
-        <MessageItem message={{ author: "maya", content: "Your rapid strep test is positive. That result explains your symptoms and means an antibiotic is appropriate. I also checked the medicines and allergies you shared. I recommend Penicillin V.", time: "2:14" }} />
+        <MessageItem message={{ author: "system", content: "Result confirmed by you · Maya notified" }} />
+        {state === "recommended" && pending === "maya" ? <ResponseProgress mode="clinical" person="maya" /> : (
+          <MessageItem message={{ author: "maya", content: "I reviewed your positive rapid strep result with the symptoms, safety answers, medicines, and allergies you shared. The result explains your sore throat and fever. An antibiotic is appropriate, and I recommend Penicillin V.", time: "2:14" }} />
+        )}
         {state === "review" ? (
           <>
-            <MessageItem message={{ author: "patient", content: "Show me the medication plan.", time: "2:15" }} />
-            <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}.\n\nI prescribed this after reviewing your test result and allergy history. August can help send it to a pharmacy.`, time: "2:16" }} />
+            <MessageItem message={{ author: "patient", content: submittedMessages["prescription:recommended"] ?? "Show me the medication plan.", time: "2:15" }} />
+            <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`, time: "2:16" }} />
           </>
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} />)}
@@ -918,7 +925,9 @@ function CompleteJourneyConversation({
       {state === "sent" ? (
         <>
           <MessageItem message={{ author: "patient", content: submittedMessages["prescription:pharmacy"] ?? "Yes, send it there.", time: "2:19" }} />
-          <MessageItem message={{ author: "august", content: `Done. I sent Maya’s prescription to ${encounter.prescription.pharmacy}. The pharmacy owns the next step, and I’ll post its confirmation in Care.`, time: "2:20" }} />
+          <MessageItem message={{ author: "august", content: `Done. I sent Maya’s prescription to ${encounter.prescription.pharmacy}. The pharmacy will confirm fulfillment here. I’ll also check in after you start the medication.`, time: "2:20" }} />
+          <div className={styles.dateMarker}>Later · August</div>
+          <MessageItem message={{ author: "august", content: "Quick check-in: how is your throat feeling since you started the medication? Have you noticed a rash, swelling, trouble breathing, or any other reaction?", time: "Tomorrow · 9:15" }} />
         </>
       ) : null}
       {patientReplies.map((message, index) => <MessageItem key={`rx-august-reply-${index}`} message={message} />)}
@@ -1163,9 +1172,15 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   function openPreparedHandoff() {
     if (!handoff) return;
     const target = handoff;
+    const startsClinicianReview = target.recipient === "maya" && target.flow === "prescription" && target.state === "recommended";
     setPatientReplies([]);
     setHandoff(null);
     moveTo(target.flow, target.state);
+    if (startsClinicianReview) {
+      setPending("maya");
+      const timer = window.setTimeout(() => setPending(null), AUGUST_THINKING_DELAY);
+      timers.current.push(timer);
+    }
   }
 
   function confirmPrescription(message = "Yes, send it there.") {
@@ -1227,7 +1242,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         const timer = window.setTimeout(() => {
           setPatientReplies((current) => [...current, {
             author: "august",
-            content: "Your appointment is set. When the result is ready, Maya will review it in her clinician conversation. Open Maya’s chat when you are ready to continue.",
+            content: "Thanks. I confirmed that this result belongs to you, added it to this visit, and notified Maya. She’ll review the result with your symptoms, medicines, and allergies before deciding on treatment.",
             time: "Now",
           }]);
           setPending(null);
@@ -1237,6 +1252,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         return;
       }
       if (flow === "prescription" && state === "recommended") {
+        setSubmittedMessages((current) => ({ ...current, "prescription:recommended": value }));
         moveTo("prescription", "review");
         return;
       }
@@ -1335,6 +1351,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         ? "Reply or edit the summary…"
         : state === "nearby-lab"
           ? "Tell August if this time works…"
+          : flow === "lab" && state === "confirmed"
+            ? "Confirm this result is yours…"
           : state === "pharmacy"
             ? "Tell August where to send it…"
             : `Message ${recipient}…`;
@@ -1508,17 +1526,15 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
             {flow === "prescription" && state === "recommended" ? (
               <div className={styles.contentStack}>
-                {completeJourney ? <MessageItem message={{ author: "system", content: "Your test result was returned to Maya’s visit. Messages now go directly to Maya." }} /> : null}
-                <MessageItem message={{ author: "maya", content: completeJourney
-                  ? "Your rapid strep test is positive. That result explains your symptoms and means an antibiotic is appropriate. I also checked the medicines and allergies you shared. I recommend Penicillin V."
-                  : "I reviewed your symptoms, safety answers, medicines, and allergy history. I recommend Penicillin V.", time: "10:24" }} />
+                <MessageItem message={{ author: "system", content: "Result confirmed by you · Maya notified" }} />
+                <MessageItem message={{ author: "maya", content: "I reviewed your positive rapid strep result with the symptoms, safety answers, medicines, and allergies you shared. The result explains your sore throat and fever. An antibiotic is appropriate, and I recommend Penicillin V.", time: "2:14" }} />
                 <PrimaryAction onClick={() => changeState("review")}>Read treatment plan</PrimaryAction>
               </div>
             ) : null}
 
             {flow === "prescription" && state === "review" ? (
               <div className={styles.contentStack}>
-                <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}.\n\nI prescribed this after reviewing your test result and allergy history. August can help you send it to a pharmacy.`, time: "10:27" }} />
+                <MessageItem message={{ author: "maya", content: `${encounter.prescription.medication}, ${encounter.prescription.strength}.\n\n${encounter.prescription.directions} for ${encounter.prescription.duration}. The prescription contains ${encounter.prescription.quantity}. Finish the full course, even if you feel better sooner.\n\nIf you develop a rash, swelling, trouble breathing, or another reaction, stop taking it and seek urgent help. August can send my signed prescription to your pharmacy and will check in after you start it.`, time: "2:16" }} />
                 <PrimaryAction onClick={() => changeState("pharmacy")}>Ask August to send it</PrimaryAction>
               </div>
             ) : null}
@@ -1532,17 +1548,20 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : null}
 
             {flow === "prescription" && state === "sent" ? (
-              <StatusReceipt
-                details="The pharmacy now owns fulfillment. We’ll show its confirmation here."
-                eyebrow="SENT TO PHARMACY"
-                rows={[
-                  { icon: Building2, label: "Destination", value: encounter.prescription.pharmacy },
-                  { icon: Clock3, label: "Sent", value: encounter.prescription.sentAt, verified: true },
-                  { icon: UserRoundCheck, label: "Current owner", value: "Castro Community Pharmacy" },
-                  { icon: Bell, label: "Next update", value: "Pharmacy confirmation in Care" },
-                ]}
-                title="Prescription sent"
-              />
+              <div className={styles.contentStack}>
+                <StatusReceipt
+                  details="The pharmacy will confirm fulfillment here. August will check in after you start the medication."
+                  eyebrow="SENT TO PHARMACY"
+                  rows={[
+                    { icon: Building2, label: "Destination", value: encounter.prescription.pharmacy },
+                    { icon: Clock3, label: "Sent", value: encounter.prescription.sentAt, verified: true },
+                    { icon: UserRoundCheck, label: "Current owner", value: "Castro Community Pharmacy" },
+                    { icon: Bell, label: "Next update", value: "August medication check-in" },
+                  ]}
+                  title="Prescription sent"
+                />
+                <MessageItem message={{ author: "august", content: "Quick check-in: how is your throat feeling since you started the medication? Have you noticed a rash, swelling, trouble breathing, or any other reaction?", time: "Tomorrow · 9:15" }} />
+              </div>
             ) : null}
 
             {flow === "lab" && state === "recommended" ? (
@@ -1571,17 +1590,18 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               <div className={styles.contentStack}>
               <AugustPreviousConversation answers={answers} />
               <StatusReceipt
-                details="Your appointment and Maya’s order remain connected to this visit."
-                eyebrow="APPOINTMENT SCHEDULED"
+                details="The appointment stayed connected to this visit. Mission Lab has now returned the result."
+                eyebrow="RESULT READY"
                 rows={[
                   { icon: CalendarDays, label: "When", value: encounter.lab.appointment, verified: true },
                   { icon: MapPin, label: "Where", value: `${encounter.lab.location} · ${encounter.lab.address}` },
-                  { icon: FileCheck2, label: "Bring", value: encounter.lab.preparation },
-                  { icon: Bell, label: "Next update", value: "Lab updates return to Maya’s visit" },
+                  { icon: FileCheck2, label: "Test", value: encounter.lab.test },
+                  { icon: Bell, label: "Next step", value: "Confirm the result before Maya reviews it" },
                 ]}
-                title="Appointment confirmed"
+                title="Your test result is ready"
               />
-              {completeJourney ? <PrimaryAction onClick={() => moveTo("prescription", "recommended")}>See Maya’s result and plan</PrimaryAction> : null}
+              <MessageItem message={{ author: "august", content: "Please confirm that you completed this test and want the result added to this visit. I’ll notify Maya only after you confirm.", time: "1:58" }} />
+              <PrimaryAction onClick={() => moveTo("prescription", "recommended")}>Confirm result for Maya</PrimaryAction>
               </div>
             ) : null}
 

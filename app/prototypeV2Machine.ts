@@ -141,15 +141,15 @@ export const prototypeV2StateLabels: Record<
     reply: "First clinician reply",
   },
   prescription: {
-    recommended: "Medication recommended",
-    review: "Review prescription",
+    recommended: "Clinician reviewing result",
+    review: "Medication plan explained",
     pharmacy: "Confirm pharmacy",
-    sent: "Prescription sent",
+    sent: "Prescription and follow-up",
   },
   lab: {
     recommended: "Testing recommended",
     "nearby-lab": "Nearby lab arranged",
-    confirmed: "Appointment confirmed",
+    confirmed: "Result ready",
   },
 };
 
