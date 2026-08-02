@@ -323,7 +323,6 @@ function Composer({
     <div className={styles.composerRegion}>
       <form className={styles.composer} onSubmit={submit}>
         <div className={styles.composerPrompt}>
-          <Sparkles aria-hidden="true" size={16} />
           <input
             aria-label={`Message ${recipient}`}
             disabled={disabled}
@@ -377,12 +376,16 @@ function Composer({
   );
 }
 
-function EncryptionNotice() {
+function EncryptionNotice({ recipient = "August" }: { recipient?: "August" | "Maya" }) {
+  const description = recipient === "Maya"
+    ? "Only you and Maya can read messages and attachments here. Maya can see the visit summary you confirmed."
+    : "Only you and August can read messages and attachments. Nothing is shared with a clinician until you choose.";
+
   return (
     <div className={styles.encryptionNotice} role="note">
       <p>
         <strong><LockKeyhole aria-hidden="true" size={12} /> End-to-end encrypted</strong>
-        <span>Only you and August can read messages and attachments. Nothing is shared with a clinician until you choose.</span>
+        <span>{description}</span>
       </p>
     </div>
   );
@@ -655,6 +658,8 @@ function CompleteJourneyConversation({
     return (
       <div className={styles.transcript}>
         <div className={styles.dateMarker}>Today · Care</div>
+        <EncryptionNotice recipient="Maya" />
+        <MessageItem message={{ author: "patient", content: "Hi Maya. Please review the information I confirmed with August.", time: "10:23" }} />
         <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed what you shared. Are you able to drink normally, and have you noticed a rash?", time: "10:24" }} />
         {patientReplies.map((message, index) => <MessageItem key={`maya-first-reply-${index}`} message={message} />)}
       </div>
@@ -1267,8 +1272,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             {flow === "intake" && state === "reply" ? (
               <div className={styles.transcript}>
                 <div className={styles.dateMarker}>Today · Care</div>
-                <MessageItem message={{ author: "system", content: "Maya joined the conversation. New messages now go directly to her." }} />
-                <MessageItem message={{ author: "system", content: `Your confirmed summary was shared with Maya at ${encounter.clinician.sharedAt.replace("Today · ", "")}` }} />
+                <EncryptionNotice recipient="Maya" />
+                <MessageItem message={{ author: "patient", content: "Hi Maya. Please review the information I confirmed with August.", time: "10:23" }} />
                 <MessageItem message={{ author: "maya", content: "Hi Parth. I reviewed your fever, worsening throat pain, safety answers, history, and allergies.", time: "10:24" }} />
                 <MessageItem message={{ author: "maya", content: "You’re breathing and drinking normally, which is reassuring. I’ll explain the recommended next step here.", time: "10:25" }} />
                 <MessageItem message={{ author: "patient", content: "Thank you. I’m ready.", time: "10:26" }} />
