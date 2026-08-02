@@ -492,3 +492,17 @@ test("active clinician composer produces a real patient reply", async ({
   await expect(page.getByText("Now", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: "Add attachment" })).toHaveCount(0);
 });
+
+test("Maya presence reflects whether she is reviewing or available", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.emulateMedia({ reducedMotion: "no-preference" });
+
+  await page.goto("/prototype-v2/00?state=lab-recommended");
+  await expect(page.locator("header").getByText("Reviewing", { exact: true })).toBeVisible();
+  await expect(page.locator("header").getByText("Online", { exact: true })).toBeVisible({ timeout: 10_000 });
+
+  await page.goto("/prototype-v2/00?state=prescription-recommended");
+  await expect(page.locator("header").getByText("Online", { exact: true })).toBeVisible();
+});

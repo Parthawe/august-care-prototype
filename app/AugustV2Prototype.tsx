@@ -226,11 +226,13 @@ function ConversationHeader({
   clinician,
   onBack,
   onSearch,
+  presence,
   subtitle,
 }: {
   clinician: boolean;
   onBack: () => void;
   onSearch: () => void;
+  presence?: "online" | "reviewing" | "estimate";
   subtitle: string;
 }) {
   return (
@@ -246,7 +248,10 @@ function ConversationHeader({
       <Avatar person={clinician ? "maya" : "august"} />
       <div className={styles.headerCopy}>
         <strong>{clinician ? "Maya (Clinician)" : "August"}</strong>
-        <span>{subtitle}</span>
+        <span aria-live="polite" className={presence === "online" ? styles.onlineStatus : undefined}>
+          {presence === "online" ? <i aria-hidden="true" /> : null}
+          {subtitle}
+        </span>
       </div>
       <div className={styles.headerActions}>
         {!clinician ? (
@@ -1477,7 +1482,18 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     return { kind: "composer" as const, disabled: awaitingMaya, placeholder: "Message Maya…", recipient: "Maya" as const };
   })();
 
-  const subtitle = clinician ? "Usually replies in 2 to 4 hours" : "Care guide";
+  const clinicianPresence = !clinician
+    ? undefined
+    : pending === "maya" || (flow === "lab" && state === "recommended" && recommendationPhase !== "complete")
+      ? "reviewing" as const
+      : "online" as const;
+  const subtitle = clinicianPresence === "reviewing"
+    ? "Reviewing"
+    : clinicianPresence === "online"
+      ? "Online"
+      : clinician
+        ? encounter.clinician.responseEstimate
+        : "Care guide";
 
   const conversationDetails = flow === "lab" && !clinician
     ? {
@@ -1538,6 +1554,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               clinician={clinician}
               onBack={() => switchTab("care")}
               onSearch={() => setSearchOpen((current) => !current)}
+              presence={clinicianPresence}
               subtitle={subtitle}
             />
           )}

@@ -121,6 +121,25 @@
   line-height: 1.3;
 }
 
+.headerCopy .onlineStatus {
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  gap: 6px;
+  color: var(--green-700);
+  font-weight: 650;
+}
+
+.onlineStatus i {
+  width: 7px;
+  height: 7px;
+  flex: none;
+  border-radius: 50%;
+  background: var(--green-600);
+  box-shadow: 0 0 0 3px rgba(25, 145, 111, 0.12);
+}
+
 .headerAction,
 .sendButton,
 .detailsSheet header button {
