@@ -573,7 +573,7 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
   return (
     <div className={styles.careInbox}>
       <form className={styles.inboxSearch} onSubmit={submit} role="search">
-        <AugustIdentityMark size="small" />
+        <Search aria-hidden="true" size={18} strokeWidth={2} />
         <input aria-label="Ask August or search chats" onChange={(event) => setQuery(event.target.value)} placeholder="Ask August or search" type="search" value={query} />
         {query ? <button aria-label="Ask August" type="submit"><Send aria-hidden="true" size={16} /></button> : null}
       </form>
