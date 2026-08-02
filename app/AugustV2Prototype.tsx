@@ -122,6 +122,7 @@ const labRecommendationMessage =
   "Before I decide on medication, I recommend a rapid strep test today. The result will tell me whether an antibiotic is appropriate. I placed the order, and August can help with the appointment.";
 
 const AUGUST_THINKING_DELAY = 3_800;
+const PUBLIC_BASE_PATH = process.env.NEXT_PUBLIC_BASE_PATH ?? "";
 
 function getAugustIntakeHistory(answers: IntakeAnswers): Message[] {
   return [
@@ -170,7 +171,7 @@ function Avatar({
     <img
       alt="Maya Rao, clinician"
       className={`${styles.avatar} ${styles[`avatar-${size}`]}`}
-      src="/maya-clinician-avatar.png"
+      src={`${PUBLIC_BASE_PATH}/maya-clinician-avatar.png`}
     />
   );
 }

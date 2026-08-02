@@ -4,6 +4,10 @@ An interview-ready, mobile-first product prototype exploring how August AI can
 move a patient from AI intake into human clinical care without blurring
 authorship or medical authority.
 
+## Live prototype
+
+[Open the GitHub Pages prototype](https://parthawe.github.io/august-care-prototype/)
+
 ## Prototype review links
 
 Open `/cases` for a review index, or use direct links:
