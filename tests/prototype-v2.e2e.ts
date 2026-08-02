@@ -58,6 +58,15 @@ test("empty state shows encryption context and accepts an image attachment", asy
   await expect(page.getByText("End-to-end encrypted")).toHaveCount(0);
 });
 
+test("the patient always starts a new August conversation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-concern");
+
+  await expect(page.getByText("Hi Parth. Tell me what’s going on.")).toHaveCount(0);
+  await expect(page.getByText("My throat has been hurting and I had a fever last night.")).toBeVisible();
+  await expect(page.getByText(/Got it\. When did it start/)).toBeVisible();
+});
+
 test("intake gathers context, confirms it, and connects directly to Maya", async ({
   page,
 }, testInfo) => {

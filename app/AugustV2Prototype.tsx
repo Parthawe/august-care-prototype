@@ -533,9 +533,7 @@ function CompleteJourneyConversation({
   pending: "august" | "maya" | null;
   state: PrototypeV2State;
 }) {
-  const opening: Message = { author: "august", content: "Hi Parth. Tell me what’s going on.", time: "9:40" };
   const fullIntake: Message[] = [
-    opening,
     { author: "patient", content: answers.concern, time: "9:41" },
     { author: "august", content: "Got it. When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
     { author: "patient", content: answers.onset, time: "9:43" },
@@ -970,10 +968,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const messages = useMemo<Message[]>(() => {
     if (flow !== "intake") return [];
     const result: Message[] = [];
-    const opening = "Hi Parth. Tell me what’s going on.";
     if (state === "empty") return [];
     result.push(
-      { author: "august", content: opening, time: "9:40" },
       { author: "patient", content: answers.concern, time: "9:41" },
       { author: "august", content: "Got it. When did it start, is it getting better or worse, and what was your highest temperature?", time: "9:41" },
     );
