@@ -578,6 +578,10 @@
   transition: background-color 160ms ease, transform 160ms var(--motion-press);
 }
 
+.summaryRowConfirmed {
+  cursor: default;
+}
+
 .summaryRow:last-child { border-bottom: 0; }
 
 .summaryRow > span:first-child {
@@ -1768,8 +1772,8 @@
 .primaryAction:hover:not(:disabled),
 .sendButton:hover:not(:disabled) { background: var(--green-800); }
 
-.summaryRow:hover { background: rgba(237, 248, 243, 0.62); }
-.summaryRow:hover .editLabel svg { transform: translateX(2px); }
+.summaryRow:not(.summaryRowConfirmed):hover { background: rgba(237, 248, 243, 0.62); }
+.summaryRow:not(.summaryRowConfirmed):hover .editLabel svg { transform: translateX(2px); }
 .inboxThread:hover { background: rgba(237, 248, 243, 0.48); }
 .tabActions button:hover { background: rgba(237, 248, 243, 0.48); }
 .clinicianContactCard > button:hover,

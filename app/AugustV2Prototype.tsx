@@ -844,8 +844,9 @@ function DetailRow({ icon: Icon, label, value, verified }: DetailRowData) {
   );
 }
 
-function SummaryCard({ answers, editField, editValue, onCancel, onChange, onEdit, onSave }: {
+function SummaryCard({ answers, confirmed = false, editField, editValue, onCancel, onChange, onEdit, onSave }: {
   answers: IntakeAnswers;
+  confirmed?: boolean;
   editField: keyof IntakeAnswers | null;
   editValue: string;
   onCancel: () => void;
@@ -861,9 +862,16 @@ function SummaryCard({ answers, editField, editValue, onCancel, onChange, onEdit
           <small>VISIT SUMMARY</small>
           <h2>Confirm what August gathered.</h2>
         </div>
-        <span><LockKeyhole aria-hidden="true" size={12} /> Private until confirmed</span>
+        <span>
+          {confirmed ? <CircleCheck aria-hidden="true" size={12} /> : <LockKeyhole aria-hidden="true" size={12} />}
+          {confirmed ? "Confirmed and shared with Maya" : "Private until confirmed"}
+        </span>
       </header>
-      {rows.map(([field, label]) => editField === field ? (
+      {rows.map(([field, label]) => confirmed ? (
+        <div className={`${styles.summaryRow} ${styles.summaryRowConfirmed}`} key={field}>
+          <span><small>{label}</small><strong>{answers[field]}</strong></span>
+        </div>
+      ) : editField === field ? (
         <div className={styles.inlineSummaryEditor} key={field}>
           <label htmlFor={`summary-${field}`}>{label}</label>
           <textarea autoFocus id={`summary-${field}`} onChange={(event) => onChange(event.target.value)} rows={4} value={editValue} />
@@ -960,9 +968,9 @@ function CompleteJourneyConversation({
         <div className={styles.dateMarker}>Today</div>
         {fullIntake.map((message, index) => <MessageItem animate={false} key={`complete-intake-${index}`} message={message} />)}
         <MessageItem message={{ author: "august", content: intakeReadyForReview, time: "9:50" }} stream={state === "summary"} />
-        {state === "summary" ? (
+        {["summary", "reviewing"].includes(state) ? (
           <>
-            <SummaryCard answers={answers} editField={editField} editValue={editValue} onCancel={onCancelEdit} onChange={onChangeEdit} onEdit={onEdit} onSave={onSaveEdit} />
+            <SummaryCard answers={answers} confirmed={state === "reviewing"} editField={editField} editValue={editValue} onCancel={onCancelEdit} onChange={onChangeEdit} onEdit={onEdit} onSave={onSaveEdit} />
             <div className={styles.summaryPrompt}>
               <MessageItem message={{ author: "august", content: "Does everything look right? Reply yes to confirm. I won’t share anything with a clinician until you do.", time: "9:50" }} />
             </div>
@@ -1755,7 +1763,15 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : null}
 
             {flow === "intake" && state === "reviewing" ? (
-              <div className={`${styles.contentStack} ${styles.quietStack}`}>
+              <div className={styles.transcript}>
+                <div className={styles.dateMarker}>Today</div>
+                {getAugustIntakeHistory(answers).map((message, index) => <MessageItem animate={false} key={`reviewing-intake-${index}`} message={message} />)}
+                <MessageItem message={{ author: "august", content: intakeReadyForReview, time: "9:50" }} />
+                <SummaryCard answers={answers} confirmed editField={editField} editValue={editValue} onCancel={() => setEditField(null)} onChange={setEditValue} onEdit={openSummaryEdit} onSave={saveSummaryEdit} />
+                <div className={styles.summaryPrompt}>
+                  <MessageItem message={{ author: "august", content: "Does everything look right? Reply yes to confirm. I won’t share anything with a clinician until you do.", time: "9:50" }} />
+                </div>
+                <MessageItem message={{ author: "patient", content: "Everything looks right. You can share it.", time: "9:51" }} />
                 <div className={styles.handoffNotice}>
                   <CircleCheck aria-hidden="true" size={18} />
                   <span>Only your confirmed summary was shared with Maya.</span>

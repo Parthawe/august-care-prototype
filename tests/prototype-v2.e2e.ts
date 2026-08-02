@@ -386,6 +386,12 @@ test("summary transition keeps conversation history settled", async ({ page }, t
 
   const historicalAnimation = await settledMessages.first().evaluate((element) => getComputedStyle(element).animationName);
   expect(historicalAnimation).toBe("none");
+
+  await page.goto("/prototype-v2/00?state=intake-reviewing");
+  await expect(page.getByRole("heading", { name: "Confirm what August gathered." })).toBeVisible();
+  await expect(page.getByText("Confirmed and shared with Maya")).toBeVisible();
+  await expect(page.getByText(/Reply yes to confirm/)).toBeVisible();
+  await expect(page.getByText("Everything looks right. You can share it.")).toBeVisible();
 });
 
 test("summary editing stays inline inside the conversation", async ({
