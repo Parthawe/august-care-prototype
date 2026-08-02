@@ -12,7 +12,6 @@ import {
 import {
   ArrowLeft,
   ArrowRight,
-  BatteryMedium,
   Bell,
   BookOpen,
   Building2,
@@ -35,11 +34,9 @@ import {
   Plus,
   Search,
   Send,
-  Signal,
   Sparkles,
   UserRoundCheck,
   UsersRound,
-  Wifi,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -146,19 +143,6 @@ function AugustIdentityMark({ size = "regular" }: { size?: "small" | "regular" |
     >
       a
     </span>
-  );
-}
-
-function StatusBar() {
-  return (
-    <div className={styles.statusBar} aria-hidden="true">
-      <span>9:41</span>
-      <div className={styles.statusIcons}>
-        <Signal size={14} strokeWidth={2.4} />
-        <Wifi size={15} strokeWidth={2.4} />
-        <BatteryMedium size={19} strokeWidth={2.1} />
-      </div>
-    </div>
   );
 }
 
@@ -1231,7 +1215,6 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     <main className={styles.stage}>
       <div className={styles.deviceColumn}>
         <section className={styles.phone} aria-label="August care">
-          <StatusBar />
           {showCareInbox ? (
             <header className={styles.careInboxHeader}>
               <div><strong>Chats</strong></div>
