@@ -637,6 +637,64 @@
   animation: contactReveal 320ms var(--motion-ease) both;
 }
 
+.conversationHandoffCard {
+  overflow: hidden;
+  scroll-margin-bottom: 18px;
+  border: 1px solid rgba(16, 59, 49, 0.1);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  box-shadow: 0 12px 28px rgba(16, 59, 49, 0.07), inset 0 1px 0 rgba(255, 255, 255, 0.86);
+  -webkit-backdrop-filter: blur(18px) saturate(1.14);
+  backdrop-filter: blur(18px) saturate(1.14);
+  animation: contactReveal 300ms var(--motion-ease) both;
+}
+
+.handoffIdentity {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 14px 14px 8px;
+}
+
+.handoffIdentity > div:last-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.handoffIdentity strong { font-size: 14px; font-weight: 730; }
+.handoffIdentity span { color: var(--ink-soft); font-size: 10px; }
+
+.conversationHandoffCard > p {
+  margin: 0;
+  padding: 0 14px 13px;
+  color: var(--ink-soft);
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.conversationHandoffCard > button {
+  width: 100%;
+  min-height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 11px 14px;
+  border: 0;
+  border-top: 1px solid rgba(16, 59, 49, 0.08);
+  color: #fff;
+  background: var(--green-800);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 720;
+  cursor: pointer;
+  transition: background-color 180ms ease, transform 160ms var(--motion-press);
+}
+
+.conversationHandoffCard > button svg { transition: transform 180ms var(--motion-ease); }
+
 .contactIdentity {
   position: relative;
   display: flex;
@@ -1657,8 +1715,10 @@
 .summaryRow:hover .editLabel svg { transform: translateX(2px); }
 .inboxThread:hover { background: rgba(237, 248, 243, 0.48); }
 .tabActions button:hover { background: rgba(237, 248, 243, 0.48); }
-.clinicianContactCard > button:hover { background: var(--green-700); }
+.clinicianContactCard > button:hover,
+.conversationHandoffCard > button:hover { background: var(--green-700); }
 .clinicianContactCard > button:hover svg,
+.conversationHandoffCard > button:hover svg,
 .primaryAction:hover > svg { transform: translateX(3px); }
 
 .headerAction:hover,
@@ -1673,6 +1733,7 @@
 .inboxThread:active,
 .tabActions button:active,
 .clinicianContactCard > button:active,
+.conversationHandoffCard > button:active,
 .bottomNav > button:active:not(:disabled) { transform: scale(0.97); }
 
 .primaryAction:focus-visible,
@@ -1693,6 +1754,7 @@
 .inboxThread:focus-visible,
 .tabActions button:focus-visible,
 .clinicianContactCard > button:focus-visible,
+.conversationHandoffCard > button:focus-visible,
 .bottomNav > button:focus-visible { outline: 3px solid var(--green-600); outline-offset: -3px; }
 
 @keyframes typing {

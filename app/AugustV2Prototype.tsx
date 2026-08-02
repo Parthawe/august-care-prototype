@@ -74,6 +74,12 @@ type DetailRowData = {
   verified?: boolean;
 };
 
+type ConversationHandoff = {
+  recipient: "august" | "maya";
+  flow: PrototypeV2Flow;
+  state: PrototypeV2State;
+};
+
 const summaryLabels: Record<keyof IntakeAnswers, string> = {
   concern: "Concern",
   onset: "Timing and severity",
@@ -665,6 +671,28 @@ function ClinicianContactCard({ onContinue, responseEstimate }: { onContinue: ()
   );
 }
 
+function ConversationHandoffCard({ onOpen, recipient }: { onOpen: () => void; recipient: "august" | "maya" }) {
+  const isMaya = recipient === "maya";
+  return (
+    <section className={styles.conversationHandoffCard} data-scroll-anchor="true">
+      <div className={styles.handoffIdentity}>
+        {isMaya ? <Avatar person="maya" size="large" /> : <AugustIdentityMark size="large" />}
+        <div>
+          <strong>{isMaya ? "Maya" : "August"}</strong>
+          <span>{isMaya ? "Clinician conversation" : "Private support conversation"}</span>
+        </div>
+      </div>
+      <p>{isMaya
+        ? "Maya’s messages stay in a separate clinician chat. Open it when you are ready to continue."
+        : "Scheduling and pharmacy support stay in your August chat. Open it when you are ready to continue."}</p>
+      <button onClick={onOpen} type="button">
+        <span>Open {isMaya ? "Maya" : "August"} conversation</span>
+        <ArrowRight aria-hidden="true" size={16} />
+      </button>
+    </section>
+  );
+}
+
 function PrimaryAction({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
     <button className={styles.primaryAction} onClick={onClick} type="button">
@@ -746,9 +774,11 @@ function CompleteJourneyConversation({
   editField,
   editValue,
   flow,
+  handoff,
   onCancelEdit,
   onChangeEdit,
   onEdit,
+  onOpenHandoff,
   onMove,
   onSaveEdit,
   patientReplies,
@@ -761,9 +791,11 @@ function CompleteJourneyConversation({
   editField: keyof IntakeAnswers | null;
   editValue: string;
   flow: PrototypeV2Flow;
+  handoff: ConversationHandoff | null;
   onCancelEdit: () => void;
   onChangeEdit: (value: string) => void;
   onEdit: (field: keyof IntakeAnswers) => void;
+  onOpenHandoff: () => void;
   onMove: (flow: PrototypeV2Flow, state: PrototypeV2State) => void;
   onSaveEdit: () => void;
   patientReplies: Message[];
@@ -823,6 +855,7 @@ function CompleteJourneyConversation({
         {patientReplies.map((message, index) => <MessageItem key={`lab-care-reply-${index}`} message={message} />)}
         <MessageItem message={{ author: "maya", content: labRecommendationMessage, time: "10:27" }} />
         {pending === "august" ? <ResponseProgress mode="scheduling" person="august" /> : null}
+        {handoff?.recipient === "august" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="august" /> : null}
       </div>
     );
   }
@@ -849,6 +882,7 @@ function CompleteJourneyConversation({
         {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
         {state === "nearby-lab" && pending === "august" && !submittedMessages["lab:nearby-lab"] ? <ResponseProgress mode="scheduling" person="august" /> : null}
         {state === "confirmed" && pending === "august" ? <ResponseProgress mode="clinical" person="august" /> : null}
+        {state === "confirmed" && handoff?.recipient === "maya" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="maya" /> : null}
       </div>
     );
   }
@@ -867,6 +901,7 @@ function CompleteJourneyConversation({
         ) : null}
         {patientReplies.map((message, index) => <MessageItem key={`rx-care-reply-${index}`} message={message} />)}
         {pending === "august" ? <ResponseProgress mode="coordination" person="august" /> : null}
+        {handoff?.recipient === "august" ? <ConversationHandoffCard onOpen={onOpenHandoff} recipient="august" /> : null}
       </div>
     );
   }
@@ -905,6 +940,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
+  const [handoff, setHandoff] = useState<ConversationHandoff | null>(null);
   const [submittedMessages, setSubmittedMessages] = useState<Record<string, string>>({});
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "updates">("thread");
@@ -1002,6 +1038,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
     setPending(null);
+    setHandoff(null);
     setState(next);
   }
 
@@ -1009,6 +1046,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current.forEach((timer) => window.clearTimeout(timer));
     timers.current = [];
     setPending(null);
+    setHandoff(null);
     if (nextFlow !== flow) setPatientReplies([]);
     setFlow(nextFlow);
     setState(nextState);
@@ -1118,14 +1156,15 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   function handOffToAugust(nextFlow: PrototypeV2Flow, nextState: PrototypeV2State, message: string) {
     if (pending) return;
     setPatientReplies((current) => [...current, { author: "patient", content: message, time: "Now" }]);
-    setPending("august");
-    const timer = window.setTimeout(() => {
-      setPatientReplies([]);
-      setPending(null);
-      setFlow(nextFlow);
-      setState(nextState);
-    }, AUGUST_THINKING_DELAY);
-    timers.current.push(timer);
+    setHandoff({ recipient: "august", flow: nextFlow, state: nextState });
+  }
+
+  function openPreparedHandoff() {
+    if (!handoff) return;
+    const target = handoff;
+    setPatientReplies([]);
+    setHandoff(null);
+    moveTo(target.flow, target.state);
   }
 
   function confirmPrescription(message = "Yes, send it there.") {
@@ -1185,8 +1224,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
         setPending("august");
         const timer = window.setTimeout(() => {
+          setPatientReplies((current) => [...current, {
+            author: "august",
+            content: "Your appointment is set. When the result is ready, Maya will review it in her clinician conversation. Open Maya’s chat when you are ready to continue.",
+            time: "Now",
+          }]);
           setPending(null);
-          moveTo("prescription", "recommended");
+          setHandoff({ recipient: "maya", flow: "prescription", state: "recommended" });
         }, AUGUST_THINKING_DELAY);
         timers.current.push(timer);
         return;
@@ -1406,9 +1450,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   editValue={editValue}
                   encounter={encounter}
                   flow={flow}
+                  handoff={handoff}
                   onCancelEdit={() => setEditField(null)}
                   onChangeEdit={setEditValue}
                   onEdit={openSummaryEdit}
+                  onOpenHandoff={openPreparedHandoff}
                   onMove={moveTo}
                   onSaveEdit={saveSummaryEdit}
                   patientReplies={patientReplies}
