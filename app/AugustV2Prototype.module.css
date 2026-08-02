@@ -1136,8 +1136,18 @@
   background: var(--green-700);
   box-shadow: 0 10px 24px rgba(16, 89, 70, 0.24);
   cursor: pointer;
+  transition: transform 160ms var(--motion-press), background-color 180ms ease, box-shadow 180ms ease;
 }
-.newChatButton svg:last-child { position: absolute; right: 9px; bottom: 9px; padding: 1px; border-radius: 50%; background: var(--green-700); }
+
+.augustFabMark {
+  display: block;
+  color: #fff;
+  font-size: 20px;
+  font-weight: 680;
+  line-height: 1;
+  letter-spacing: -0.04em;
+  transform: translateY(-1px);
+}
 
 .tabPage { min-height: 100%; padding: 24px 22px 30px; animation: surfaceRise 260ms var(--motion-ease) both; }
 .tabIntro { max-width: 320px; }

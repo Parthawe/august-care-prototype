@@ -491,7 +491,9 @@ function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { c
         {!showMaya && !showAugust && !query ? <div className={styles.emptyTabState}><MessageCircle aria-hidden="true" size={20} /><strong>No chats in this filter</strong><span>Your care conversations will appear here.</span></div> : null}
       </div>
 
-      <button aria-label="Start a new August chat" className={styles.newChatButton} onClick={onOpenAugust} type="button"><MessageCircle aria-hidden="true" size={20} /><Plus aria-hidden="true" size={12} /></button>
+      <button aria-label="Start a new August chat" className={styles.newChatButton} onClick={onOpenAugust} type="button">
+        <span aria-hidden="true" className={styles.augustFabMark} data-august-mark="true">a</span>
+      </button>
     </div>
   );
 }

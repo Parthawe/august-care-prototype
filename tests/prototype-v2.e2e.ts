@@ -335,6 +335,18 @@ test("Chats search filters threads and can hand a question directly to August", 
   await expect(page.getByRole("textbox", { name: "Message August" })).toHaveValue("headache after lunch");
 });
 
+test("Chats floating action starts a fresh August conversation", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-empty");
+  await page.getByRole("navigation").getByRole("button", { name: "Chats" }).click();
+
+  const newAugustChat = page.getByRole("button", { name: "Start a new August chat" });
+  await expect(newAugustChat).toBeVisible();
+  await expect(newAugustChat.locator('[data-august-mark="true"]')).toHaveText("a");
+  await newAugustChat.click();
+  await expect(page.getByRole("textbox", { name: "Message August" })).toBeVisible();
+});
+
 test("conversation header provides search and a compact details menu", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-concern");
