@@ -69,7 +69,7 @@ test("the patient always starts a new August conversation", async ({ page }, tes
 
   await expect(page.getByText("Hi Anuruddh. Tell me what’s going on.")).toHaveCount(0);
   await expect(page.getByText("My throat has been hurting and I had a fever last night.")).toBeVisible();
-  await expect(page.getByText(/Of course\. I can help you work through/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: /Of course\. I can help you work through/ })).toBeVisible();
 });
 
 test("August shows deliberate medical review before replying", async ({ page }, testInfo) => {
@@ -84,7 +84,7 @@ test("August shows deliberate medical review before replying", async ({ page }, 
     expect(page.getByText(/Of course\. I can help you work through/)).toHaveCount(0, { timeout: 1_000 }),
   ]);
 
-  await expect(page.getByText(/Of course\. I can help you work through/)).toBeVisible();
+  await expect(page.locator("p").filter({ hasText: /Of course\. I can help you work through/ })).toBeVisible();
   await expect(page.getByText("August is thinking")).toHaveCount(0);
 });
 
