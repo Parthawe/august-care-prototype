@@ -67,6 +67,23 @@ test("the patient always starts a new August conversation", async ({ page }, tes
   await expect(page.getByText(/Got it\. When did it start/)).toBeVisible();
 });
 
+test("August shows deliberate medical review before replying", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-empty");
+
+  await send(page, "My throat hurts and I had a fever.");
+  await expect(page.getByText("August is thinking")).toBeVisible();
+  await expect(page.getByText("Understanding what you shared")).toBeVisible();
+  await expect(page.getByText(/Got it\. When did it start/)).toHaveCount(0);
+
+  await page.waitForTimeout(750);
+  await expect(page.getByText("Checking for urgent warning signs")).toBeVisible();
+  await expect(page.getByText(/Got it\. When did it start/)).toHaveCount(0);
+
+  await expect(page.getByText(/Got it\. When did it start/)).toBeVisible();
+  await expect(page.getByText("August is thinking")).toHaveCount(0);
+});
+
 test("intake gathers context, confirms it, and connects directly to Maya", async ({
   page,
 }, testInfo) => {

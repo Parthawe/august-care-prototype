@@ -368,6 +368,65 @@
 .typing i:nth-child(2) { animation-delay: 0.14s; }
 .typing i:nth-child(3) { animation-delay: 0.28s; }
 
+.thinkingRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  transform-origin: left bottom;
+  animation: messageIn 240ms var(--motion-ease) both;
+}
+
+.thinkingSurface {
+  width: min(252px, calc(100% - 38px));
+  padding: 11px 13px 10px;
+  border: 1px solid rgba(16, 59, 49, 0.075);
+  border-radius: 5px 18px 18px 18px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 5px 15px rgba(16, 59, 49, 0.055);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.thinkingTitle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green-700);
+  font-size: 11px;
+  font-weight: 760;
+  line-height: 1.2;
+}
+
+.thinkingTitle svg { flex: none; }
+
+.thinkingPhase {
+  display: block;
+  min-height: 17px;
+  margin-top: 5px;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.4;
+  animation: thinkingPhaseIn 180ms var(--motion-ease) both;
+}
+
+.thinkingProgress {
+  display: block;
+  height: 2px;
+  margin-top: 9px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--mint-100);
+}
+
+.thinkingProgress i {
+  display: block;
+  width: 46%;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--green-600);
+  animation: thinkingSweep 1.12s ease-in-out infinite;
+}
+
 .screenIntro { padding: 3px 2px 1px; }
 
 .screenIntro > small,
@@ -1416,6 +1475,17 @@
   35% { transform: translateY(-3px); opacity: 1; }
 }
 
+@keyframes thinkingPhaseIn {
+  from { opacity: 0; transform: translateY(3px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes thinkingSweep {
+  0% { transform: translateX(-105%); opacity: 0.45; }
+  45% { opacity: 1; }
+  100% { transform: translateX(220%); opacity: 0.45; }
+}
+
 @keyframes chromeIn {
   from { opacity: 0; transform: translateY(-5px); }
   to { opacity: 1; transform: translateY(0); }
@@ -1521,5 +1591,6 @@
 @media (prefers-reduced-motion: reduce) {
   .screen { scroll-behavior: auto; }
   .typing i { animation: none; }
+  .thinkingProgress i { width: 68%; transform: none; }
   *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
 }

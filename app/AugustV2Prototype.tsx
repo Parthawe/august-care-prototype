@@ -232,6 +232,59 @@ function TypingIndicator({ person }: { person: "august" | "maya" }) {
   );
 }
 
+function AugustThinkingIndicator({
+  mode = "clinical",
+}: {
+  mode?: "clinical" | "coordination";
+}) {
+  const [phase, setPhase] = useState(0);
+  const phases = mode === "clinical"
+    ? [
+        "Understanding what you shared",
+        "Checking for urgent warning signs",
+        "Preparing the safest next question",
+      ]
+    : [
+        "Reviewing your care context",
+        "Checking the order and next steps",
+        "Preparing a clear response",
+      ];
+
+  useEffect(() => {
+    const phaseTimers = [
+      window.setTimeout(() => setPhase(1), 560),
+      window.setTimeout(() => setPhase(2), 1_140),
+    ];
+    return () => phaseTimers.forEach(window.clearTimeout);
+  }, []);
+
+  return (
+    <div className={styles.thinkingRow} role="status" aria-live="polite">
+      <Avatar person="august" size="small" />
+      <div className={styles.thinkingSurface}>
+        <strong className={styles.thinkingTitle}>
+          <Sparkles aria-hidden="true" size={13} />
+          August is thinking
+        </strong>
+        <span className={styles.thinkingPhase} key={phase}>{phases[phase]}</span>
+        <span className={styles.thinkingProgress} aria-hidden="true"><i /></span>
+      </div>
+    </div>
+  );
+}
+
+function ResponseProgress({
+  mode = "clinical",
+  person,
+}: {
+  mode?: "clinical" | "coordination";
+  person: "august" | "maya";
+}) {
+  return person === "august"
+    ? <AugustThinkingIndicator mode={mode} />
+    : <TypingIndicator person="maya" />;
+}
+
 function Composer({
   disabled,
   initialValue = "",
@@ -247,11 +300,7 @@ function Composer({
   placeholder: string;
   recipient: "August" | "Maya";
 }) {
-  const [value, setValue] = useState("");
-
-  useEffect(() => {
-    setValue(initialValue);
-  }, [initialValue]);
+  const [value, setValue] = useState(initialValue);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -620,7 +669,7 @@ function CompleteJourneyConversation({
             {patientReplies.map((message, index) => <MessageItem key={`handoff-reply-${index}`} message={message} />)}
           </>
         ) : null}
-        {pending ? <TypingIndicator person={pending} /> : null}
+        {pending ? <ResponseProgress mode={flow === "intake" ? "clinical" : "coordination"} person={pending} /> : null}
       </div>
     );
   }
@@ -884,7 +933,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
   function replyThen(next: PrototypeV2State, person: "august" | "maya") {
     setPending(person);
-    const timer = window.setTimeout(() => { setPending(null); changeState(next); }, person === "maya" ? 850 : 620);
+    const timer = window.setTimeout(() => { setPending(null); changeState(next); }, person === "maya" ? 1_100 : 1_850);
     timers.current.push(timer);
   }
 
@@ -902,7 +951,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       if (flow === "intake" && state === "reply") {
         setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
         setPending("maya");
-        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 850);
+        const timer = window.setTimeout(() => { setPending(null); moveTo("lab", "recommended"); }, 1_100);
         timers.current.push(timer);
         return;
       }
@@ -971,7 +1020,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       setAnswers((current) => ({ ...current, [question.field]: value }));
       if (gatheringStep < intakeQuestions.length - 1) {
         setPending("august");
-        const timer = window.setTimeout(() => { setGatheringStep((current) => current + 1); setPending(null); }, 620);
+        const timer = window.setTimeout(() => { setGatheringStep((current) => current + 1); setPending(null); }, 1_850);
         timers.current.push(timer);
       } else {
         replyThen("summary", "august");
@@ -1138,7 +1187,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                   {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
                   {state === "empty" ? <EncryptionNotice /> : null}
                   {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
-                  {pending ? <TypingIndicator person={pending} /> : null}
+                  {pending ? <ResponseProgress person={pending} /> : null}
                 </div>
               ) : (
                 <CompleteJourneyConversation
@@ -1164,7 +1213,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 {state !== "empty" ? <div className={styles.dateMarker}>Today</div> : null}
                 {state === "empty" ? <EncryptionNotice /> : null}
                 {messages.map((message, index) => <MessageItem key={`${message.author}-${index}-${message.content}`} message={message} />)}
-                {pending ? <TypingIndicator person={pending} /> : null}
+                {pending ? <ResponseProgress person={pending} /> : null}
               </div>
             ) : null}
 
@@ -1294,7 +1343,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
             ) : showUpdates ? (
               <PassiveFooter icon={Bell} text="Updates appear automatically" />
             ) : composerConfig.kind === "composer" ? (
-              <Composer disabled={composerConfig.disabled || Boolean(pending)} initialValue={composerDraft} onAttach={handleImageAttachment} onSubmit={(value) => { setComposerDraft(""); handleComposer(value); }} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
+              <Composer disabled={composerConfig.disabled || Boolean(pending)} initialValue={composerDraft} key={`${composerConfig.recipient}-${composerDraft}`} onAttach={handleImageAttachment} onSubmit={(value) => { setComposerDraft(""); handleComposer(value); }} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
             ) : (
               <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
             )}
