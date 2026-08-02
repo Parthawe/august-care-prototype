@@ -892,10 +892,10 @@
 .emptyPromptCard {
   position: relative;
   width: min(292px, calc(100% - 48px));
-  min-height: 142px;
+  min-height: 112px;
   display: grid;
-  grid-template-columns: 40px minmax(0, 1fr);
-  grid-template-rows: minmax(0, 1fr) auto;
+  grid-template-columns: 40px minmax(0, 1fr) 34px;
+  align-items: start;
   gap: 9px 11px;
   flex: none;
   padding: 13px;
@@ -921,22 +921,22 @@
 .emptyPromptCopy strong { display: block; margin-bottom: 4px; color: var(--ink); font-size: 15px; line-height: 1.22; letter-spacing: -0.015em; }
 .emptyPromptCopy p { margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.38; }
 
-.emptyPromptCard > button {
-  min-height: 40px;
-  grid-column: 2;
-  justify-self: start;
-  padding: 0 16px;
-  border: 1px solid var(--green-600);
-  border-radius: 999px;
-  color: var(--green-700);
-  background: rgba(255, 255, 255, 0.76);
-  font: inherit;
-  font-size: 13px;
-  font-weight: 700;
+.emptyPromptDismiss {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--ink-soft);
+  background: transparent;
   cursor: pointer;
+  transition: color 160ms ease, background-color 160ms ease, transform 160ms ease;
 }
 
-.emptyPromptCard > button:active { transform: scale(0.98); }
+.emptyPromptDismiss:hover { color: var(--ink); background: var(--mint-100); }
+.emptyPromptDismiss:active { transform: scale(0.92); }
 
 .composerRegion {
   position: relative;
