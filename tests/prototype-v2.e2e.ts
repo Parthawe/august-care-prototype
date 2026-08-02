@@ -239,7 +239,7 @@ test("Care opens an inbox before entering Maya’s clean conversation", async ({
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-reply");
 
-  await page.getByRole("navigation").getByRole("button", { name: /Care Conversations/ }).click();
+  await page.getByRole("navigation").getByRole("button", { name: "Care" }).click();
   await expect(page.getByText("Your care conversations")).toBeVisible();
   await expect(page.getByText("Active care")).toBeVisible();
   await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
@@ -250,6 +250,31 @@ test("Care opens an inbox before entering Maya’s clean conversation", async ({
   await page.getByRole("button", { name: /Maya Clinician/ }).click();
   await expect(page.getByText(/Hi Parth\. I reviewed what you shared/)).toBeVisible();
   await expect(page.getByText(/New messages here go directly to her/)).toHaveCount(0);
+});
+
+test("mobile navigation exposes four useful tabs with August at the far right", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-empty");
+
+  const navigation = page.getByRole("navigation", { name: "Primary navigation" });
+  const buttons = navigation.getByRole("button");
+  await expect(buttons).toHaveCount(4);
+  await expect(buttons.nth(0)).toHaveAttribute("aria-label", "Home");
+  await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Care");
+  await expect(buttons.nth(2)).toHaveAttribute("aria-label", "Updates");
+  await expect(buttons.nth(3)).toHaveAttribute("aria-label", "August");
+
+  await navigation.getByRole("button", { name: "Home" }).click();
+  await expect(page.getByRole("heading", { name: "Your care, in one place." })).toBeVisible();
+
+  await navigation.getByRole("button", { name: "Updates" }).click();
+  await expect(page.getByRole("heading", { name: "Updates" })).toBeVisible();
+
+  await navigation.getByRole("button", { name: "Care" }).click();
+  await expect(page.getByText("No clinician conversations yet")).toBeVisible();
+
+  await navigation.getByRole("button", { name: "August" }).click();
+  await expect(page.getByRole("textbox", { name: "Message August" })).toBeVisible();
 });
 
 test("August handles natural booking replies without leaving the chat", async ({ page }, testInfo) => {

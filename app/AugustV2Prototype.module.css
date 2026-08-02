@@ -799,13 +799,13 @@
 
 .bottomNav {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   align-items: center;
-  gap: 4px;
+  gap: 2px;
   margin: 5px 16px max(9px, env(safe-area-inset-bottom));
-  padding: 4px;
+  padding: 4px 7px;
   border: 1px solid rgba(16, 59, 49, 0.09);
-  border-radius: 30px;
+  border-radius: 28px;
   border-color: rgba(255, 255, 255, 0.76);
   background: rgba(255, 255, 255, 0.7);
   box-shadow: 0 12px 32px rgba(16, 59, 49, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.9);
@@ -815,48 +815,37 @@
 
 .bottomNav > button {
   position: relative;
-  min-height: 52px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 9px;
-  padding: 5px 13px;
+  min-height: 50px;
+  display: grid;
+  place-items: center;
+  padding: 0;
   border: 0;
-  border-radius: 26px;
-  color: #536c62;
+  border-radius: 18px;
+  color: #667b73;
   background: transparent;
   font: inherit;
-  text-align: left;
   cursor: pointer;
   transition:
     color 190ms ease,
     background-color 220ms var(--motion-ease),
-    box-shadow 220ms var(--motion-ease),
     transform 160ms var(--motion-press);
 }
 
-.bottomNav > button > span {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.bottomNav > button strong {
-  font-size: 11px;
-  font-weight: 740;
-}
-
-.bottomNav > button small {
-  color: var(--ink-muted);
-  font-size: 9px;
-  font-weight: 520;
-}
-
-.bottomNav .avatar { width: 22px; height: 22px; filter: grayscale(0.55); transition: filter 200ms ease, transform 220ms var(--motion-ease); }
-.bottomNav .activeNav { color: #fff; background: #075f4d; box-shadow: 0 5px 14px rgba(7, 95, 77, 0.18); }
-.bottomNav .activeNav small { color: rgba(255, 255, 255, 0.72); }
-.bottomNav .activeNav .avatar { filter: none; transform: scale(1.04); }
+.bottomNav .avatar { width: 28px; height: 28px; filter: grayscale(0.48); transition: filter 200ms ease, transform 220ms var(--motion-ease), box-shadow 220ms var(--motion-ease); }
+.bottomNav .activeNav { color: var(--green-800); background: rgba(227, 245, 237, 0.84); }
+.bottomNav .activeNav .avatar { filter: none; transform: scale(1.04); box-shadow: 0 0 0 2px var(--paper), 0 0 0 4px var(--green-700); }
 .bottomNav > button:disabled { cursor: default; opacity: 0.48; }
+
+.navBadge {
+  position: absolute;
+  top: 8px;
+  right: calc(50% - 15px);
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green-600);
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.92);
+}
 
 .careInboxHeader {
   min-width: 0;
@@ -885,6 +874,78 @@
 }
 
 .careInbox { min-height: 100%; padding: 20px 22px 30px; }
+
+.tabPage { min-height: 100%; padding: 24px 22px 30px; animation: surfaceRise 260ms var(--motion-ease) both; }
+.tabIntro { max-width: 320px; }
+.tabIntro small { color: var(--green-700); font-size: 11px; font-weight: 760; letter-spacing: 0.13em; }
+.tabIntro h1 { margin: 7px 0 8px; color: var(--ink); font-size: 30px; font-weight: 660; letter-spacing: -0.045em; line-height: 1.08; }
+.tabIntro p { margin: 0; color: var(--ink-soft); font-size: 14px; line-height: 1.55; }
+
+.tabActions { margin-top: 24px; border-top: 1px solid var(--line); }
+.tabActions button {
+  width: 100%;
+  min-height: 78px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 13px;
+  padding: 12px 4px;
+  border: 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background-color 180ms ease, transform 160ms var(--motion-press);
+}
+.tabActions button > span:nth-child(2) { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.tabActions button strong { font-size: 15px; font-weight: 650; }
+.tabActions button small { color: var(--ink-muted); font-size: 12px; }
+.tabActions button > svg { color: var(--ink-muted); }
+.tabActionIcon,
+.updateItem > span,
+.emptyTabState > svg {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  border-radius: 50%;
+  color: var(--green-700);
+  background: var(--mint-100);
+}
+
+.updateItem {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 12px;
+  margin-top: 24px;
+  padding: 16px 4px;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+.updateItem > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.updateItem small { color: var(--green-700); font-size: 10px; font-weight: 760; letter-spacing: 0.1em; }
+.updateItem strong { font-size: 14px; font-weight: 650; line-height: 1.35; }
+.updateItem p { margin: 0; color: var(--ink-soft); font-size: 12px; line-height: 1.45; }
+.updateItem time { color: var(--ink-muted); font-size: 11px; }
+
+.emptyTabState {
+  min-height: 160px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 26px;
+  padding: 20px;
+  color: var(--ink-soft);
+  text-align: center;
+}
+.emptyTabState strong { color: var(--ink); font-size: 15px; font-weight: 650; }
+.emptyTabState span { max-width: 260px; font-size: 12px; line-height: 1.5; }
 
 .encryptionNotice {
   max-width: 310px;
@@ -1121,6 +1182,7 @@
 .summaryRow:hover { background: rgba(237, 248, 243, 0.62); }
 .summaryRow:hover .editLabel svg { transform: translateX(2px); }
 .inboxThread:hover { background: rgba(237, 248, 243, 0.48); }
+.tabActions button:hover { background: rgba(237, 248, 243, 0.48); }
 .clinicianContactCard > button:hover { background: var(--green-700); }
 .clinicianContactCard > button:hover svg,
 .primaryAction:hover > svg { transform: translateX(3px); }
@@ -1135,6 +1197,7 @@
 .secondaryAction:active,
 .summaryRow:active,
 .inboxThread:active,
+.tabActions button:active,
 .clinicianContactCard > button:active,
 .bottomNav > button:active:not(:disabled) { transform: scale(0.97); }
 
@@ -1153,6 +1216,7 @@
 .inlineCancel:focus-visible,
 .inlineSave:focus-visible,
 .inboxThread:focus-visible,
+.tabActions button:focus-visible,
 .clinicianContactCard > button:focus-visible,
 .bottomNav > button:focus-visible { outline: 3px solid var(--green-600); outline-offset: -3px; }
 
@@ -1258,7 +1322,8 @@
   .summaryRow { min-height: 56px; padding-block: 8px; }
   .composerRegion { padding-top: 5px; }
   .bottomNav { margin-inline: 10px; }
-  .bottomNav > button { min-height: 46px; padding-inline: 8px; }
+  .bottomNav > button { min-height: 46px; padding: 0; }
+  .tabPage { padding: 18px 14px 24px; }
   .successPanel { justify-content: flex-start; margin: 12px; padding: 24px 16px; }
 }
 
