@@ -282,73 +282,27 @@ function TypingIndicator({ person }: { person: "august" | "maya" }) {
   );
 }
 
-function AugustThinkingIndicator({
-  mode = "clinical",
-}: {
-  mode?: "clinical" | "coordination" | "scheduling";
-}) {
-  const [phase, setPhase] = useState(0);
-  const phases = mode === "clinical"
-    ? [
-        "Understanding what you shared",
-        "Checking for urgent warning signs",
-        "Preparing the safest next question",
-      ]
-    : mode === "scheduling"
-      ? [
-          "Checking Mission Lab availability",
-          "Confirming the appointment time",
-          "Attaching Maya’s order",
-        ]
-    : [
-        "Reviewing your care context",
-        "Checking the order and next steps",
-        "Preparing a clear response",
-      ];
-
-  useEffect(() => {
-    const phaseTimers = [
-      window.setTimeout(() => setPhase(1), 900),
-      window.setTimeout(() => setPhase(2), 1_850),
-    ];
-    return () => phaseTimers.forEach(window.clearTimeout);
-  }, []);
-
+function AugustThinkingIndicator() {
   return (
-    <div className={styles.thinkingRow} role="status" aria-live="polite">
+    <div aria-label="August is thinking" className={styles.thinkingRow} role="status">
       <Avatar person="august" size="small" />
       <div className={styles.thinkingSurface}>
-        <strong className={styles.thinkingTitle}>
-          <Sparkles aria-hidden="true" size={13} />
-          {mode === "scheduling" ? "August is arranging this" : "August is thinking"}
-        </strong>
-        <ol className={styles.thinkingSteps}>
-          {phases.map((item, index) => {
-            const status = index < phase ? "complete" : index === phase ? "current" : "upcoming";
-            return (
-              <li className={styles[`thinkingStep-${status}`]} key={item}>
-                <span aria-hidden="true" className={styles.thinkingStepMark}>
-                  {status === "complete" ? <Check size={11} strokeWidth={2.8} /> : <i />}
-                </span>
-                <span>{item}</span>
-              </li>
-            );
-          })}
-        </ol>
+        <Sparkles aria-hidden="true" size={14} />
+        <span>August is thinking</span>
+        <span aria-hidden="true" className={styles.thinkingDots}><i /><i /><i /></span>
       </div>
     </div>
   );
 }
 
 function ResponseProgress({
-  mode = "clinical",
   person,
 }: {
   mode?: "clinical" | "coordination" | "scheduling";
   person: "august" | "maya";
 }) {
   return person === "august"
-    ? <AugustThinkingIndicator mode={mode} />
+    ? <AugustThinkingIndicator />
     : <TypingIndicator person="maya" />;
 }
 
