@@ -265,7 +265,7 @@ function TypingIndicator({ person }: { person: "august" | "maya" }) {
 function AugustThinkingIndicator({
   mode = "clinical",
 }: {
-  mode?: "clinical" | "coordination";
+  mode?: "clinical" | "coordination" | "scheduling";
 }) {
   const [phase, setPhase] = useState(0);
   const phases = mode === "clinical"
@@ -274,6 +274,12 @@ function AugustThinkingIndicator({
         "Checking for urgent warning signs",
         "Preparing the safest next question",
       ]
+    : mode === "scheduling"
+      ? [
+          "Checking Mission Lab availability",
+          "Confirming the appointment time",
+          "Attaching Maya’s order",
+        ]
     : [
         "Reviewing your care context",
         "Checking the order and next steps",
@@ -294,7 +300,7 @@ function AugustThinkingIndicator({
       <div className={styles.thinkingSurface}>
         <strong className={styles.thinkingTitle}>
           <Sparkles aria-hidden="true" size={13} />
-          August is thinking
+          {mode === "scheduling" ? "August is arranging this" : "August is thinking"}
         </strong>
         <ol className={styles.thinkingSteps}>
           {phases.map((item, index) => {
@@ -318,7 +324,7 @@ function ResponseProgress({
   mode = "clinical",
   person,
 }: {
-  mode?: "clinical" | "coordination";
+  mode?: "clinical" | "coordination" | "scheduling";
   person: "august" | "maya";
 }) {
   return person === "august"
@@ -751,6 +757,12 @@ function CompleteJourneyConversation({
         <div className={styles.dateMarker}>Today · August</div>
         <MessageItem message={{ author: "system", content: "Maya sent the rapid strep test order to August for scheduling." }} />
         <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
+        {state === "nearby-lab" && pending === "august" ? (
+          <>
+            <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "Now" }} />
+            <ResponseProgress mode="scheduling" person="august" />
+          </>
+        ) : null}
         {state === "confirmed" ? (
           <>
             <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "10:29" }} />
@@ -996,6 +1008,16 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     timers.current.push(timer);
   }
 
+  function confirmLabAppointment() {
+    if (pending) return;
+    setPending("august");
+    const timer = window.setTimeout(() => {
+      setPending(null);
+      changeState("confirmed");
+    }, AUGUST_THINKING_DELAY);
+    timers.current.push(timer);
+  }
+
   function handleComposer(value: string) {
     if (completeJourney) {
       const normalized = value.toLowerCase();
@@ -1020,7 +1042,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
       }
       if (flow === "lab" && state === "nearby-lab") {
         if (/\b(yes|works|confirm|okay|ok)\b/.test(normalized)) {
-          moveTo("lab", "confirmed");
+          confirmLabAppointment();
           return;
         }
         if (/\b(no|change|different|cannot|can't)\b/.test(normalized)) {
@@ -1147,7 +1169,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           : state === "pharmacy"
             ? "Tell August where to send it…"
             : `Message ${recipient}…`;
-      return { kind: "composer" as const, disabled: false, placeholder, recipient };
+      return { kind: "composer" as const, disabled: Boolean(pending), placeholder, recipient };
     }
     if (state === "sent" || state === "confirmed") return { kind: "passive" as const, icon: Bell, text: "Updates will appear in Care" };
     if (flow === "intake" && state === "summary") return { kind: "passive" as const, icon: LockKeyhole, text: "Nothing is shared until you confirm" };
@@ -1366,7 +1388,12 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
                 <div className={styles.dateMarker}>Today · August</div>
                 <MessageItem message={{ author: "system", content: "Maya sent the test order to your private August conversation." }} />
                 <MessageItem message={{ author: "august", content: `${encounter.lab.location} can take Maya’s order ${encounter.lab.orderCode}. It is ${encounter.lab.distance} at ${encounter.lab.address}.\n\nThe appointment is ${encounter.lab.appointment.toLowerCase()}. Bring a photo ID and the order code.\n\nDoes this appointment work for you?`, time: "10:28" }} />
-                <PrimaryAction onClick={() => changeState("confirmed")}>Yes, confirm appointment</PrimaryAction>
+                {pending === "august" ? (
+                  <>
+                    <MessageItem message={{ author: "patient", content: "Yes, that time works for me.", time: "Now" }} />
+                    <ResponseProgress mode="scheduling" person="august" />
+                  </>
+                ) : <PrimaryAction onClick={confirmLabAppointment}>Yes, confirm appointment</PrimaryAction>}
               </div>
             ) : null}
 
