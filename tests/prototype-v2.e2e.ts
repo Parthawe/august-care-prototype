@@ -244,16 +244,15 @@ test("complete journey runs from intake through testing and prescription", async
   await expect(page).toHaveURL(/state=prescription-sent/);
 });
 
-test("Care opens an inbox before entering Maya’s clean conversation", async ({ page }, testInfo) => {
+test("Chats opens an inbox before entering Maya’s clean conversation", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-reply");
 
-  await page.getByRole("navigation").getByRole("button", { name: "Care" }).click();
-  await expect(page.getByText("Your care conversations")).toBeVisible();
-  await expect(page.getByText("Active care")).toBeVisible();
+  await page.getByRole("navigation").getByRole("button", { name: "Chats" }).click();
+  await expect(page.locator("header").getByText("Chats", { exact: true })).toBeVisible();
+  await expect(page.getByRole("searchbox", { name: "Ask August or search chats" })).toBeVisible();
   await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
   await expect(page.getByRole("button", { name: /August Care guide/ })).toBeVisible();
-  await expect(page.getByText("Choose a conversation to continue")).toBeVisible();
   await expect(page.getByRole("textbox")).toHaveCount(0);
 
   await page.getByRole("button", { name: /Maya Clinician/ }).click();
@@ -269,17 +268,30 @@ test("mobile navigation uses the compact reference dock with August at the far r
   const buttons = navigation.getByRole("button");
   await expect(buttons).toHaveCount(3);
   await expect(buttons.nth(0)).toHaveAttribute("aria-label", "Activity");
-  await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Care");
+  await expect(buttons.nth(1)).toHaveAttribute("aria-label", "Chats");
   await expect(buttons.nth(2)).toHaveAttribute("aria-label", "August");
 
   await navigation.getByRole("button", { name: "Activity" }).click();
   await expect(page.getByRole("heading", { name: "Activity" })).toBeVisible();
 
-  await navigation.getByRole("button", { name: "Care" }).click();
-  await expect(page.getByText("No clinician conversations yet")).toBeVisible();
+  await navigation.getByRole("button", { name: "Chats" }).click();
+  await expect(page.locator("header").getByText("Chats", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maya Clinician/ })).toHaveCount(0);
 
   await navigation.getByRole("button", { name: "August" }).click();
   await expect(page.getByRole("textbox", { name: "Message August" })).toBeVisible();
+});
+
+test("Chats search filters threads and can hand a question directly to August", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-empty");
+  await page.getByRole("navigation").getByRole("button", { name: "Chats" }).click();
+
+  const search = page.getByRole("searchbox", { name: "Ask August or search chats" });
+  await search.fill("headache after lunch");
+  await expect(page.getByRole("button", { name: /Ask August headache after lunch/ })).toBeVisible();
+  await search.press("Enter");
+  await expect(page.getByRole("textbox", { name: "Message August" })).toHaveValue("headache after lunch");
 });
 
 test("conversation header provides search and a compact details menu", async ({ page }, testInfo) => {
@@ -327,18 +339,18 @@ test("conversation details explain recipient and privacy with accessible dismiss
   await expect(trigger).toBeFocused();
 });
 
-test("header back is always present and opens the Care tab", async ({
+test("header back is always present and opens the Chats tab", async ({
   page,
 }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=intake-empty");
-  await page.getByRole("button", { name: "Back to Care" }).click();
-  await expect(page.getByText("Your care conversations")).toBeVisible();
-  await expect(page.getByText("No clinician conversations yet")).toBeVisible();
+  await page.getByRole("button", { name: "Back to Chats" }).click();
+  await expect(page.locator("header").getByText("Chats", { exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Maya Clinician/ })).toHaveCount(0);
 
   await page.goto("/prototype-v2/prescription?state=recommended");
-  await page.getByRole("button", { name: "Back to Care" }).click();
-  await expect(page.getByText("Your care conversations")).toBeVisible();
+  await page.getByRole("button", { name: "Back to Chats" }).click();
+  await expect(page.locator("header").getByText("Chats", { exact: true })).toBeVisible();
   await expect(page.getByRole("button", { name: /Maya Clinician/ })).toBeVisible();
   await expect(page.getByText(/choose a clinician|choose an outcome/i)).toHaveCount(0);
 });

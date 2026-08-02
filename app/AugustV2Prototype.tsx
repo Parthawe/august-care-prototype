@@ -15,6 +15,7 @@ import {
   BatteryMedium,
   Bell,
   Building2,
+  Camera,
   CalendarDays,
   Check,
   CheckCheck,
@@ -151,7 +152,7 @@ function ConversationHeader({
   return (
     <header className={styles.conversationHeader}>
       <button
-        aria-label="Back to Care"
+        aria-label="Back to Chats"
         className={styles.headerAction}
         onClick={onBack}
         type="button"
@@ -231,18 +232,24 @@ function TypingIndicator({ person }: { person: "august" | "maya" }) {
 
 function Composer({
   disabled,
+  initialValue = "",
   onAttach,
   onSubmit,
   placeholder,
   recipient,
 }: {
   disabled?: boolean;
+  initialValue?: string;
   onAttach: (file: File) => void;
   onSubmit: (value: string) => void;
   placeholder: string;
   recipient: "August" | "Maya";
 }) {
   const [value, setValue] = useState("");
+
+  useEffect(() => {
+    setValue(initialValue);
+  }, [initialValue]);
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -318,7 +325,7 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
 }) {
   const items: Array<{ id: ProductTab; label: string; icon?: LucideIcon }> = [
     { id: "updates", label: "Activity", icon: Clock3 },
-    { id: "care", label: "Care", icon: MessageCircle },
+    { id: "care", label: "Chats", icon: MessageCircle },
     { id: "august", label: "August" },
   ];
 
@@ -342,12 +349,43 @@ function ProductNavigation({ activeTab, careAvailable, onSelect }: {
   );
 }
 
-function CareInbox({ careAvailable, onOpenAugust, onOpenMaya }: { careAvailable: boolean; onOpenAugust: () => void; onOpenMaya: () => void }) {
+function CareInbox({ careAvailable, onAskAugust, onOpenAugust, onOpenMaya }: { careAvailable: boolean; onAskAugust: (query: string) => void; onOpenAugust: () => void; onOpenMaya: () => void }) {
+  const [query, setQuery] = useState("");
+  const [filter, setFilter] = useState<"all" | "unread" | "clinicians">("all");
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const showMaya = careAvailable && (!normalizedQuery || ["maya", "clinician", "throat", "care"].some((term) => term.includes(normalizedQuery) || normalizedQuery.includes(term)));
+  const showAugust = filter === "all" && (!normalizedQuery || ["august", "care guide", "private support"].some((term) => term.includes(normalizedQuery) || normalizedQuery.includes(term)));
+
+  function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const clean = query.trim();
+    if (clean) onAskAugust(clean);
+  }
+
   return (
     <div className={styles.careInbox}>
-      {careAvailable ? (
-        <>
-          <p className={styles.inboxSectionLabel}>Active care</p>
+      <form className={styles.inboxSearch} onSubmit={submit} role="search">
+        <Avatar person="august" size="small" />
+        <input aria-label="Ask August or search chats" onChange={(event) => setQuery(event.target.value)} placeholder="Ask August or search" type="search" value={query} />
+        {query ? <button aria-label="Ask August" type="submit"><Send aria-hidden="true" size={16} /></button> : null}
+      </form>
+
+      <div aria-label="Chat filters" className={styles.chatFilters} role="group">
+        {(["all", "unread", "clinicians"] as const).map((item) => (
+          <button aria-pressed={filter === item} key={item} onClick={() => setFilter(item)} type="button">{item === "all" ? "All" : item === "unread" ? "Unread" : "Clinicians"}</button>
+        ))}
+      </div>
+
+      {query ? (
+        <button className={styles.askAugustRow} onClick={() => onAskAugust(query.trim())} type="button">
+          <Avatar person="august" size="regular" />
+          <span><strong>Ask August</strong><small>{query.trim()}</small></span>
+          <Send aria-hidden="true" size={17} />
+        </button>
+      ) : null}
+
+      <div className={styles.chatList}>
+        {showMaya ? (
           <button className={styles.inboxThread} onClick={onOpenMaya} type="button">
             <Avatar person="maya" size="large" />
             <span className={styles.inboxThreadCopy}>
@@ -356,20 +394,23 @@ function CareInbox({ careAvailable, onOpenAugust, onOpenMaya }: { careAvailable:
             </span>
             <span className={styles.inboxThreadMeta}><time>10:24</time><b>1</b></span>
           </button>
-        </>
-      ) : (
-        <div className={styles.emptyTabState}><MessageCircle aria-hidden="true" size={20} /><strong>No clinician conversations yet</strong><span>When a clinician joins your care, their conversation will appear here.</span></div>
-      )}
+        ) : null}
 
-      <p className={styles.inboxSectionLabel}>August</p>
-      <button className={styles.inboxThread} onClick={onOpenAugust} type="button">
-        <Avatar person="august" size="large" />
-        <span className={styles.inboxThreadCopy}>
-          <span><strong>August</strong><small>Care guide</small></span>
-          <span>Ask anything or continue your care.</span>
-        </span>
-        <span className={styles.inboxThreadMeta}><time>Now</time><CheckCheck aria-hidden="true" size={16} /></span>
-      </button>
+        {showAugust ? (
+          <button className={styles.inboxThread} onClick={onOpenAugust} type="button">
+            <Avatar person="august" size="large" />
+            <span className={styles.inboxThreadCopy}>
+              <span><strong>August</strong><small>Care guide</small></span>
+              <span>Ask anything or continue your care.</span>
+            </span>
+            <span className={styles.inboxThreadMeta}><time>Now</time><CheckCheck aria-hidden="true" size={16} /></span>
+          </button>
+        ) : null}
+
+        {!showMaya && !showAugust && !query ? <div className={styles.emptyTabState}><MessageCircle aria-hidden="true" size={20} /><strong>No chats in this filter</strong><span>Your care conversations will appear here.</span></div> : null}
+      </div>
+
+      <button aria-label="Start a new August chat" className={styles.newChatButton} onClick={onOpenAugust} type="button"><MessageCircle aria-hidden="true" size={20} /><Plus aria-hidden="true" size={12} /></button>
     </div>
   );
 }
@@ -632,6 +673,8 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchFeedback, setSearchFeedback] = useState("");
+  const [chatMenuOpen, setChatMenuOpen] = useState(false);
+  const [composerDraft, setComposerDraft] = useState("");
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
@@ -766,6 +809,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (flow === "lab") moveTo("lab", "recommended");
     else if (flow === "prescription") moveTo("prescription", "review");
     else moveTo("intake", "reply");
+  }
+
+  function askAugustFromChats(query: string) {
+    const clean = query.trim();
+    if (!clean) return;
+    setComposerDraft(clean);
+    switchTab("august");
   }
 
   function closeSearch() {
@@ -1008,8 +1058,20 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
           <StatusBar />
           {showCareInbox ? (
             <header className={styles.careInboxHeader}>
-              <div><strong>Care</strong><span>Your care conversations</span></div>
-              <Clock3 aria-hidden="true" size={20} />
+              <div><strong>Chats</strong></div>
+              <div className={styles.chatHeaderActions}>
+                <label aria-label="Add an image to August" className={styles.chatHeaderAction}>
+                  <Camera aria-hidden="true" size={19} />
+                  <input accept="image/*" onChange={(event) => { const file = event.target.files?.[0]; if (file) handleImageAttachment(file); event.target.value = ""; }} type="file" />
+                </label>
+                <button aria-expanded={chatMenuOpen} aria-label="Open Chats menu" className={styles.chatHeaderAction} onClick={() => setChatMenuOpen((current) => !current)} type="button"><MoreVertical aria-hidden="true" size={20} /></button>
+                {chatMenuOpen ? (
+                  <div className={styles.chatMenu} role="menu">
+                    <button onClick={() => { setChatMenuOpen(false); switchTab("august"); }} role="menuitem" type="button">New August chat</button>
+                    <button onClick={() => { setChatMenuOpen(false); switchTab("updates"); }} role="menuitem" type="button">View activity</button>
+                  </div>
+                ) : null}
+              </div>
             </header>
           ) : showUpdates ? (
             <header className={styles.careInboxHeader}>
@@ -1044,7 +1106,7 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               </form>
             ) : null}
             {showCareInbox ? (
-              <CareInbox careAvailable={careAvailable} onOpenAugust={() => switchTab("august")} onOpenMaya={openMayaThread} />
+              <CareInbox careAvailable={careAvailable} onAskAugust={askAugustFromChats} onOpenAugust={() => switchTab("august")} onOpenMaya={openMayaThread} />
             ) : showUpdates ? (
               <UpdatesTab careAvailable={careAvailable} />
             ) : completeJourney ? (
@@ -1205,11 +1267,11 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
 
           <div className={styles.inputZone}>
             {showCareInbox ? (
-              <PassiveFooter icon={MessageCircle} text="Choose a conversation to continue" />
+              null
             ) : showUpdates ? (
               <PassiveFooter icon={Bell} text="Updates appear automatically" />
             ) : composerConfig.kind === "composer" ? (
-              <Composer disabled={composerConfig.disabled || Boolean(pending)} onAttach={handleImageAttachment} onSubmit={handleComposer} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
+              <Composer disabled={composerConfig.disabled || Boolean(pending)} initialValue={composerDraft} onAttach={handleImageAttachment} onSubmit={(value) => { setComposerDraft(""); handleComposer(value); }} placeholder={composerConfig.placeholder} recipient={composerConfig.recipient} />
             ) : (
               <PassiveFooter icon={composerConfig.icon} text={composerConfig.text} />
             )}
