@@ -845,7 +845,8 @@ function CompleteJourneyConversation({
             <MessageItem message={{ author: "august", content: `You’re confirmed for ${encounter.lab.appointment.toLowerCase()} at ${encounter.lab.location}. Bring a photo ID. Maya’s order is already attached, and I’ll return the result to her visit.`, time: "10:30" }} />
           </>
         ) : null}
-        {state !== "confirmed" ? patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />) : null}
+        {patientReplies.map((message, index) => <MessageItem key={`lab-august-reply-${index}`} message={message} />)}
+        {state === "confirmed" && pending === "august" ? <ResponseProgress mode="clinical" person="august" /> : null}
       </div>
     );
   }
@@ -1148,7 +1149,13 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         }
       }
       if (flow === "lab" && state === "confirmed") {
-        moveTo("prescription", "recommended");
+        setPatientReplies((current) => [...current, { author: "patient", content: value, time: "Now" }]);
+        setPending("august");
+        const timer = window.setTimeout(() => {
+          setPending(null);
+          moveTo("prescription", "recommended");
+        }, AUGUST_THINKING_DELAY);
+        timers.current.push(timer);
         return;
       }
       if (flow === "prescription" && state === "recommended") {
