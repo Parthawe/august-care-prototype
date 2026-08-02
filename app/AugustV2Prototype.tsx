@@ -23,6 +23,7 @@ import {
   ClipboardCheck,
   Clock3,
   FileCheck2,
+  Glasses,
   ImagePlus,
   House,
   HeartPulse,
@@ -209,6 +210,11 @@ function ConversationHeader({
         <span>{subtitle}</span>
       </div>
       <div className={styles.headerActions}>
+        {!clinician ? (
+          <button aria-label="Incognito mode unavailable in prototype" className={styles.headerAction} disabled type="button">
+            <Glasses aria-hidden="true" size={19} />
+          </button>
+        ) : null}
         <button aria-label="Search conversation" className={styles.headerAction} onClick={onSearch} type="button">
           <Search aria-hidden="true" size={19} />
         </button>
