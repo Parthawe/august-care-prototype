@@ -142,12 +142,66 @@
     box-shadow 180ms ease;
 }
 
-.headerAction:first-child { margin-left: -8px; }
-.headerAction:last-child { margin-right: -6px; }
+.conversationHeader > .headerAction:first-child { margin-left: -8px; }
+.headerActions { display: flex; align-items: center; flex: none; margin-right: -7px; }
+.headerActions .headerAction { margin: 0; color: var(--green-800); background: transparent; }
 
-.headerAction:last-child {
-  color: #08745d;
-  background: rgba(227, 245, 237, 0.9);
+.conversationSearch {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  min-height: 52px;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 14px 12px;
+  padding: 5px 6px 5px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.88);
+  border-radius: 24px;
+  color: var(--green-700);
+  background: rgba(250, 253, 251, 0.88);
+  box-shadow: 0 10px 26px rgba(16, 59, 49, 0.11), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+  -webkit-backdrop-filter: blur(24px) saturate(1.35);
+  backdrop-filter: blur(24px) saturate(1.35);
+  animation: chromeIn 200ms var(--motion-ease) both;
+}
+
+.conversationSearch input {
+  min-width: 0;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  outline: 0;
+  color: var(--ink);
+  background: transparent;
+  font: inherit;
+  font-size: 14px;
+}
+
+.conversationSearch input::placeholder { color: #7a8e86; }
+.conversationSearch:focus-within {
+  box-shadow: 0 10px 26px rgba(16, 59, 49, 0.11), inset 0 0 0 1.5px rgba(31, 113, 92, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.96);
+}
+.conversationSearch > span { color: var(--ink-muted); font-size: 10px; white-space: nowrap; }
+.conversationSearch button {
+  width: 40px;
+  height: 40px;
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  color: var(--green-700);
+  background: transparent;
+  cursor: pointer;
+}
+
+.searchHit {
+  border-radius: 6px;
+  outline: 5px solid rgba(222, 238, 231, 0.94);
+  background: rgba(222, 238, 231, 0.94);
+  transition: outline-color 180ms ease, background-color 180ms ease;
 }
 
 .screen {
@@ -1235,6 +1289,7 @@
 .primaryAction:focus-visible,
 .secondaryAction:focus-visible,
 .headerAction:focus-visible,
+.conversationSearch button:focus-visible,
 .sendButton:focus-visible,
 .summaryRow:focus-visible,
 .detailsSheet button:focus-visible,

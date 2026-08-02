@@ -277,6 +277,21 @@ test("mobile navigation exposes four useful tabs with August at the far right", 
   await expect(page.getByRole("textbox", { name: "Message August" })).toBeVisible();
 });
 
+test("conversation header provides search and a compact details menu", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile-390");
+  await page.goto("/prototype-v2/00?state=intake-concern");
+
+  await expect(page.getByRole("button", { name: "Search conversation" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open conversation details" })).toBeVisible();
+  await page.getByRole("button", { name: "Search conversation" }).click();
+  const search = page.getByRole("searchbox", { name: "Search this conversation" });
+  await search.fill("temperature");
+  await search.press("Enter");
+  await expect(page.getByText("1 match")).toBeVisible();
+  await page.getByRole("button", { name: "Close conversation search" }).click();
+  await expect(search).toHaveCount(0);
+});
+
 test("August handles natural booking replies without leaving the chat", async ({ page }, testInfo) => {
   test.skip(testInfo.project.name !== "mobile-390");
   await page.goto("/prototype-v2/00?state=lab-nearby-lab");

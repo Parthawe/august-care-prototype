@@ -24,11 +24,12 @@ import {
   Clock3,
   FileCheck2,
   House,
-  Info,
   LockKeyhole,
   MapPin,
   MessageCircle,
+  MoreVertical,
   Plus,
+  Search,
   Send,
   Signal,
   UserRoundCheck,
@@ -144,12 +145,14 @@ function ConversationHeader({
   clinician,
   onBack,
   onDetails,
+  onSearch,
   subtitle,
 }: {
   canGoBack: boolean;
   clinician: boolean;
   onBack: () => void;
   onDetails: (trigger: HTMLButtonElement) => void;
+  onSearch: () => void;
   subtitle: string;
 }) {
   return (
@@ -169,14 +172,19 @@ function ConversationHeader({
         <strong>{clinician ? "Maya (Clinician)" : "August"}</strong>
         <span>{subtitle}</span>
       </div>
-      <button
-        aria-label="Open conversation details"
-        className={styles.headerAction}
-        onClick={(event) => onDetails(event.currentTarget)}
-        type="button"
-      >
-        <Info aria-hidden="true" size={19} />
-      </button>
+      <div className={styles.headerActions}>
+        <button aria-label="Search conversation" className={styles.headerAction} onClick={onSearch} type="button">
+          <Search aria-hidden="true" size={19} />
+        </button>
+        <button
+          aria-label="Open conversation details"
+          className={styles.headerAction}
+          onClick={(event) => onDetails(event.currentTarget)}
+          type="button"
+        >
+          <MoreVertical aria-hidden="true" size={20} />
+        </button>
+      </div>
     </header>
   );
 }
@@ -645,12 +653,16 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
   const [gatheringStep, setGatheringStep] = useState(0);
   const [pending, setPending] = useState<"august" | "maya" | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchFeedback, setSearchFeedback] = useState("");
   const [editField, setEditField] = useState<keyof IntakeAnswers | null>(null);
   const [editValue, setEditValue] = useState("");
   const [patientReplies, setPatientReplies] = useState<Message[]>([]);
   const [uploadedImages, setUploadedImages] = useState<Array<{ id: string; name: string; url: string }>>([]);
   const [conversationView, setConversationView] = useState<"thread" | "care-inbox" | "home" | "updates">("thread");
   const transcriptRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const dialogRef = useRef<HTMLElement>(null);
   const firstDialogActionRef = useRef<HTMLButtonElement>(null);
   const lastTriggerRef = useRef<HTMLButtonElement | null>(null);
@@ -676,6 +688,10 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
         : "august";
 
   useEffect(() => () => timers.current.forEach((timer) => window.clearTimeout(timer)), []);
+
+  useEffect(() => {
+    if (searchOpen) requestAnimationFrame(() => searchInputRef.current?.focus());
+  }, [searchOpen]);
 
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -800,6 +816,35 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
     if (flow === "lab") moveTo("lab", "recommended");
     else if (flow === "prescription") moveTo("prescription", "review");
     else moveTo("intake", "reply");
+  }
+
+  function closeSearch() {
+    setSearchOpen(false);
+    setSearchQuery("");
+    setSearchFeedback("");
+    transcriptRef.current?.querySelectorAll(`.${styles.searchHit}`).forEach((node) => node.classList.remove(styles.searchHit));
+  }
+
+  function searchConversation(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const query = searchQuery.trim().toLocaleLowerCase();
+    const container = transcriptRef.current;
+    if (!container || !query) {
+      setSearchFeedback("Type something to search");
+      return;
+    }
+
+    container.querySelectorAll(`.${styles.searchHit}`).forEach((node) => node.classList.remove(styles.searchHit));
+    const matches = Array.from(container.querySelectorAll<HTMLElement>("p"))
+      .filter((node) => !node.closest(`.${styles.conversationSearch}`) && node.innerText.toLocaleLowerCase().includes(query));
+    if (!matches.length) {
+      setSearchFeedback("No matches");
+      return;
+    }
+
+    matches[0].classList.add(styles.searchHit);
+    matches[0].scrollIntoView({ behavior: "smooth", block: "center" });
+    setSearchFeedback(`${matches.length} ${matches.length === 1 ? "match" : "matches"}`);
   }
 
   function handleImageAttachment(file: File) {
@@ -1034,11 +1079,28 @@ export function AugustV2Prototype({ completeJourney = false, initialFlow, initia
               clinician={clinician}
               onBack={goBack}
               onDetails={(trigger) => { lastTriggerRef.current = trigger; setDetailsOpen(true); }}
+              onSearch={() => setSearchOpen((current) => !current)}
               subtitle={subtitle}
             />
           )}
 
           <div className={styles.screen} ref={transcriptRef}>
+            {searchOpen ? (
+              <form className={styles.conversationSearch} onSubmit={searchConversation} role="search">
+                <Search aria-hidden="true" size={17} />
+                <input
+                  aria-label="Search this conversation"
+                  onChange={(event) => { setSearchQuery(event.target.value); setSearchFeedback(""); }}
+                  onKeyDown={(event) => { if (event.key === "Escape") closeSearch(); }}
+                  placeholder="Search this conversation"
+                  ref={searchInputRef}
+                  type="search"
+                  value={searchQuery}
+                />
+                {searchFeedback ? <span aria-live="polite">{searchFeedback}</span> : null}
+                <button aria-label="Close conversation search" onClick={closeSearch} type="button"><X aria-hidden="true" size={17} /></button>
+              </form>
+            ) : null}
             {showCareInbox ? (
               <CareInbox careAvailable={careAvailable} onOpenAugust={() => switchTab("august")} onOpenMaya={openMayaThread} />
             ) : showHome ? (
